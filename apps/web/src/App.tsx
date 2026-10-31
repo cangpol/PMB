@@ -49,6 +49,7 @@ import { JalurMasukPage } from "./pages/admin/konfigurasi/JalurMasukPage";
 import { BiayaMatriksPage } from "./pages/admin/konfigurasi/BiayaMatriksPage";
 import { VoucherPage } from "./pages/admin/konfigurasi/VoucherPage";
 import { PengaturanPmbPage } from "./pages/admin/konfigurasi/PengaturanPmbPage";
+import { FormBuilderPage } from "./pages/admin/konfigurasi/FormBuilderPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -162,6 +163,7 @@ export const App: React.FC = () => {
                   <Route path="jalur" element={<JalurMasukPage />} />
                   <Route path="biaya" element={<BiayaMatriksPage />} />
                   <Route path="vouchers" element={<VoucherPage />} />
+                  <Route path="form-builder" element={<FormBuilderPage />} />
                   <Route path="pengaturan" element={<PengaturanPmbPage />} />
                 </Route>
               </Route>

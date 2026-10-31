@@ -11,6 +11,7 @@ import {
   Coins,
   Ticket,
   Sliders,
+  Layers,
   LogOut,
   Shield,
 } from "lucide-react";
@@ -75,6 +76,11 @@ export const AdminLayout: React.FC = () => {
       label: "Voucher Promosi",
       path: "/admin/konfigurasi/vouchers",
       icon: <Ticket className="w-4 h-4" />,
+    },
+    {
+      label: "Form & Berkas Builder",
+      path: "/admin/konfigurasi/form-builder",
+      icon: <Layers className="w-4 h-4" />,
     },
     {
       label: "Pengaturan Sistem",

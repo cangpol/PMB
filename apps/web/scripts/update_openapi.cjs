@@ -4,987 +4,583 @@ const path = require('path');
 const openapiPath = path.resolve(__dirname, '../../api/openapi.json');
 const openapi = JSON.parse(fs.readFileSync(openapiPath, 'utf8'));
 
-// 1. Tambahkan paths Konfigurasi Admin
-const newPaths = {
-  "/api/admin/konfigurasi/tahun-akademik": {
+// 1. Tambahkan paths Konfigurasi Admin & Form Builder
+const formBuilderPaths = {
+  "/api/pendaftaran/fields": {
     "get": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Daftar tahun akademik",
-      "operationId": "list_tahun_akademik_handler",
+      "tags": ["Pendaftaran"],
+      "summary": "Ambil definisi kolom form aktif",
+      "operationId": "get_fields_handler",
+      "parameters": [{ "name": "jalur_id", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } }],
       "responses": {
         "200": {
-          "description": "Daftar tahun akademik",
-          "content": {
-            "application/json": {
-              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/TahunAkademikResponse" } }
-            }
-          }
-        }
-      }
-    },
-    "post": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Tambah tahun akademik baru",
-      "operationId": "create_tahun_akademik_handler",
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateTahunAkademikRequest" } } }
-      },
-      "responses": {
-        "201": {
-          "description": "Tahun akademik berhasil dibuat",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TahunAkademikResponse" } } }
+          "description": "Daftar definisi field",
+          "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DefinisiField" } } } }
         }
       }
     }
   },
-  "/api/admin/konfigurasi/tahun-akademik/{id}": {
-    "put": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Ubah tahun akademik",
-      "operationId": "update_tahun_akademik_handler",
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+  "/api/pendaftaran/submit-dinamis": {
+    "post": {
+      "tags": ["Pendaftaran"],
+      "summary": "Simpan formulir pendaftaran dinamis",
+      "operationId": "submit_formulir_dinamis_handler",
       "requestBody": {
         "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateTahunAkademikRequest" } } }
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubmitDinamisRequest" } } }
       },
       "responses": {
         "200": {
-          "description": "Tahun akademik berhasil diperbarui",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TahunAkademikResponse" } } }
+          "description": "Formulir biodata berhasil disimpan",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PendaftarDetailResponse" } } }
+        }
+      }
+    }
+  },
+  "/api/pendaftaran/berkas/syarat": {
+    "get": {
+      "tags": ["Pendaftaran"],
+      "summary": "Daftar syarat berkas dan status unggah calon",
+      "operationId": "get_berkas_syarat_handler",
+      "responses": {
+        "200": {
+          "description": "Daftar berkas",
+          "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/BerkasCalonItem" } } } }
+        }
+      }
+    }
+  },
+  "/api/pendaftaran/berkas/presign-upload": {
+    "post": {
+      "tags": ["Pendaftaran"],
+      "summary": "Minta Presigned PUT URL MinIO untuk unggah berkas",
+      "operationId": "presign_upload_berkas_handler",
+      "requestBody": {
+        "required": true,
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PresignUploadRequest" } } }
+      },
+      "responses": {
+        "200": {
+          "description": "Presigned PUT URL dihasilkan",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PresignedUploadResponse" } } }
+        }
+      }
+    }
+  },
+  "/api/pendaftaran/berkas/konfirmasi": {
+    "post": {
+      "tags": ["Pendaftaran"],
+      "summary": "Konfirmasi unggahan berkas ke database",
+      "operationId": "konfirmasi_upload_berkas_handler",
+      "requestBody": {
+        "required": true,
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/KonfirmasiUploadRequest" } } }
+      },
+      "responses": {
+        "200": {
+          "description": "Berkas berhasil dikonfirmasi",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BerkasCalonItem" } } }
+        }
+      }
+    }
+  },
+  "/api/pendaftaran/berkas/{id}/presign-download": {
+    "get": {
+      "tags": ["Pendaftaran"],
+      "summary": "Minta Presigned GET URL MinIO berumur pendek (15 menit)",
+      "operationId": "presign_download_berkas_handler",
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "responses": {
+        "200": {
+          "description": "Presigned GET URL dihasilkan",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PresignedDownloadResponse" } } }
+        }
+      }
+    }
+  },
+  "/api/pendaftaran/langkah": {
+    "get": {
+      "tags": ["Pendaftaran"],
+      "summary": "Ambil progres alur langkah pendaftaran",
+      "operationId": "get_langkah_progress_handler",
+      "responses": {
+        "200": {
+          "description": "Daftar progress langkah",
+          "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/LangkahProgressItem" } } } }
+        }
+      }
+    }
+  },
+  "/api/pendaftaran/admin/form-builder/fields": {
+    "get": {
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Daftar seluruh kolom form",
+      "operationId": "admin_list_fields_handler",
+      "parameters": [{ "name": "jalur_id", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } }],
+      "responses": {
+        "200": {
+          "description": "Daftar definisi field",
+          "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DefinisiField" } } } }
+        }
+      }
+    },
+    "post": {
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Tambah kolom form baru",
+      "operationId": "admin_create_field_handler",
+      "requestBody": {
+        "required": true,
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateDefinisiFieldRequest" } } }
+      },
+      "responses": {
+        "200": {
+          "description": "Field berhasil dibuat",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DefinisiField" } } }
+        }
+      }
+    }
+  },
+  "/api/pendaftaran/admin/form-builder/fields/{id}": {
+    "put": {
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Ubah kolom form",
+      "operationId": "admin_update_field_handler",
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "requestBody": {
+        "required": true,
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateDefinisiFieldRequest" } } }
+      },
+      "responses": {
+        "200": {
+          "description": "Field berhasil diperbarui",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DefinisiField" } } }
         }
       }
     },
     "delete": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Hapus tahun akademik",
-      "operationId": "delete_tahun_akademik_handler",
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Hapus kolom form",
+      "operationId": "admin_delete_field_handler",
       "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
       "responses": {
-        "200": {
-          "description": "Tahun akademik berhasil dihapus",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericMessageResponse" } } }
-        }
+        "200": { "description": "Field berhasil dihapus" }
       }
     }
   },
-  "/api/admin/konfigurasi/fakultas": {
+  "/api/pendaftaran/admin/form-builder/fields/reorder": {
+    "post": {
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Reorder urutan kolom form",
+      "operationId": "admin_reorder_fields_handler",
+      "requestBody": {
+        "required": true,
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReorderFieldsRequest" } } }
+      },
+      "responses": {
+        "200": { "description": "Urutan berhasil diperbarui" }
+      }
+    }
+  },
+  "/api/pendaftaran/admin/form-builder/berkas": {
     "get": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Daftar fakultas",
-      "operationId": "list_fakultas_handler",
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Daftar syarat berkas",
+      "operationId": "admin_list_definisi_berkas_handler",
+      "parameters": [{ "name": "jalur_id", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } }],
       "responses": {
         "200": {
-          "description": "Daftar fakultas",
-          "content": {
-            "application/json": {
-              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/FakultasResponse" } }
-            }
-          }
+          "description": "Daftar berkas",
+          "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DefinisiBerkas" } } } }
         }
       }
     },
     "post": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Tambah fakultas baru",
-      "operationId": "create_fakultas_handler",
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Tambah syarat berkas baru",
+      "operationId": "admin_create_definisi_berkas_handler",
       "requestBody": {
         "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateFakultasRequest" } } }
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateDefinisiBerkasRequest" } } }
       },
       "responses": {
-        "201": {
-          "description": "Fakultas berhasil dibuat",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FakultasResponse" } } }
+        "200": {
+          "description": "Definisi berkas berhasil dibuat",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DefinisiBerkas" } } }
         }
       }
     }
   },
-  "/api/admin/konfigurasi/fakultas/{id}": {
+  "/api/pendaftaran/admin/form-builder/berkas/{id}": {
     "put": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Ubah fakultas",
-      "operationId": "update_fakultas_handler",
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Ubah syarat berkas",
+      "operationId": "admin_update_definisi_berkas_handler",
       "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
       "requestBody": {
         "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateFakultasRequest" } } }
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateDefinisiBerkasRequest" } } }
       },
       "responses": {
         "200": {
-          "description": "Fakultas berhasil diperbarui",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FakultasResponse" } } }
+          "description": "Definisi berkas berhasil diperbarui",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DefinisiBerkas" } } }
         }
       }
     },
     "delete": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Hapus fakultas",
-      "operationId": "delete_fakultas_handler",
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Hapus syarat berkas",
+      "operationId": "admin_delete_definisi_berkas_handler",
       "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
       "responses": {
-        "200": {
-          "description": "Fakultas berhasil dihapus",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericMessageResponse" } } }
-        }
+        "200": { "description": "Definisi berkas berhasil dihapus" }
       }
     }
   },
-  "/api/admin/konfigurasi/gelombang": {
+  "/api/pendaftaran/admin/form-builder/langkah": {
     "get": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Daftar gelombang pendaftaran admin",
-      "operationId": "list_gelombang_admin_handler",
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Daftar langkah alur pendaftaran",
+      "operationId": "admin_list_definisi_langkah_handler",
+      "parameters": [{ "name": "jalur_id", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } }],
       "responses": {
         "200": {
-          "description": "Daftar gelombang",
-          "content": {
-            "application/json": {
-              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/GelombangDetailResponse" } }
-            }
-          }
+          "description": "Daftar definisi langkah",
+          "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DefinisiLangkah" } } } }
         }
       }
     },
     "post": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Tambah gelombang pendaftaran",
-      "operationId": "create_gelombang_handler",
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Tambah langkah pendaftaran baru",
+      "operationId": "admin_create_definisi_langkah_handler",
       "requestBody": {
         "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateGelombangRequest" } } }
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateDefinisiLangkahRequest" } } }
       },
       "responses": {
-        "201": {
-          "description": "Gelombang berhasil dibuat",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GelombangDetailResponse" } } }
+        "200": {
+          "description": "Definisi langkah berhasil dibuat",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DefinisiLangkah" } } }
         }
       }
     }
   },
-  "/api/admin/konfigurasi/gelombang/{id}": {
+  "/api/pendaftaran/admin/form-builder/langkah/{id}": {
     "put": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Ubah gelombang",
-      "operationId": "update_gelombang_handler",
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Ubah langkah pendaftaran",
+      "operationId": "admin_update_definisi_langkah_handler",
       "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
       "requestBody": {
         "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateGelombangRequest" } } }
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateDefinisiLangkahRequest" } } }
       },
       "responses": {
         "200": {
-          "description": "Gelombang berhasil diubah",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GelombangDetailResponse" } } }
+          "description": "Definisi langkah berhasil diperbarui",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DefinisiLangkah" } } }
         }
       }
     },
     "delete": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Hapus gelombang",
-      "operationId": "delete_gelombang_handler",
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Hapus langkah pendaftaran",
+      "operationId": "admin_delete_definisi_langkah_handler",
       "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
       "responses": {
-        "200": {
-          "description": "Gelombang berhasil dihapus",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericMessageResponse" } } }
-        }
+        "200": { "description": "Definisi langkah berhasil dihapus" }
       }
     }
   },
-  "/api/admin/konfigurasi/prodi": {
+  "/api/pendaftaran/admin/berkas-list": {
     "get": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Daftar program studi admin",
-      "operationId": "list_prodi_admin_handler",
+      "tags": ["Pendaftaran Admin"],
+      "summary": "Admin: Daftar seluruh berkas masuk calon untuk diverifikasi",
+      "operationId": "admin_list_berkas_handler",
+      "parameters": [
+        { "name": "status", "in": "query", "required": false, "schema": { "type": "string" } },
+        { "name": "search", "in": "query", "required": false, "schema": { "type": "string" } }
+      ],
       "responses": {
         "200": {
-          "description": "Daftar program studi",
-          "content": {
-            "application/json": {
-              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ProdiDetailResponse" } }
-            }
-          }
-        }
-      }
-    },
-    "post": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Tambah prodi baru",
-      "operationId": "create_prodi_handler",
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateProdiKonfigurasiRequest" } } }
-      },
-      "responses": {
-        "201": {
-          "description": "Program studi berhasil dibuat",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProdiDetailResponse" } } }
-        }
-      }
-    }
-  },
-  "/api/admin/konfigurasi/prodi/{id}": {
-    "put": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Ubah program studi",
-      "operationId": "update_prodi_handler",
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateProdiKonfigurasiRequest" } } }
-      },
-      "responses": {
-        "200": {
-          "description": "Program studi berhasil diubah",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProdiDetailResponse" } } }
-        }
-      }
-    },
-    "delete": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Hapus prodi",
-      "operationId": "delete_prodi_handler",
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-      "responses": {
-        "200": {
-          "description": "Program studi berhasil dihapus",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericMessageResponse" } } }
-        }
-      }
-    }
-  },
-  "/api/admin/konfigurasi/kuota-prodi": {
-    "get": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Daftar alokasi kuota prodi per gelombang",
-      "operationId": "list_kuota_prodi_gelombang_handler",
-      "responses": {
-        "200": {
-          "description": "Daftar kuota prodi per gelombang",
-          "content": {
-            "application/json": {
-              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/KuotaProdiGelombangResponse" } }
-            }
-          }
-        }
-      }
-    },
-    "put": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Set kuota prodi untuk gelombang tertentu",
-      "operationId": "set_kuota_prodi_gelombang_handler",
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SetKuotaProdiGelombangRequest" } } }
-      },
-      "responses": {
-        "200": {
-          "description": "Kuota berhasil disimpan",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/KuotaProdiGelombangResponse" } } }
-        }
-      }
-    }
-  },
-  "/api/admin/konfigurasi/jalur": {
-    "get": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Daftar jalur pendaftaran admin",
-      "operationId": "list_jalur_admin_handler",
-      "responses": {
-        "200": {
-          "description": "Daftar jalur masuk",
-          "content": {
-            "application/json": {
-              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/JalurDetailResponse" } }
-            }
-          }
-        }
-      }
-    },
-    "post": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Tambah jalur masuk baru",
-      "operationId": "create_jalur_handler",
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateJalurKonfigurasiRequest" } } }
-      },
-      "responses": {
-        "201": {
-          "description": "Jalur berhasil dibuat",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JalurDetailResponse" } } }
-        }
-      }
-    }
-  },
-  "/api/admin/konfigurasi/jalur/{id}": {
-    "put": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Ubah jalur masuk",
-      "operationId": "update_jalur_handler",
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateJalurKonfigurasiRequest" } } }
-      },
-      "responses": {
-        "200": {
-          "description": "Jalur berhasil diubah",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JalurDetailResponse" } } }
-        }
-      }
-    },
-    "delete": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Hapus jalur masuk",
-      "operationId": "delete_jalur_handler",
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-      "responses": {
-        "200": {
-          "description": "Jalur berhasil dihapus",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericMessageResponse" } } }
-        }
-      }
-    }
-  },
-  "/api/admin/konfigurasi/komponen-biaya": {
-    "get": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Daftar komponen biaya",
-      "operationId": "list_komponen_biaya_handler",
-      "responses": {
-        "200": {
-          "description": "Daftar komponen biaya",
-          "content": {
-            "application/json": {
-              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/KomponenBiayaResponse" } }
-            }
-          }
-        }
-      }
-    },
-    "post": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Tambah komponen biaya",
-      "operationId": "create_komponen_biaya_handler",
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateKomponenBiayaRequest" } } }
-      },
-      "responses": {
-        "201": {
-          "description": "Komponen biaya berhasil dibuat",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/KomponenBiayaResponse" } } }
-        }
-      }
-    }
-  },
-  "/api/admin/konfigurasi/komponen-biaya/{id}": {
-    "put": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Ubah komponen biaya",
-      "operationId": "update_komponen_biaya_handler",
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateKomponenBiayaRequest" } } }
-      },
-      "responses": {
-        "200": {
-          "description": "Komponen biaya berhasil diubah",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/KomponenBiayaResponse" } } }
-        }
-      }
-    },
-    "delete": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Hapus komponen biaya",
-      "operationId": "delete_komponen_biaya_handler",
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-      "responses": {
-        "200": {
-          "description": "Komponen biaya berhasil dihapus",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericMessageResponse" } } }
-        }
-      }
-    }
-  },
-  "/api/admin/konfigurasi/matriks-biaya": {
-    "get": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Daftar matriks biaya pendaftaran & kuliah",
-      "operationId": "list_matriks_biaya_handler",
-      "responses": {
-        "200": {
-          "description": "Daftar matriks biaya",
-          "content": {
-            "application/json": {
-              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/MatriksBiayaResponse" } }
-            }
-          }
-        }
-      }
-    },
-    "post": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Tambah matriks biaya",
-      "operationId": "create_matriks_biaya_handler",
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateMatriksBiayaRequest" } } }
-      },
-      "responses": {
-        "201": {
-          "description": "Matriks biaya berhasil dibuat",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericMessageResponse" } } }
-        }
-      }
-    }
-  },
-  "/api/admin/konfigurasi/matriks-biaya/{id}": {
-    "put": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Ubah matriks biaya",
-      "operationId": "update_matriks_biaya_handler",
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateMatriksBiayaRequest" } } }
-      },
-      "responses": {
-        "200": {
-          "description": "Matriks biaya berhasil diubah",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericMessageResponse" } } }
-        }
-      }
-    },
-    "delete": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Hapus matriks biaya",
-      "operationId": "delete_matriks_biaya_handler",
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-      "responses": {
-        "200": {
-          "description": "Matriks biaya berhasil dihapus",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericMessageResponse" } } }
-        }
-      }
-    }
-  },
-  "/api/admin/konfigurasi/matriks-biaya/hitung": {
-    "post": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Simulasi dan kalkulator perhitungan biaya",
-      "operationId": "hitung_biaya_simulasi_handler",
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HitungBiayaRequest" } } }
-      },
-      "responses": {
-        "200": {
-          "description": "Hasil perhitungan simulasi biaya",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HitungBiayaResponse" } } }
-        }
-      }
-    }
-  },
-  "/api/admin/konfigurasi/vouchers": {
-    "get": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Daftar voucher diskon",
-      "operationId": "list_vouchers_handler",
-      "responses": {
-        "200": {
-          "description": "Daftar voucher",
-          "content": {
-            "application/json": {
-              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/VoucherDetailResponse" } }
-            }
-          }
-        }
-      }
-    },
-    "post": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Tambah voucher baru",
-      "operationId": "create_voucher_handler",
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateVoucherRequest" } } }
-      },
-      "responses": {
-        "201": {
-          "description": "Voucher berhasil dibuat",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VoucherDetailResponse" } } }
-        }
-      }
-    }
-  },
-  "/api/admin/konfigurasi/vouchers/{id}": {
-    "put": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Ubah voucher",
-      "operationId": "update_voucher_handler",
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateVoucherRequest" } } }
-      },
-      "responses": {
-        "200": {
-          "description": "Voucher berhasil diubah",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VoucherDetailResponse" } } }
-        }
-      }
-    },
-    "delete": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Hapus voucher",
-      "operationId": "delete_voucher_handler",
-      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-      "responses": {
-        "200": {
-          "description": "Voucher berhasil dihapus",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenericMessageResponse" } } }
-        }
-      }
-    }
-  },
-  "/api/admin/konfigurasi/pengaturan": {
-    "get": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Daftar pengaturan PMB",
-      "operationId": "list_pengaturan_handler",
-      "responses": {
-        "200": {
-          "description": "Daftar pengaturan",
-          "content": {
-            "application/json": {
-              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PengaturanResponse" } }
-            }
-          }
-        }
-      }
-    },
-    "put": {
-      "tags": ["Konfigurasi Admin"],
-      "summary": "Ubah pengaturan PMB",
-      "operationId": "update_pengaturan_handler",
-      "requestBody": {
-        "required": true,
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdatePengaturanRequest" } } }
-      },
-      "responses": {
-        "200": {
-          "description": "Pengaturan berhasil diperbarui",
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PengaturanResponse" } } }
+          "description": "Daftar berkas untuk verifikasi",
+          "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/BerkasDetailItem" } } } }
         }
       }
     }
   }
 };
 
-// 2. Tambahkan schemas Konfigurasi Admin
-const newSchemas = {
-  "TahunAkademikResponse": {
+const formBuilderSchemas = {
+  "DefinisiField": {
     "type": "object",
-    "required": ["id", "kode", "nama", "tgl_mulai", "tgl_selesai", "is_active", "created_at", "updated_at"],
+    "required": ["id", "kode_field", "label", "tipe_field", "wajib", "opsi", "aturan_validasi", "urutan", "kelompok", "is_active", "created_at", "updated_at"],
     "properties": {
       "id": { "type": "string", "format": "uuid" },
-      "kode": { "type": "string" },
+      "jalur_id": { "type": "string", "format": "uuid", "nullable": true },
+      "kode_field": { "type": "string" },
+      "label": { "type": "string" },
+      "tipe_field": { "type": "string" },
+      "placeholder": { "type": "string", "nullable": true },
+      "wajib": { "type": "boolean" },
+      "opsi": {},
+      "aturan_validasi": {},
+      "urutan": { "type": "integer" },
+      "kelompok": { "type": "string" },
+      "is_active": { "type": "boolean" },
+      "created_at": { "type": "string", "format": "date-time" },
+      "updated_at": { "type": "string", "format": "date-time" }
+    }
+  },
+  "DefinisiBerkas": {
+    "type": "object",
+    "required": ["id", "kode_berkas", "nama", "wajib", "tipe_file", "ukuran_maks_kb", "urutan", "is_active", "created_at", "updated_at"],
+    "properties": {
+      "id": { "type": "string", "format": "uuid" },
+      "jalur_id": { "type": "string", "format": "uuid", "nullable": true },
+      "kode_berkas": { "type": "string" },
       "nama": { "type": "string" },
-      "tgl_mulai": { "type": "string", "format": "date" },
-      "tgl_selesai": { "type": "string", "format": "date" },
+      "deskripsi": { "type": "string", "nullable": true },
+      "wajib": { "type": "boolean" },
+      "tipe_file": { "type": "string" },
+      "ukuran_maks_kb": { "type": "integer" },
+      "urutan": { "type": "integer" },
       "is_active": { "type": "boolean" },
       "created_at": { "type": "string", "format": "date-time" },
       "updated_at": { "type": "string", "format": "date-time" }
     }
   },
-  "CreateTahunAkademikRequest": {
+  "DefinisiLangkah": {
     "type": "object",
-    "required": ["kode", "nama", "tgl_mulai", "tgl_selesai", "is_active"],
+    "required": ["id", "kode_langkah", "judul_langkah", "tipe_langkah", "urutan", "wajib", "syarat_lanjut", "is_active", "created_at", "updated_at"],
     "properties": {
-      "kode": { "type": "string" },
+      "id": { "type": "string", "format": "uuid" },
+      "jalur_id": { "type": "string", "format": "uuid", "nullable": true },
+      "kode_langkah": { "type": "string" },
+      "judul_langkah": { "type": "string" },
+      "deskripsi": { "type": "string", "nullable": true },
+      "tipe_langkah": { "type": "string" },
+      "urutan": { "type": "integer" },
+      "wajib": { "type": "boolean" },
+      "syarat_lanjut": {},
+      "is_active": { "type": "boolean" },
+      "created_at": { "type": "string", "format": "date-time" },
+      "updated_at": { "type": "string", "format": "date-time" }
+    }
+  },
+  "SubmitDinamisRequest": {
+    "type": "object",
+    "required": ["data"],
+    "properties": {
+      "jalur_id": { "type": "string", "format": "uuid", "nullable": true },
+      "gelombang_id": { "type": "string", "format": "uuid", "nullable": true },
+      "prodi_pilihan_1": { "type": "string", "format": "uuid", "nullable": true },
+      "prodi_pilihan_2": { "type": "string", "format": "uuid", "nullable": true },
+      "data": {}
+    }
+  },
+  "PresignUploadRequest": {
+    "type": "object",
+    "required": ["definisi_berkas_id", "file_name", "mime_type", "file_size_bytes"],
+    "properties": {
+      "definisi_berkas_id": { "type": "string", "format": "uuid" },
+      "file_name": { "type": "string" },
+      "mime_type": { "type": "string" },
+      "file_size_bytes": { "type": "integer" }
+    }
+  },
+  "KonfirmasiUploadRequest": {
+    "type": "object",
+    "required": ["definisi_berkas_id", "file_key", "file_name", "mime_type", "file_size_bytes"],
+    "properties": {
+      "definisi_berkas_id": { "type": "string", "format": "uuid" },
+      "file_key": { "type": "string" },
+      "file_name": { "type": "string" },
+      "mime_type": { "type": "string" },
+      "file_size_bytes": { "type": "integer" }
+    }
+  },
+  "BerkasCalonItem": {
+    "type": "object",
+    "required": ["definisi_berkas_id", "kode_berkas", "nama", "wajib", "tipe_file", "ukuran_maks_kb", "urutan", "status_verifikasi"],
+    "properties": {
+      "id": { "type": "string", "format": "uuid", "nullable": true },
+      "definisi_berkas_id": { "type": "string", "format": "uuid" },
+      "kode_berkas": { "type": "string" },
       "nama": { "type": "string" },
-      "tgl_mulai": { "type": "string", "format": "date" },
-      "tgl_selesai": { "type": "string", "format": "date" },
+      "deskripsi": { "type": "string", "nullable": true },
+      "wajib": { "type": "boolean" },
+      "tipe_file": { "type": "string" },
+      "ukuran_maks_kb": { "type": "integer" },
+      "urutan": { "type": "integer" },
+      "file_key": { "type": "string", "nullable": true },
+      "file_name": { "type": "string", "nullable": true },
+      "mime_type": { "type": "string", "nullable": true },
+      "file_size_bytes": { "type": "integer", "nullable": true },
+      "status_verifikasi": { "type": "string" },
+      "catatan": { "type": "string", "nullable": true },
+      "uploaded_at": { "type": "string", "format": "date-time", "nullable": true }
+    }
+  },
+  "BerkasDetailItem": {
+    "type": "object",
+    "required": ["id", "pendaftar_id", "nomor_pendaftaran", "nama_lengkap", "email", "nama_jalur", "kode_berkas", "nama_berkas", "wajib", "file_key", "file_name", "mime_type", "file_size_bytes", "status_verifikasi", "uploaded_at"],
+    "properties": {
+      "id": { "type": "string", "format": "uuid" },
+      "pendaftar_id": { "type": "string", "format": "uuid" },
+      "nomor_pendaftaran": { "type": "string" },
+      "nama_lengkap": { "type": "string" },
+      "email": { "type": "string" },
+      "nama_jalur": { "type": "string" },
+      "definisi_berkas_id": { "type": "string", "format": "uuid", "nullable": true },
+      "kode_berkas": { "type": "string" },
+      "nama_berkas": { "type": "string" },
+      "wajib": { "type": "boolean" },
+      "file_key": { "type": "string" },
+      "file_name": { "type": "string" },
+      "mime_type": { "type": "string" },
+      "file_size_bytes": { "type": "integer" },
+      "status_verifikasi": { "type": "string" },
+      "catatan": { "type": "string", "nullable": true },
+      "uploaded_at": { "type": "string", "format": "date-time" },
+      "verified_at": { "type": "string", "format": "date-time", "nullable": true }
+    }
+  },
+  "LangkahProgressItem": {
+    "type": "object",
+    "required": ["id", "kode_langkah", "judul_langkah", "tipe_langkah", "urutan", "wajib", "status", "bisa_diakses"],
+    "properties": {
+      "id": { "type": "string", "format": "uuid" },
+      "kode_langkah": { "type": "string" },
+      "judul_langkah": { "type": "string" },
+      "deskripsi": { "type": "string", "nullable": true },
+      "tipe_langkah": { "type": "string" },
+      "urutan": { "type": "integer" },
+      "wajib": { "type": "boolean" },
+      "status": { "type": "string" },
+      "bisa_diakses": { "type": "boolean" },
+      "syarat_keterangan": { "type": "string", "nullable": true }
+    }
+  },
+  "CreateDefinisiFieldRequest": {
+    "type": "object",
+    "required": ["kode_field", "label", "tipe_field", "wajib"],
+    "properties": {
+      "jalur_id": { "type": "string", "format": "uuid", "nullable": true },
+      "kode_field": { "type": "string" },
+      "label": { "type": "string" },
+      "tipe_field": { "type": "string" },
+      "placeholder": { "type": "string", "nullable": true },
+      "wajib": { "type": "boolean" },
+      "opsi": { "nullable": true },
+      "aturan_validasi": { "nullable": true },
+      "urutan": { "type": "integer", "nullable": true },
+      "kelompok": { "type": "string", "nullable": true }
+    }
+  },
+  "UpdateDefinisiFieldRequest": {
+    "type": "object",
+    "required": ["label", "tipe_field", "wajib", "urutan", "kelompok", "is_active"],
+    "properties": {
+      "jalur_id": { "type": "string", "format": "uuid", "nullable": true },
+      "label": { "type": "string" },
+      "tipe_field": { "type": "string" },
+      "placeholder": { "type": "string", "nullable": true },
+      "wajib": { "type": "boolean" },
+      "opsi": { "nullable": true },
+      "aturan_validasi": { "nullable": true },
+      "urutan": { "type": "integer" },
+      "kelompok": { "type": "string" },
       "is_active": { "type": "boolean" }
     }
   },
-  "UpdateTahunAkademikRequest": {
+  "ReorderFieldsRequest": {
     "type": "object",
-    "required": ["kode", "nama", "tgl_mulai", "tgl_selesai", "is_active"],
+    "required": ["field_ids"],
     "properties": {
-      "kode": { "type": "string" },
+      "field_ids": { "type": "array", "items": { "type": "string", "format": "uuid" } }
+    }
+  },
+  "CreateDefinisiBerkasRequest": {
+    "type": "object",
+    "required": ["kode_berkas", "nama", "wajib"],
+    "properties": {
+      "jalur_id": { "type": "string", "format": "uuid", "nullable": true },
+      "kode_berkas": { "type": "string" },
       "nama": { "type": "string" },
-      "tgl_mulai": { "type": "string", "format": "date" },
-      "tgl_selesai": { "type": "string", "format": "date" },
-      "is_active": { "type": "boolean" }
-    }
-  },
-  "FakultasResponse": {
-    "type": "object",
-    "required": ["id", "kode_fakultas", "nama_fakultas", "is_active", "created_at", "updated_at"],
-    "properties": {
-      "id": { "type": "string", "format": "uuid" },
-      "kode_fakultas": { "type": "string" },
-      "nama_fakultas": { "type": "string" },
       "deskripsi": { "type": "string", "nullable": true },
-      "is_active": { "type": "boolean" },
-      "created_at": { "type": "string", "format": "date-time" },
-      "updated_at": { "type": "string", "format": "date-time" }
+      "wajib": { "type": "boolean" },
+      "tipe_file": { "type": "string", "nullable": true },
+      "ukuran_maks_kb": { "type": "integer", "nullable": true },
+      "urutan": { "type": "integer", "nullable": true }
     }
   },
-  "CreateFakultasRequest": {
+  "UpdateDefinisiBerkasRequest": {
     "type": "object",
-    "required": ["kode_fakultas", "nama_fakultas", "is_active"],
+    "required": ["nama", "wajib", "tipe_file", "ukuran_maks_kb", "urutan", "is_active"],
     "properties": {
-      "kode_fakultas": { "type": "string" },
-      "nama_fakultas": { "type": "string" },
+      "jalur_id": { "type": "string", "format": "uuid", "nullable": true },
+      "nama": { "type": "string" },
       "deskripsi": { "type": "string", "nullable": true },
+      "wajib": { "type": "boolean" },
+      "tipe_file": { "type": "string" },
+      "ukuran_maks_kb": { "type": "integer" },
+      "urutan": { "type": "integer" },
       "is_active": { "type": "boolean" }
     }
   },
-  "GelombangDetailResponse": {
+  "CreateDefinisiLangkahRequest": {
     "type": "object",
-    "required": ["id", "nama_gelombang", "nomor_gelombang", "status", "tgl_mulai", "tgl_selesai", "kuota", "is_active", "created_at", "updated_at"],
+    "required": ["kode_langkah", "judul_langkah", "tipe_langkah", "wajib"],
     "properties": {
-      "id": { "type": "string", "format": "uuid" },
-      "nama_gelombang": { "type": "string" },
-      "tahun_akademik_id": { "type": "string", "format": "uuid", "nullable": true },
-      "tahun_akademik_nama": { "type": "string", "nullable": true },
-      "nomor_gelombang": { "type": "integer" },
-      "status": { "type": "string" },
-      "tgl_mulai": { "type": "string", "format": "date-time" },
-      "tgl_selesai": { "type": "string", "format": "date-time" },
-      "kuota": { "type": "integer" },
-      "is_active": { "type": "boolean" },
-      "created_at": { "type": "string", "format": "date-time" },
-      "updated_at": { "type": "string", "format": "date-time" }
-    }
-  },
-  "CreateGelombangRequest": {
-    "type": "object",
-    "required": ["nama_gelombang", "nomor_gelombang", "status", "tgl_mulai", "tgl_selesai", "kuota", "is_active"],
-    "properties": {
-      "nama_gelombang": { "type": "string" },
-      "tahun_akademik_id": { "type": "string", "format": "uuid", "nullable": true },
-      "nomor_gelombang": { "type": "integer" },
-      "status": { "type": "string" },
-      "tgl_mulai": { "type": "string", "format": "date-time" },
-      "tgl_selesai": { "type": "string", "format": "date-time" },
-      "kuota": { "type": "integer" },
-      "is_active": { "type": "boolean" }
-    }
-  },
-  "UpdateGelombangRequest": {
-    "type": "object",
-    "required": ["nama_gelombang", "status", "tgl_mulai", "tgl_selesai", "kuota", "is_active"],
-    "properties": {
-      "nama_gelombang": { "type": "string" },
-      "tahun_akademik_id": { "type": "string", "format": "uuid", "nullable": true },
-      "status": { "type": "string" },
-      "tgl_mulai": { "type": "string", "format": "date-time" },
-      "tgl_selesai": { "type": "string", "format": "date-time" },
-      "kuota": { "type": "integer" },
-      "is_active": { "type": "boolean" }
-    }
-  },
-  "ProdiDetailResponse": {
-    "type": "object",
-    "required": ["id", "kode_prodi", "nama_prodi", "jenjang", "fakultas", "kode_fakultas", "passing_score", "kuota", "ukt_nominal", "is_active", "created_at", "updated_at"],
-    "properties": {
-      "id": { "type": "string", "format": "uuid" },
-      "kode_prodi": { "type": "string" },
-      "nama_prodi": { "type": "string" },
-      "jenjang": { "type": "string" },
-      "fakultas": { "type": "string" },
-      "kode_fakultas": { "type": "string" },
-      "fakultas_id": { "type": "string", "format": "uuid", "nullable": true },
-      "passing_score": { "type": "number" },
-      "kuota": { "type": "integer" },
-      "ukt_nominal": { "type": "integer" },
-      "is_active": { "type": "boolean" },
-      "created_at": { "type": "string", "format": "date-time" },
-      "updated_at": { "type": "string", "format": "date-time" }
-    }
-  },
-  "CreateProdiKonfigurasiRequest": {
-    "type": "object",
-    "required": ["kode_prodi", "nama_prodi", "jenjang", "fakultas", "kode_fakultas", "passing_score", "kuota", "ukt_nominal", "is_active"],
-    "properties": {
-      "kode_prodi": { "type": "string" },
-      "nama_prodi": { "type": "string" },
-      "jenjang": { "type": "string" },
-      "fakultas_id": { "type": "string", "format": "uuid", "nullable": true },
-      "fakultas": { "type": "string" },
-      "kode_fakultas": { "type": "string" },
-      "passing_score": { "type": "number" },
-      "kuota": { "type": "integer" },
-      "ukt_nominal": { "type": "integer" },
-      "is_active": { "type": "boolean" }
-    }
-  },
-  "UpdateProdiKonfigurasiRequest": {
-    "type": "object",
-    "required": ["nama_prodi", "jenjang", "fakultas", "kode_fakultas", "passing_score", "kuota", "ukt_nominal", "is_active"],
-    "properties": {
-      "nama_prodi": { "type": "string" },
-      "jenjang": { "type": "string" },
-      "fakultas_id": { "type": "string", "format": "uuid", "nullable": true },
-      "fakultas": { "type": "string" },
-      "kode_fakultas": { "type": "string" },
-      "passing_score": { "type": "number" },
-      "kuota": { "type": "integer" },
-      "ukt_nominal": { "type": "integer" },
-      "is_active": { "type": "boolean" }
-    }
-  },
-  "KuotaProdiGelombangResponse": {
-    "type": "object",
-    "required": ["id", "prodi_id", "nama_prodi", "gelombang_id", "nama_gelombang", "kuota", "kuota_terisi", "updated_at"],
-    "properties": {
-      "id": { "type": "string", "format": "uuid" },
-      "prodi_id": { "type": "string", "format": "uuid" },
-      "nama_prodi": { "type": "string" },
-      "gelombang_id": { "type": "string", "format": "uuid" },
-      "nama_gelombang": { "type": "string" },
-      "kuota": { "type": "integer" },
-      "kuota_terisi": { "type": "integer" },
-      "updated_at": { "type": "string", "format": "date-time" }
-    }
-  },
-  "SetKuotaProdiGelombangRequest": {
-    "type": "object",
-    "required": ["prodi_id", "gelombang_id", "kuota"],
-    "properties": {
-      "prodi_id": { "type": "string", "format": "uuid" },
-      "gelombang_id": { "type": "string", "format": "uuid" },
-      "kuota": { "type": "integer" }
-    }
-  },
-  "JalurDetailResponse": {
-    "type": "object",
-    "required": ["id", "kode_jalur", "nama_jalur", "deskripsi", "biaya_formulir", "tipe_seleksi", "is_active", "created_at", "updated_at"],
-    "properties": {
-      "id": { "type": "string", "format": "uuid" },
-      "kode_jalur": { "type": "string" },
-      "nama_jalur": { "type": "string" },
-      "deskripsi": { "type": "string" },
-      "biaya_formulir": { "type": "integer" },
-      "tipe_seleksi": { "type": "string" },
-      "syarat": { "type": "string", "nullable": true },
-      "kuota_maksimal": { "type": "integer", "nullable": true },
-      "is_active": { "type": "boolean" },
-      "created_at": { "type": "string", "format": "date-time" },
-      "updated_at": { "type": "string", "format": "date-time" }
-    }
-  },
-  "CreateJalurKonfigurasiRequest": {
-    "type": "object",
-    "required": ["kode_jalur", "nama_jalur", "deskripsi", "biaya_formulir", "tipe_seleksi", "is_active"],
-    "properties": {
-      "kode_jalur": { "type": "string" },
-      "nama_jalur": { "type": "string" },
-      "deskripsi": { "type": "string" },
-      "biaya_formulir": { "type": "integer" },
-      "tipe_seleksi": { "type": "string" },
-      "syarat": { "type": "string", "nullable": true },
-      "kuota_maksimal": { "type": "integer", "nullable": true },
-      "is_active": { "type": "boolean" }
-    }
-  },
-  "UpdateJalurKonfigurasiRequest": {
-    "type": "object",
-    "required": ["nama_jalur", "deskripsi", "biaya_formulir", "tipe_seleksi", "is_active"],
-    "properties": {
-      "nama_jalur": { "type": "string" },
-      "deskripsi": { "type": "string" },
-      "biaya_formulir": { "type": "integer" },
-      "tipe_seleksi": { "type": "string" },
-      "syarat": { "type": "string", "nullable": true },
-      "kuota_maksimal": { "type": "integer", "nullable": true },
-      "is_active": { "type": "boolean" }
-    }
-  },
-  "KomponenBiayaResponse": {
-    "type": "object",
-    "required": ["id", "kode_komponen", "nama_komponen", "is_active", "created_at", "updated_at"],
-    "properties": {
-      "id": { "type": "string", "format": "uuid" },
-      "kode_komponen": { "type": "string" },
-      "nama_komponen": { "type": "string" },
+      "jalur_id": { "type": "string", "format": "uuid", "nullable": true },
+      "kode_langkah": { "type": "string" },
+      "judul_langkah": { "type": "string" },
       "deskripsi": { "type": "string", "nullable": true },
-      "is_active": { "type": "boolean" },
-      "created_at": { "type": "string", "format": "date-time" },
-      "updated_at": { "type": "string", "format": "date-time" }
+      "tipe_langkah": { "type": "string" },
+      "urutan": { "type": "integer", "nullable": true },
+      "wajib": { "type": "boolean" },
+      "syarat_lanjut": { "nullable": true }
     }
   },
-  "CreateKomponenBiayaRequest": {
+  "UpdateDefinisiLangkahRequest": {
     "type": "object",
-    "required": ["kode_komponen", "nama_komponen", "is_active"],
+    "required": ["judul_langkah", "tipe_langkah", "urutan", "wajib", "is_active"],
     "properties": {
-      "kode_komponen": { "type": "string" },
-      "nama_komponen": { "type": "string" },
+      "jalur_id": { "type": "string", "format": "uuid", "nullable": true },
+      "judul_langkah": { "type": "string" },
       "deskripsi": { "type": "string", "nullable": true },
+      "tipe_langkah": { "type": "string" },
+      "urutan": { "type": "integer" },
+      "wajib": { "type": "boolean" },
+      "syarat_lanjut": { "nullable": true },
       "is_active": { "type": "boolean" }
     }
   },
-  "MatriksBiayaResponse": {
+  "PresignedUploadResponse": {
     "type": "object",
-    "required": ["id", "prodi_id", "nama_prodi", "jalur_id", "nama_jalur", "gelombang_id", "nama_gelombang", "komponen_id", "nama_komponen", "kode_komponen", "nominal", "bisa_dicicil", "maksimal_cicilan", "updated_at"],
+    "required": ["upload_url", "file_key", "expires_in_seconds"],
     "properties": {
-      "id": { "type": "string", "format": "uuid" },
-      "prodi_id": { "type": "string", "format": "uuid" },
-      "nama_prodi": { "type": "string" },
-      "jalur_id": { "type": "string", "format": "uuid" },
-      "nama_jalur": { "type": "string" },
-      "gelombang_id": { "type": "string", "format": "uuid" },
-      "nama_gelombang": { "type": "string" },
-      "komponen_id": { "type": "string", "format": "uuid" },
-      "nama_komponen": { "type": "string" },
-      "kode_komponen": { "type": "string" },
-      "nominal": { "type": "integer" },
-      "bisa_dicicil": { "type": "boolean" },
-      "maksimal_cicilan": { "type": "integer" },
-      "nominal_cicilan_pertama": { "type": "integer", "nullable": true },
-      "updated_at": { "type": "string", "format": "date-time" }
+      "upload_url": { "type": "string" },
+      "file_key": { "type": "string" },
+      "expires_in_seconds": { "type": "integer" }
     }
   },
-  "CreateMatriksBiayaRequest": {
+  "PresignedDownloadResponse": {
     "type": "object",
-    "required": ["prodi_id", "jalur_id", "gelombang_id", "komponen_id", "nominal", "bisa_dicicil", "maksimal_cicilan"],
+    "required": ["download_url", "file_key", "expires_in_seconds"],
     "properties": {
-      "prodi_id": { "type": "string", "format": "uuid" },
-      "jalur_id": { "type": "string", "format": "uuid" },
-      "gelombang_id": { "type": "string", "format": "uuid" },
-      "komponen_id": { "type": "string", "format": "uuid" },
-      "nominal": { "type": "integer" },
-      "bisa_dicicil": { "type": "boolean" },
-      "maksimal_cicilan": { "type": "integer" },
-      "nominal_cicilan_pertama": { "type": "integer", "nullable": true }
-    }
-  },
-  "UpdateMatriksBiayaRequest": {
-    "type": "object",
-    "required": ["nominal", "bisa_dicicil", "maksimal_cicilan"],
-    "properties": {
-      "nominal": { "type": "integer" },
-      "bisa_dicicil": { "type": "boolean" },
-      "maksimal_cicilan": { "type": "integer" },
-      "nominal_cicilan_pertama": { "type": "integer", "nullable": true }
-    }
-  },
-  "HitungBiayaRequest": {
-    "type": "object",
-    "required": ["prodi_id", "jalur_id", "gelombang_id"],
-    "properties": {
-      "prodi_id": { "type": "string", "format": "uuid" },
-      "jalur_id": { "type": "string", "format": "uuid" },
-      "gelombang_id": { "type": "string", "format": "uuid" },
-      "kode_voucher": { "type": "string", "nullable": true }
-    }
-  },
-  "BiayaItemDetail": {
-    "type": "object",
-    "required": ["komponen_id", "kode_komponen", "nama_komponen", "nominal", "bisa_dicicil", "maksimal_cicilan"],
-    "properties": {
-      "komponen_id": { "type": "string", "format": "uuid" },
-      "kode_komponen": { "type": "string" },
-      "nama_komponen": { "type": "string" },
-      "nominal": { "type": "integer" },
-      "bisa_dicicil": { "type": "boolean" },
-      "maksimal_cicilan": { "type": "integer" },
-      "nominal_cicilan_pertama": { "type": "integer", "nullable": true }
-    }
-  },
-  "HitungBiayaResponse": {
-    "type": "object",
-    "required": ["rincian_komponen", "total_biaya_asli", "diskon_voucher", "total_setelah_diskon", "minimal_bayar_pertama", "bisa_dicicil", "maksimal_termin"],
-    "properties": {
-      "rincian_komponen": { "type": "array", "items": { "$ref": "#/components/schemas/BiayaItemDetail" } },
-      "total_biaya_asli": { "type": "integer" },
-      "diskon_voucher": { "type": "integer" },
-      "total_setelah_diskon": { "type": "integer" },
-      "minimal_bayar_pertama": { "type": "integer" },
-      "bisa_dicicil": { "type": "boolean" },
-      "maksimal_termin": { "type": "integer" },
-      "voucher_info": { "type": "string", "nullable": true }
-    }
-  },
-  "VoucherDetailResponse": {
-    "type": "object",
-    "required": ["id", "kode_voucher", "tipe_diskon", "nilai_diskon", "kuota", "kuota_terpakai", "tgl_kadaluarsa", "is_active", "created_at", "updated_at"],
-    "properties": {
-      "id": { "type": "string", "format": "uuid" },
-      "kode_voucher": { "type": "string" },
-      "tipe_diskon": { "type": "string" },
-      "nilai_diskon": { "type": "integer" },
-      "kuota": { "type": "integer" },
-      "kuota_terpakai": { "type": "integer" },
-      "tgl_kadaluarsa": { "type": "string", "format": "date-time" },
-      "batas_jalur_id": { "type": "string", "format": "uuid", "nullable": true },
-      "batas_prodi_id": { "type": "string", "format": "uuid", "nullable": true },
-      "deskripsi": { "type": "string", "nullable": true },
-      "is_active": { "type": "boolean" },
-      "created_at": { "type": "string", "format": "date-time" },
-      "updated_at": { "type": "string", "format": "date-time" }
-    }
-  },
-  "CreateVoucherRequest": {
-    "type": "object",
-    "required": ["kode_voucher", "tipe_diskon", "nilai_diskon", "kuota", "tgl_kadaluarsa", "is_active"],
-    "properties": {
-      "kode_voucher": { "type": "string" },
-      "tipe_diskon": { "type": "string" },
-      "nilai_diskon": { "type": "integer" },
-      "kuota": { "type": "integer" },
-      "tgl_kadaluarsa": { "type": "string", "format": "date-time" },
-      "batas_jalur_id": { "type": "string", "format": "uuid", "nullable": true },
-      "batas_prodi_id": { "type": "string", "format": "uuid", "nullable": true },
-      "deskripsi": { "type": "string", "nullable": true },
-      "is_active": { "type": "boolean" }
-    }
-  },
-  "UpdateVoucherRequest": {
-    "type": "object",
-    "required": ["kuota", "tgl_kadaluarsa", "is_active"],
-    "properties": {
-      "kuota": { "type": "integer" },
-      "tgl_kadaluarsa": { "type": "string", "format": "date-time" },
-      "batas_jalur_id": { "type": "string", "format": "uuid", "nullable": true },
-      "batas_prodi_id": { "type": "string", "format": "uuid", "nullable": true },
-      "deskripsi": { "type": "string", "nullable": true },
-      "is_active": { "type": "boolean" }
-    }
-  },
-  "PengaturanResponse": {
-    "type": "object",
-    "required": ["id", "kunci", "nilai", "updated_at"],
-    "properties": {
-      "id": { "type": "string", "format": "uuid" },
-      "kunci": { "type": "string" },
-      "nilai": { "type": "string" },
-      "deskripsi": { "type": "string", "nullable": true },
-      "updated_by": { "type": "string", "format": "uuid", "nullable": true },
-      "updated_at": { "type": "string", "format": "date-time" }
-    }
-  },
-  "UpdatePengaturanRequest": {
-    "type": "object",
-    "required": ["kunci", "nilai"],
-    "properties": {
-      "kunci": { "type": "string" },
-      "nilai": { "type": "string" }
+      "download_url": { "type": "string" },
+      "file_key": { "type": "string" },
+      "expires_in_seconds": { "type": "integer" }
     }
   }
 };
 
-// Gabungkan
-openapi.paths = { ...openapi.paths, ...newPaths };
-openapi.components.schemas = { ...openapi.components.schemas, ...newSchemas };
+// Gabungkan ke openapi
+openapi.paths = { ...openapi.paths, ...formBuilderPaths };
+openapi.components.schemas = { ...openapi.components.schemas, ...formBuilderSchemas };
 
 fs.writeFileSync(openapiPath, JSON.stringify(openapi, null, 2), 'utf8');
-console.log('openapi.json berhasil diperbarui dengan endpoints dan skema Konfigurasi Admin!');
-
+console.log('openapi.json berhasil diperbarui dengan endpoints Form Builder, Dynamic Fields, Berkas, dan Langkah!');

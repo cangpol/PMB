@@ -685,6 +685,267 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/pendaftaran/fields": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ambil definisi kolom form aktif */
+    get: operations["get_fields_handler"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/submit-dinamis": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Simpan formulir pendaftaran dinamis */
+    post: operations["submit_formulir_dinamis_handler"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/berkas/syarat": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Daftar syarat berkas dan status unggah calon */
+    get: operations["get_berkas_syarat_handler"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/berkas/presign-upload": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Minta Presigned PUT URL MinIO untuk unggah berkas */
+    post: operations["presign_upload_berkas_handler"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/berkas/konfirmasi": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Konfirmasi unggahan berkas ke database */
+    post: operations["konfirmasi_upload_berkas_handler"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/berkas/{id}/presign-download": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Minta Presigned GET URL MinIO berumur pendek (15 menit) */
+    get: operations["presign_download_berkas_handler"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/langkah": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Ambil progres alur langkah pendaftaran */
+    get: operations["get_langkah_progress_handler"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/admin/form-builder/fields": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Admin: Daftar seluruh kolom form */
+    get: operations["admin_list_fields_handler"];
+    put?: never;
+    /** Admin: Tambah kolom form baru */
+    post: operations["admin_create_field_handler"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/admin/form-builder/fields/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Admin: Ubah kolom form */
+    put: operations["admin_update_field_handler"];
+    post?: never;
+    /** Admin: Hapus kolom form */
+    delete: operations["admin_delete_field_handler"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/admin/form-builder/fields/reorder": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Admin: Reorder urutan kolom form */
+    post: operations["admin_reorder_fields_handler"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/admin/form-builder/berkas": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Admin: Daftar syarat berkas */
+    get: operations["admin_list_definisi_berkas_handler"];
+    put?: never;
+    /** Admin: Tambah syarat berkas baru */
+    post: operations["admin_create_definisi_berkas_handler"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/admin/form-builder/berkas/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Admin: Ubah syarat berkas */
+    put: operations["admin_update_definisi_berkas_handler"];
+    post?: never;
+    /** Admin: Hapus syarat berkas */
+    delete: operations["admin_delete_definisi_berkas_handler"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/admin/form-builder/langkah": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Admin: Daftar langkah alur pendaftaran */
+    get: operations["admin_list_definisi_langkah_handler"];
+    put?: never;
+    /** Admin: Tambah langkah pendaftaran baru */
+    post: operations["admin_create_definisi_langkah_handler"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/admin/form-builder/langkah/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Admin: Ubah langkah pendaftaran */
+    put: operations["admin_update_definisi_langkah_handler"];
+    post?: never;
+    /** Admin: Hapus langkah pendaftaran */
+    delete: operations["admin_delete_definisi_langkah_handler"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/pendaftaran/admin/berkas-list": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Admin: Daftar seluruh berkas masuk calon untuk diverifikasi */
+    get: operations["admin_list_berkas_handler"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1247,6 +1508,230 @@ export interface components {
     UpdatePengaturanRequest: {
       kunci: string;
       nilai: string;
+    };
+    DefinisiField: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      jalur_id?: string | null;
+      kode_field: string;
+      label: string;
+      tipe_field: string;
+      placeholder?: string | null;
+      wajib: boolean;
+      opsi: unknown;
+      aturan_validasi: unknown;
+      urutan: number;
+      kelompok: string;
+      is_active: boolean;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+    };
+    DefinisiBerkas: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      jalur_id?: string | null;
+      kode_berkas: string;
+      nama: string;
+      deskripsi?: string | null;
+      wajib: boolean;
+      tipe_file: string;
+      ukuran_maks_kb: number;
+      urutan: number;
+      is_active: boolean;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+    };
+    DefinisiLangkah: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      jalur_id?: string | null;
+      kode_langkah: string;
+      judul_langkah: string;
+      deskripsi?: string | null;
+      tipe_langkah: string;
+      urutan: number;
+      wajib: boolean;
+      syarat_lanjut: unknown;
+      is_active: boolean;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+    };
+    SubmitDinamisRequest: {
+      /** Format: uuid */
+      jalur_id?: string | null;
+      /** Format: uuid */
+      gelombang_id?: string | null;
+      /** Format: uuid */
+      prodi_pilihan_1?: string | null;
+      /** Format: uuid */
+      prodi_pilihan_2?: string | null;
+      data: unknown;
+    };
+    PresignUploadRequest: {
+      /** Format: uuid */
+      definisi_berkas_id: string;
+      file_name: string;
+      mime_type: string;
+      file_size_bytes: number;
+    };
+    KonfirmasiUploadRequest: {
+      /** Format: uuid */
+      definisi_berkas_id: string;
+      file_key: string;
+      file_name: string;
+      mime_type: string;
+      file_size_bytes: number;
+    };
+    BerkasCalonItem: {
+      /** Format: uuid */
+      id?: string | null;
+      /** Format: uuid */
+      definisi_berkas_id: string;
+      kode_berkas: string;
+      nama: string;
+      deskripsi?: string | null;
+      wajib: boolean;
+      tipe_file: string;
+      ukuran_maks_kb: number;
+      urutan: number;
+      file_key?: string | null;
+      file_name?: string | null;
+      mime_type?: string | null;
+      file_size_bytes?: number | null;
+      status_verifikasi: string;
+      catatan?: string | null;
+      /** Format: date-time */
+      uploaded_at?: string | null;
+    };
+    BerkasDetailItem: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      pendaftar_id: string;
+      nomor_pendaftaran: string;
+      nama_lengkap: string;
+      email: string;
+      nama_jalur: string;
+      /** Format: uuid */
+      definisi_berkas_id?: string | null;
+      kode_berkas: string;
+      nama_berkas: string;
+      wajib: boolean;
+      file_key: string;
+      file_name: string;
+      mime_type: string;
+      file_size_bytes: number;
+      status_verifikasi: string;
+      catatan?: string | null;
+      /** Format: date-time */
+      uploaded_at: string;
+      /** Format: date-time */
+      verified_at?: string | null;
+    };
+    LangkahProgressItem: {
+      /** Format: uuid */
+      id: string;
+      kode_langkah: string;
+      judul_langkah: string;
+      deskripsi?: string | null;
+      tipe_langkah: string;
+      urutan: number;
+      wajib: boolean;
+      status: string;
+      bisa_diakses: boolean;
+      syarat_keterangan?: string | null;
+    };
+    CreateDefinisiFieldRequest: {
+      /** Format: uuid */
+      jalur_id?: string | null;
+      kode_field: string;
+      label: string;
+      tipe_field: string;
+      placeholder?: string | null;
+      wajib: boolean;
+      opsi?: unknown;
+      aturan_validasi?: unknown;
+      urutan?: number | null;
+      kelompok?: string | null;
+    };
+    UpdateDefinisiFieldRequest: {
+      /** Format: uuid */
+      jalur_id?: string | null;
+      label: string;
+      tipe_field: string;
+      placeholder?: string | null;
+      wajib: boolean;
+      opsi?: unknown;
+      aturan_validasi?: unknown;
+      urutan: number;
+      kelompok: string;
+      is_active: boolean;
+    };
+    ReorderFieldsRequest: {
+      field_ids: string[];
+    };
+    CreateDefinisiBerkasRequest: {
+      /** Format: uuid */
+      jalur_id?: string | null;
+      kode_berkas: string;
+      nama: string;
+      deskripsi?: string | null;
+      wajib: boolean;
+      tipe_file?: string | null;
+      ukuran_maks_kb?: number | null;
+      urutan?: number | null;
+    };
+    UpdateDefinisiBerkasRequest: {
+      /** Format: uuid */
+      jalur_id?: string | null;
+      nama: string;
+      deskripsi?: string | null;
+      wajib: boolean;
+      tipe_file: string;
+      ukuran_maks_kb: number;
+      urutan: number;
+      is_active: boolean;
+    };
+    CreateDefinisiLangkahRequest: {
+      /** Format: uuid */
+      jalur_id?: string | null;
+      kode_langkah: string;
+      judul_langkah: string;
+      deskripsi?: string | null;
+      tipe_langkah: string;
+      urutan?: number | null;
+      wajib: boolean;
+      syarat_lanjut?: unknown;
+    };
+    UpdateDefinisiLangkahRequest: {
+      /** Format: uuid */
+      jalur_id?: string | null;
+      judul_langkah: string;
+      deskripsi?: string | null;
+      tipe_langkah: string;
+      urutan: number;
+      wajib: boolean;
+      syarat_lanjut?: unknown;
+      is_active: boolean;
+    };
+    PresignedUploadResponse: {
+      upload_url: string;
+      file_key: string;
+      expires_in_seconds: number;
+    };
+    PresignedDownloadResponse: {
+      download_url: string;
+      file_key: string;
+      expires_in_seconds: number;
     };
   };
   responses: never;
@@ -2617,6 +3102,483 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PengaturanResponse"];
+        };
+      };
+    };
+  };
+  get_fields_handler: {
+    parameters: {
+      query?: {
+        jalur_id?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Daftar definisi field */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DefinisiField"][];
+        };
+      };
+    };
+  };
+  submit_formulir_dinamis_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SubmitDinamisRequest"];
+      };
+    };
+    responses: {
+      /** @description Formulir biodata berhasil disimpan */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PendaftarDetailResponse"];
+        };
+      };
+    };
+  };
+  get_berkas_syarat_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Daftar berkas */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BerkasCalonItem"][];
+        };
+      };
+    };
+  };
+  presign_upload_berkas_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PresignUploadRequest"];
+      };
+    };
+    responses: {
+      /** @description Presigned PUT URL dihasilkan */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PresignedUploadResponse"];
+        };
+      };
+    };
+  };
+  konfirmasi_upload_berkas_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["KonfirmasiUploadRequest"];
+      };
+    };
+    responses: {
+      /** @description Berkas berhasil dikonfirmasi */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BerkasCalonItem"];
+        };
+      };
+    };
+  };
+  presign_download_berkas_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Presigned GET URL dihasilkan */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PresignedDownloadResponse"];
+        };
+      };
+    };
+  };
+  get_langkah_progress_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Daftar progress langkah */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LangkahProgressItem"][];
+        };
+      };
+    };
+  };
+  admin_list_fields_handler: {
+    parameters: {
+      query?: {
+        jalur_id?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Daftar definisi field */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DefinisiField"][];
+        };
+      };
+    };
+  };
+  admin_create_field_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateDefinisiFieldRequest"];
+      };
+    };
+    responses: {
+      /** @description Field berhasil dibuat */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DefinisiField"];
+        };
+      };
+    };
+  };
+  admin_update_field_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateDefinisiFieldRequest"];
+      };
+    };
+    responses: {
+      /** @description Field berhasil diperbarui */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DefinisiField"];
+        };
+      };
+    };
+  };
+  admin_delete_field_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Field berhasil dihapus */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  admin_reorder_fields_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReorderFieldsRequest"];
+      };
+    };
+    responses: {
+      /** @description Urutan berhasil diperbarui */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  admin_list_definisi_berkas_handler: {
+    parameters: {
+      query?: {
+        jalur_id?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Daftar berkas */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DefinisiBerkas"][];
+        };
+      };
+    };
+  };
+  admin_create_definisi_berkas_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateDefinisiBerkasRequest"];
+      };
+    };
+    responses: {
+      /** @description Definisi berkas berhasil dibuat */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DefinisiBerkas"];
+        };
+      };
+    };
+  };
+  admin_update_definisi_berkas_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateDefinisiBerkasRequest"];
+      };
+    };
+    responses: {
+      /** @description Definisi berkas berhasil diperbarui */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DefinisiBerkas"];
+        };
+      };
+    };
+  };
+  admin_delete_definisi_berkas_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Definisi berkas berhasil dihapus */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  admin_list_definisi_langkah_handler: {
+    parameters: {
+      query?: {
+        jalur_id?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Daftar definisi langkah */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DefinisiLangkah"][];
+        };
+      };
+    };
+  };
+  admin_create_definisi_langkah_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateDefinisiLangkahRequest"];
+      };
+    };
+    responses: {
+      /** @description Definisi langkah berhasil dibuat */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DefinisiLangkah"];
+        };
+      };
+    };
+  };
+  admin_update_definisi_langkah_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateDefinisiLangkahRequest"];
+      };
+    };
+    responses: {
+      /** @description Definisi langkah berhasil diperbarui */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DefinisiLangkah"];
+        };
+      };
+    };
+  };
+  admin_delete_definisi_langkah_handler: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Definisi langkah berhasil dihapus */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  admin_list_berkas_handler: {
+    parameters: {
+      query?: {
+        status?: string;
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Daftar berkas untuk verifikasi */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BerkasDetailItem"][];
         };
       };
     };
