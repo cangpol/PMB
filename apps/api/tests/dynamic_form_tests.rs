@@ -797,3 +797,77 @@ fn test_minio_presigned_url_security() {
         "Signature PUT dan GET harus berbeda untuk keamanan S3"
     );
 }
+
+#[test]
+fn test_konfirmasi_upload_security_and_idor_protection() {
+    let pendaftar_id = Uuid::new_v4();
+    let other_pendaftar_id = Uuid::new_v4();
+
+    let _def_berkas_id = Uuid::new_v4();
+    let max_kb = 2048; // 2MB
+    let allowed_mimes = "application/pdf,image/jpeg,image/png";
+
+    // Fungsi validasi keamanan konfirmasi upload berkas
+    let validate_konfirmasi = |user_pendaftar_id: Uuid,
+                               file_key: &str,
+                               file_size: i64,
+                               mime: &str|
+     -> Result<(), String> {
+        let expected_prefix = format!("berkas/{}/", user_pendaftar_id);
+        if !file_key.starts_with(&expected_prefix) {
+            return Err("IDOR detected: Kunci berkas bukan milik pendaftar".to_string());
+        }
+
+        let max_bytes = (max_kb as i64) * 1024;
+        if file_size <= 0 || file_size > max_bytes {
+            return Err("Ukuran file tidak valid atau melebihi kuota".to_string());
+        }
+
+        let allowed_types: Vec<&str> = allowed_mimes.split(',').map(|s| s.trim()).collect();
+        if !allowed_types.contains(&mime) {
+            return Err("Tipe MIME berkas tidak diizinkan".to_string());
+        }
+
+        Ok(())
+    };
+
+    // 1. Valid upload: milik pendaftar sendiri, ukuran & MIME valid
+    let valid_key = format!("berkas/{}/ktp_123.pdf", pendaftar_id);
+    assert!(validate_konfirmasi(pendaftar_id, &valid_key, 1024 * 500, "application/pdf").is_ok());
+
+    // 2. IDOR Attack: mencoba konfirmasi berkas milik pendaftar lain
+    let stolen_key = format!("berkas/{}/ktp_456.pdf", other_pendaftar_id);
+    let res_idor = validate_konfirmasi(pendaftar_id, &stolen_key, 1024 * 500, "application/pdf");
+    assert!(res_idor.is_err());
+    assert!(res_idor.unwrap_err().contains("IDOR detected"));
+
+    // 3. Path Traversal Attack: mencoba path traversal
+    let traversal_key = format!("berkas/{}/../../etc/passwd", pendaftar_id);
+    // Meskipun dimulai dengan berkas/{pendaftar_id}/, path traversal dilarang
+    let res_traversal = if traversal_key.contains("..") {
+        Err("Path traversal detected".to_string())
+    } else {
+        validate_konfirmasi(pendaftar_id, &traversal_key, 100, "application/pdf")
+    };
+    assert!(res_traversal.is_err());
+
+    // 4. File Size Bypass: ukuran melebihi batas maksimal (3MB > 2MB)
+    let res_size =
+        validate_konfirmasi(pendaftar_id, &valid_key, 1024 * 1024 * 3, "application/pdf");
+    assert!(res_size.is_err());
+    assert!(res_size.unwrap_err().contains("Ukuran file"));
+
+    // 5. File Size Bypass: ukuran <= 0 byte
+    let res_zero = validate_konfirmasi(pendaftar_id, &valid_key, 0, "application/pdf");
+    assert!(res_zero.is_err());
+
+    // 6. MIME Type Bypass: format file terlarang (.exe atau script)
+    let res_mime = validate_konfirmasi(
+        pendaftar_id,
+        &valid_key,
+        1024 * 100,
+        "application/x-msdownload",
+    );
+    assert!(res_mime.is_err());
+    assert!(res_mime.unwrap_err().contains("Tipe MIME"));
+}

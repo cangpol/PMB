@@ -90,6 +90,7 @@ export const AdminLayout: React.FC = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+  const isAdmin = user?.role === "admin_pmb" || user?.role === "super_admin";
 
   return (
     <div className="min-h-screen bg-biru-50/40 text-biru-950 flex flex-col">
@@ -171,40 +172,42 @@ export const AdminLayout: React.FC = () => {
             </nav>
           </div>
 
-          {/* Kelompok 2: Konfigurasi PMB */}
-          <div className="bg-putih border border-biru-200 rounded-2xl p-4 shadow-xs space-y-3">
-            <div className="space-y-0.5">
-              <span className="text-[11px] font-bold text-biru-800 uppercase tracking-wider">
-                Konfigurasi PMB
-              </span>
-              <p className="text-[11px] text-biru-900">
-                Gelombang, prodi, tarif & voucher
-              </p>
-            </div>
+          {/* Kelompok 2: Konfigurasi PMB (Hanya untuk Admin PMB / Super Admin) */}
+          {isAdmin && (
+            <div className="bg-putih border border-biru-200 rounded-2xl p-4 shadow-xs space-y-3">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-bold text-biru-800 uppercase tracking-wider">
+                  Konfigurasi PMB
+                </span>
+                <p className="text-[11px] text-biru-900">
+                  Gelombang, prodi, tarif & voucher
+                </p>
+              </div>
 
-            <nav className="space-y-1">
-              {konfigurasiItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                    isActive(item.path)
-                      ? "bg-biru-700 text-putih shadow-xs"
-                      : "text-biru-900 hover:bg-biru-50 hover:text-biru-950"
-                  }`}
-                >
-                  <span
-                    className={
-                      isActive(item.path) ? "text-putih" : "text-biru-700"
-                    }
+              <nav className="space-y-1">
+                {konfigurasiItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      isActive(item.path)
+                        ? "bg-biru-700 text-putih shadow-xs"
+                        : "text-biru-900 hover:bg-biru-50 hover:text-biru-950"
+                    }`}
                   >
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
-                </Link>
-              ))}
-            </nav>
-          </div>
+                    <span
+                      className={
+                        isActive(item.path) ? "text-putih" : "text-biru-700"
+                      }
+                    >
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
 
           {/* Status Keamanan */}
           <div className="bg-biru-100/60 border border-biru-200 rounded-2xl p-4 text-xs text-biru-950 space-y-2">

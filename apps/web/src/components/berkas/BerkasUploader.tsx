@@ -8,7 +8,8 @@ import {
   X,
   ExternalLink,
 } from "lucide-react";
-import { Button, Card, StatusBadge } from "../common";
+import { Button, Card, StatusBadge, EmptyState } from "../common";
+import { useToast } from "@/components/ui/useToast";
 
 export interface BerkasItem {
   id?: string | null;
@@ -38,6 +39,7 @@ export const BerkasUploader: React.FC<BerkasUploaderProps> = ({
   berkasList,
   onUploadSuccess,
 }) => {
+  const { toast } = useToast();
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>(
     {},
   );
@@ -201,11 +203,26 @@ export const BerkasUploader: React.FC<BerkasUploaderProps> = ({
       const data = await res.json();
       setPreviewUrl(data.download_url);
     } catch (err: any) {
-      alert(err.message || "Gagal memuat pratinjau dokumen");
+      toast({
+        variant: "error",
+        title: "Kesalahan",
+        description: err.message || "Gagal memuat pratinjau dokumen",
+      });
     } finally {
       setIsLoadingPreview(false);
     }
   };
+
+  if (berkasList.length === 0) {
+    return (
+      <Card className="p-8 border-biru-200 bg-putih text-center shadow-xs">
+        <EmptyState
+          title="Tidak Ada Dokumen Persyaratan"
+          description="Jalur pendaftaran ini saat ini tidak memerlukan unggahan berkas persyaratan tambahan."
+        />
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">

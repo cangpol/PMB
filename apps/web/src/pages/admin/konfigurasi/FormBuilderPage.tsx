@@ -16,6 +16,7 @@ import {
   StatusBadge,
   TableSkeleton,
   ErrorState,
+  EmptyState,
 } from "../../../components/common";
 import { Button, Card, Input } from "@/components/ui";
 import {
@@ -571,89 +572,100 @@ export const FormBuilderPage: React.FC = () => {
               </span>
             </div>
 
-            <div className="space-y-3">
-              {fields.map((field, idx) => (
-                <div
-                  key={field.id}
-                  draggable
-                  onDragStart={() => handleDragStart(idx)}
-                  onDragOver={(e) => handleDragOver(e)}
-                  onDrop={() => handleDrop(idx)}
-                  className={`p-4 bg-putih rounded-xl border border-biru-100 shadow-xs flex items-center justify-between gap-4 transition hover:border-biru-300 ${
-                    draggedIndex === idx
-                      ? "opacity-40 border-dashed border-biru-600"
-                      : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="cursor-grab text-biru-400 hover:text-biru-900 p-1">
-                      <GripVertical className="w-4 h-4" />
-                    </div>
-                    <div className="w-6 h-6 rounded-full bg-biru-50 text-biru-900 text-xs font-bold flex items-center justify-center shrink-0">
-                      {idx + 1}
-                    </div>
-                    <div className="truncate space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm text-biru-950 truncate">
-                          {field.label}
-                        </span>
-                        {field.wajib && (
-                          <span className="text-[10px] bg-biru-100 text-biru-900 font-bold px-1.5 py-0.2 rounded">
-                            Wajib
+            {fields.length === 0 ? (
+              <Card className="p-8 border-biru-200 bg-putih text-center shadow-xs">
+                <EmptyState
+                  title="Belum Ada Kolom Biodata"
+                  description="Silakan klik tombol 'Tambah Kolom Biodata' untuk mulai menyusun formulir pendaftaran dinamis."
+                />
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {fields.map((field, idx) => (
+                  <div
+                    key={field.id}
+                    draggable
+                    onDragStart={() => handleDragStart(idx)}
+                    onDragOver={(e) => handleDragOver(e)}
+                    onDrop={() => handleDrop(idx)}
+                    className={`p-4 bg-putih rounded-xl border border-biru-100 shadow-xs flex items-center justify-between gap-4 transition hover:border-biru-300 ${
+                      draggedIndex === idx
+                        ? "opacity-40 border-dashed border-biru-600"
+                        : ""
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="cursor-grab text-biru-400 hover:text-biru-900 p-1">
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+                      <div className="w-6 h-6 rounded-full bg-biru-50 text-biru-900 text-xs font-bold flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </div>
+                      <div className="truncate space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm text-biru-950 truncate">
+                            {field.label}
                           </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-biru-700">
-                        <span className="font-mono bg-biru-50 px-1 rounded text-biru-800">
-                          {field.kode_field}
-                        </span>
-                        <span>•</span>
-                        <span className="capitalize">{field.tipe_field}</span>
-                        <span>•</span>
-                        <span className="text-biru-600">{field.kelompok}</span>
+                          {field.wajib && (
+                            <span className="text-[10px] bg-biru-100 text-biru-900 font-bold px-1.5 py-0.2 rounded">
+                              Wajib
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-biru-700">
+                          <span className="font-mono bg-biru-50 px-1 rounded text-biru-800">
+                            {field.kode_field}
+                          </span>
+                          <span>•</span>
+                          <span className="capitalize">{field.tipe_field}</span>
+                          <span>•</span>
+                          <span className="text-biru-600">
+                            {field.kelompok}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      disabled={idx === 0}
-                      onClick={() => handleMoveField(idx, "up")}
-                      className="p-1.5 text-biru-700 hover:text-biru-950 disabled:opacity-30 rounded hover:bg-biru-50"
-                      title="Pindahkan ke atas"
-                    >
-                      <ArrowUp className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      disabled={idx === fields.length - 1}
-                      onClick={() => handleMoveField(idx, "down")}
-                      className="p-1.5 text-biru-700 hover:text-biru-950 disabled:opacity-30 rounded hover:bg-biru-50"
-                      title="Pindahkan ke bawah"
-                    >
-                      <ArrowDown className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditField(field)}
-                      className="p-1.5 text-biru-800 hover:text-biru-950 rounded hover:bg-biru-50"
-                      title="Ubah Field"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteField(field.id)}
-                      className="p-1.5 text-biru-600 hover:text-biru-900 rounded hover:bg-biru-50"
-                      title="Hapus Field"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => handleMoveField(idx, "up")}
+                        className="p-1.5 text-biru-700 hover:text-biru-950 disabled:opacity-30 rounded hover:bg-biru-50"
+                        title="Pindahkan ke atas"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === fields.length - 1}
+                        onClick={() => handleMoveField(idx, "down")}
+                        className="p-1.5 text-biru-700 hover:text-biru-950 disabled:opacity-30 rounded hover:bg-biru-50"
+                        title="Pindahkan ke bawah"
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditField(field)}
+                        className="p-1.5 text-biru-800 hover:text-biru-950 rounded hover:bg-biru-50"
+                        title="Ubah Field"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteField(field.id)}
+                        className="p-1.5 text-biru-600 hover:text-biru-900 rounded hover:bg-biru-50"
+                        title="Hapus Field"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Kolom Kanan: Live Preview Form Calon (5 Kolom) */}
@@ -693,74 +705,83 @@ export const FormBuilderPage: React.FC = () => {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {berkasList.map((item) => (
-              <Card
-                key={item.id}
-                className="p-5 border-biru-100 bg-putih shadow-xs flex flex-col justify-between"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold bg-biru-50 text-biru-900 px-2 py-0.5 rounded">
-                      {item.kode_berkas}
-                    </span>
-                    {item.wajib ? (
-                      <span className="text-[10px] bg-biru-900 text-putih font-bold px-2 py-0.5 rounded-full">
-                        Wajib
+          {berkasList.length === 0 ? (
+            <Card className="p-8 border-biru-200 bg-putih text-center shadow-xs">
+              <EmptyState
+                title="Belum Ada Syarat Berkas"
+                description="Silakan klik tombol 'Tambah Syarat Berkas' untuk mendefinisikan dokumen yang harus diunggah pendaftar."
+              />
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {berkasList.map((item) => (
+                <Card
+                  key={item.id}
+                  className="p-5 border-biru-100 bg-putih shadow-xs flex flex-col justify-between"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs font-bold bg-biru-50 text-biru-900 px-2 py-0.5 rounded">
+                        {item.kode_berkas}
                       </span>
-                    ) : (
-                      <span className="text-[10px] bg-biru-100 text-biru-800 font-medium px-2 py-0.5 rounded-full">
-                        Opsional
-                      </span>
+                      {item.wajib ? (
+                        <span className="text-[10px] bg-biru-900 text-putih font-bold px-2 py-0.5 rounded-full">
+                          Wajib
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-biru-100 text-biru-800 font-medium px-2 py-0.5 rounded-full">
+                          Opsional
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-serif text-base font-bold text-biru-950">
+                      {item.nama}
+                    </h3>
+                    {item.deskripsi && (
+                      <p className="text-xs text-biru-800 line-clamp-2">
+                        {item.deskripsi}
+                      </p>
                     )}
-                  </div>
-                  <h3 className="font-serif text-base font-bold text-biru-950">
-                    {item.nama}
-                  </h3>
-                  {item.deskripsi && (
-                    <p className="text-xs text-biru-800 line-clamp-2">
-                      {item.deskripsi}
-                    </p>
-                  )}
-                  <div className="text-xs text-biru-700 pt-2 space-y-1">
-                    <div>
-                      Format:{" "}
-                      <strong className="font-semibold">
-                        {item.tipe_file}
-                      </strong>
-                    </div>
-                    <div>
-                      Batas Maks:{" "}
-                      <strong className="font-semibold">
-                        {(item.ukuran_maks_kb / 1024).toFixed(1)} MB
-                      </strong>
+                    <div className="text-xs text-biru-700 pt-2 space-y-1">
+                      <div>
+                        Format:{" "}
+                        <strong className="font-semibold">
+                          {item.tipe_file}
+                        </strong>
+                      </div>
+                      <div>
+                        Batas Maks:{" "}
+                        <strong className="font-semibold">
+                          {(item.ukuran_maks_kb / 1024).toFixed(1)} MB
+                        </strong>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-biru-100">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleOpenEditBerkas(item)}
-                    className="text-xs border-biru-200 text-biru-900 hover:bg-biru-50"
-                  >
-                    <Edit2 className="w-3.5 h-3.5 mr-1" />
-                    Ubah
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDeleteBerkas(item.id)}
-                    className="text-xs border-biru-200 text-biru-600 hover:bg-biru-50"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 mr-1" />
-                    Hapus
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
+                  <div className="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-biru-100">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleOpenEditBerkas(item)}
+                      className="text-xs border-biru-200 text-biru-900 hover:bg-biru-50"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 mr-1" />
+                      Ubah
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeleteBerkas(item.id)}
+                      className="text-xs border-biru-200 text-biru-600 hover:bg-biru-50"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1" />
+                      Hapus
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -773,36 +794,45 @@ export const FormBuilderPage: React.FC = () => {
             </h2>
           </div>
 
-          <div className="space-y-3 max-w-3xl">
-            {langkahList.map((step, idx) => (
-              <div
-                key={step.id}
-                className="p-5 bg-putih rounded-xl border border-biru-100 shadow-xs flex items-center justify-between gap-4"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-8 h-8 rounded-full bg-biru-900 text-putih font-bold text-sm flex items-center justify-center shrink-0">
-                    {idx + 1}
+          {langkahList.length === 0 ? (
+            <Card className="p-8 border-biru-200 bg-putih text-center shadow-xs">
+              <EmptyState
+                title="Belum Ada Alur Langkah"
+                description="Tahapan seleksi PMB belum dikonfigurasi untuk alur pendaftaran ini."
+              />
+            </Card>
+          ) : (
+            <div className="space-y-3 max-w-3xl">
+              {langkahList.map((step, idx) => (
+                <div
+                  key={step.id}
+                  className="p-5 bg-putih rounded-xl border border-biru-100 shadow-xs flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-full bg-biru-900 text-putih font-bold text-sm flex items-center justify-center shrink-0">
+                      {idx + 1}
+                    </div>
+                    <div>
+                      <h4 className="font-serif text-base font-bold text-biru-950">
+                        {step.judul_langkah}
+                      </h4>
+                      {step.deskripsi && (
+                        <p className="text-xs text-biru-800 mt-0.5">
+                          {step.deskripsi}
+                        </p>
+                      )}
+                      <span className="inline-block font-mono text-[11px] text-biru-600 mt-1">
+                        Tipe: {step.tipe_langkah} •{" "}
+                        {step.wajib ? "Wajib" : "Opsional"}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-serif text-base font-bold text-biru-950">
-                      {step.judul_langkah}
-                    </h4>
-                    {step.deskripsi && (
-                      <p className="text-xs text-biru-800 mt-0.5">
-                        {step.deskripsi}
-                      </p>
-                    )}
-                    <span className="inline-block font-mono text-[11px] text-biru-600 mt-1">
-                      Tipe: {step.tipe_langkah} •{" "}
-                      {step.wajib ? "Wajib" : "Opsional"}
-                    </span>
-                  </div>
-                </div>
 
-                <StatusBadge status="success" label="Aktif" />
-              </div>
-            ))}
-          </div>
+                  <StatusBadge status="success" label="Aktif" />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

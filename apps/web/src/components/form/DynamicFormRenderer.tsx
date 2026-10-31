@@ -11,7 +11,7 @@ import {
   AlertCircle,
   MapPin,
 } from "lucide-react";
-import { Button, Card, Input } from "@/components/ui";
+import { Button, Card, Input, EmptyState } from "@/components/ui";
 import { DATA_WILAYAH_INDONESIA } from "../../data/wilayah";
 
 export interface DefinisiFieldItem {
@@ -38,7 +38,7 @@ interface DynamicFormRendererProps {
   readOnly?: boolean;
 }
 
-export function buildDynamicZodSchema(fields: DefinisiFieldItem[]) {
+function buildDynamicZodSchema(fields: DefinisiFieldItem[]) {
   const shape: Record<string, z.ZodTypeAny> = {};
 
   fields.forEach((f) => {
@@ -255,6 +255,17 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
 
     return groups;
   }, [fields]);
+
+  if (fields.length === 0) {
+    return (
+      <Card className="p-8 border-biru-200 bg-putih text-center shadow-xs">
+        <EmptyState
+          title="Belum Ada Kolom Formulir"
+          description="Formulir pendaftaran untuk jalur ini belum dikonfigurasi atau belum memiliki kolom isian aktif."
+        />
+      </Card>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">

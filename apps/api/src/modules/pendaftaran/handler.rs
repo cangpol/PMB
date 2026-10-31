@@ -298,8 +298,9 @@ pub async fn presign_download_berkas_handler(
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = make_service(&state);
+    let can_access_all = auth_user.is_admin() || auth_user.is_asesor();
     let res = service
-        .presign_download(auth_user.user_id, auth_user.is_admin(), id)
+        .presign_download(auth_user.user_id, can_access_all, id)
         .await?;
     Ok(Json(res))
 }
@@ -665,26 +666,18 @@ pub async fn admin_list_berkas_handler(
     )
 )]
 pub async fn admin_verifikasi_berkas_handler(
-    auth_user: AuthUser,
+    admin: RequireAdmin,
     State(state): State<AppState>,
     Json(req): Json<VerifikasiBerkasRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    if !auth_user.is_admin() {
-        return Err(AppError::Forbidden(
-            "Hanya panitia PMB yang dapat memverifikasi berkas".to_string(),
-        ));
-    }
-
     let service = make_service(&state);
     let payload = serde_json::to_value(&req).ok();
     let berkas_id = req.berkas_id;
-    service
-        .verifikasi_berkas_admin(auth_user.user_id, req)
-        .await?;
+    service.verifikasi_berkas_admin(admin.user_id, req).await?;
 
     let _ = crate::security::record_audit_log(
         &state.db,
-        Some(auth_user.user_id),
+        Some(admin.user_id),
         "VERIFIKASI_BERKAS",
         "berkas_pendaftar",
         Some(berkas_id),
@@ -807,8 +800,9 @@ pub async fn get_presigned_url_handler(
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = make_service(&state);
+    let can_access_all = auth_user.is_admin() || auth_user.is_asesor();
     let presigned = service
-        .presign_download(auth_user.user_id, auth_user.is_admin(), id)
+        .presign_download(auth_user.user_id, can_access_all, id)
         .await?;
 
     Ok(Json(PresignedUrlResponse {

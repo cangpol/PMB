@@ -138,7 +138,14 @@ export const App: React.FC = () => {
                   element={<Navigate to="/admin/dashboard" replace />}
                 />
                 <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="berkas" element={<VerifikasiBerkasPage />} />
+                <Route
+                  path="berkas"
+                  element={
+                    <RequireRole allowedRoles={["admin_pmb", "super_admin"]}>
+                      <VerifikasiBerkasPage />
+                    </RequireRole>
+                  }
+                />
                 <Route path="keuangan" element={<VerifikasiKeuanganPage />} />
                 <Route path="seleksi" element={<SeleksiKelulusanPage />} />
                 <Route path="master" element={<MasterDataPage />} />

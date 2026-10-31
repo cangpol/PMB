@@ -702,7 +702,7 @@ impl PendaftaranRepository {
         catatan: Option<&str>,
         verified_by: Option<Uuid>,
     ) -> Result<(), AppError> {
-        sqlx::query(
+        let res = sqlx::query(
             "UPDATE berkas_pendaftar
              SET status_verifikasi = $1, catatan = $2, verified_at = NOW(), verified_by = $3
              WHERE id = $4",
@@ -713,6 +713,13 @@ impl PendaftaranRepository {
         .bind(berkas_id)
         .execute(&self.pool)
         .await?;
+
+        if res.rows_affected() == 0 {
+            return Err(AppError::NotFound(
+                "Dokumen berkas pendaftaran tidak ditemukan".to_string(),
+            ));
+        }
+
         Ok(())
     }
 

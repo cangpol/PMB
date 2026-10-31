@@ -272,4 +272,3 @@ export const DATA_WILAYAH_INDONESIA: ProvinsiData[] = [
     ],
   },
 ];
-

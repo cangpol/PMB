@@ -282,6 +282,32 @@ impl PendaftaranService {
             .await?
             .ok_or_else(|| AppError::NotFound("Definisi berkas tidak ditemukan".to_string()))?;
 
+        // 1. Validasi kepemilikan file_key (IDOR Protection)
+        let expected_prefix = format!("berkas/{}/", pendaftar.id);
+        if !req.file_key.starts_with(&expected_prefix) {
+            return Err(AppError::Forbidden(
+                "Kunci berkas tidak valid untuk akun pendaftar ini".to_string(),
+            ));
+        }
+
+        // 2. Validasi batas ukuran berkas
+        let max_bytes = (def_berkas.ukuran_maks_kb as i64) * 1024;
+        if req.file_size_bytes <= 0 || req.file_size_bytes > max_bytes {
+            return Err(AppError::BadRequest(format!(
+                "Ukuran berkas tidak valid atau melebihi batas maksimal {} KB",
+                def_berkas.ukuran_maks_kb
+            )));
+        }
+
+        // 3. Validasi tipe file
+        let allowed_types: Vec<&str> = def_berkas.tipe_file.split(',').map(|s| s.trim()).collect();
+        if !allowed_types.is_empty() && !allowed_types.contains(&req.mime_type.as_str()) {
+            return Err(AppError::BadRequest(format!(
+                "Format berkas tidak diizinkan. Format yang diperbolehkan: {}",
+                def_berkas.tipe_file
+            )));
+        }
+
         let b = self
             .repo
             .save_berkas_dinamis(
@@ -349,7 +375,7 @@ impl PendaftaranService {
     pub async fn presign_download(
         &self,
         user_id: Uuid,
-        is_admin: bool,
+        can_access_all: bool,
         berkas_id: Uuid,
     ) -> Result<PresignedDownloadResponse, AppError> {
         let berkas = self
@@ -358,8 +384,8 @@ impl PendaftaranService {
             .await?
             .ok_or_else(|| AppError::NotFound("Dokumen berkas tidak ditemukan".to_string()))?;
 
-        // Jika bukan admin, pastikan pemilik berkas cocok dengan user_id
-        if !is_admin {
+        // Jika bukan staf berwenang (admin / asesor), pastikan pemilik berkas cocok dengan user_id
+        if !can_access_all {
             let pendaftar = self.repo.find_by_user_id(user_id).await?.ok_or_else(|| {
                 AppError::Forbidden("Anda tidak berhak mengakses dokumen berkas ini".to_string())
             })?;
