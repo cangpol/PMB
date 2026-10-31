@@ -1,0 +1,203 @@
+use utoipa::OpenApi;
+
+use crate::{
+    error::ApiErrorResponse,
+    modules::{
+        auth::dto::*, auth::handler::*, cms::dto::*, cms::handler::*, dashboard::dto::*,
+        dashboard::handler::*, health::*, kelulusan::dto::*, kelulusan::handler::*,
+        konfigurasi::dto::*, konfigurasi::handler::*, master::dto::*, master::handler::*,
+        pembayaran::dto::*, pembayaran::handler::*, pendaftaran::dto::*, pendaftaran::handler::*,
+        ujian::dto::*, ujian::handler::*,
+    },
+};
+
+#[derive(OpenApi)]
+#[openapi(
+    info(
+        title = "API PMB Universitas Pignatelli Triputra",
+        version = "1.0.0",
+        description = "Spesifikasi Kontrak API Sistem Penerimaan Mahasiswa Baru (PMB) Universitas Pignatelli Triputra."
+    ),
+    paths(
+        // Auth
+        register_handler,
+        login_handler,
+        logout_handler,
+        me_handler,
+        verify_email_handler,
+        forgot_password_handler,
+        reset_password_handler,
+        change_password_handler,
+        admin_list_users_handler,
+        admin_update_role_handler,
+        // Master
+        list_prodi_handler,
+        get_prodi_handler,
+        list_jalur_handler,
+        list_gelombang_handler,
+        // Pendaftaran
+        get_my_pendaftaran_handler,
+        submit_biodata_handler,
+        submit_akademik_handler,
+        upload_berkas_handler,
+        get_presigned_url_handler,
+        finalisasi_handler,
+        admin_verifikasi_berkas_handler,
+        admin_list_pendaftar_handler,
+        // Pembayaran
+        cek_voucher_handler,
+        get_my_tagihan_handler,
+        buat_tagihan_formulir_handler,
+        simulasi_va_bayar_handler,
+        admin_konfirmasi_bayar_handler,
+        admin_list_pembayaran_handler,
+        // Ujian CBT
+        mulai_ujian_handler,
+        submit_ujian_handler,
+        // Kelulusan
+        get_my_kelulusan_handler,
+        admin_proses_seleksi_handler,
+        admin_list_kelulusan_handler,
+        // CMS
+        list_posts_handler,
+        get_post_handler,
+        // Dashboard
+        get_calon_dashboard_handler,
+        get_admin_dashboard_handler,
+        // Konfigurasi Admin
+        list_tahun_akademik_handler,
+        create_tahun_akademik_handler,
+        update_tahun_akademik_handler,
+        delete_tahun_akademik_handler,
+        list_fakultas_handler,
+        create_fakultas_handler,
+        update_fakultas_handler,
+        delete_fakultas_handler,
+        list_gelombang_admin_handler,
+        create_gelombang_handler,
+        update_gelombang_handler,
+        delete_gelombang_handler,
+        list_prodi_admin_handler,
+        create_prodi_handler,
+        update_prodi_handler,
+        delete_prodi_handler,
+        list_kuota_prodi_gelombang_handler,
+        set_kuota_prodi_gelombang_handler,
+        list_jalur_admin_handler,
+        create_jalur_handler,
+        update_jalur_handler,
+        delete_jalur_handler,
+        list_komponen_biaya_handler,
+        create_komponen_biaya_handler,
+        update_komponen_biaya_handler,
+        delete_komponen_biaya_handler,
+        list_matriks_biaya_handler,
+        create_matriks_biaya_handler,
+        update_matriks_biaya_handler,
+        delete_matriks_biaya_handler,
+        hitung_biaya_simulasi_handler,
+        list_vouchers_handler,
+        create_voucher_handler,
+        update_voucher_handler,
+        delete_voucher_handler,
+        list_pengaturan_handler,
+        update_pengaturan_handler,
+        // Health
+        health_check_handler,
+    ),
+    components(
+        schemas(
+            ApiErrorResponse,
+            HealthCheckResponse,
+            // Auth
+            RegisterRequest,
+            LoginRequest,
+            AuthResponse,
+            VerifyEmailRequest,
+            ForgotPasswordRequest,
+            ResetPasswordRequest,
+            ChangePasswordRequest,
+            UpdateUserRoleRequest,
+            UserListItemResponse,
+            GenericMessageResponse,
+            // Master
+            ProdiResponse,
+            CreateProdiRequest,
+            JalurResponse,
+            GelombangResponse,
+            // Pendaftaran
+            SubmitBiodataRequest,
+            SubmitAkademikRequest,
+            UploadBerkasRequest,
+            PresignedUrlResponse,
+            VerifikasiBerkasRequest,
+            BerkasResponse,
+            PendaftarDetailResponse,
+            // Pembayaran
+            CekVoucherRequest,
+            CekVoucherResponse,
+            PilihMetodeRequest,
+            KonfirmasiBayarRequest,
+            PembayaranDetailResponse,
+            // Ujian
+            SoalPublicResponse,
+            MulaiUjianResponse,
+            SubmitUjianRequest,
+            HasilUjianResponse,
+            // Kelulusan
+            HasilKelulusanResponse,
+            ProsesSeleksiRequest,
+            // CMS
+            CmsPostResponse,
+            CreateCmsPostRequest,
+            // Dashboard
+            CalonDashboardResponse,
+            StepperStep,
+            AdminDashboardResponse,
+            ProdiStat,
+            FunnelStat,
+            // Konfigurasi Admin
+            TahunAkademikResponse,
+            CreateTahunAkademikRequest,
+            UpdateTahunAkademikRequest,
+            FakultasResponse,
+            CreateFakultasRequest,
+            GelombangDetailResponse,
+            CreateGelombangRequest,
+            UpdateGelombangRequest,
+            ProdiDetailResponse,
+            CreateProdiKonfigurasiRequest,
+            UpdateProdiKonfigurasiRequest,
+            KuotaProdiGelombangResponse,
+            SetKuotaProdiGelombangRequest,
+            JalurDetailResponse,
+            CreateJalurKonfigurasiRequest,
+            UpdateJalurKonfigurasiRequest,
+            KomponenBiayaResponse,
+            CreateKomponenBiayaRequest,
+            MatriksBiayaResponse,
+            CreateMatriksBiayaRequest,
+            UpdateMatriksBiayaRequest,
+            HitungBiayaRequest,
+            HitungBiayaResponse,
+            BiayaItemDetail,
+            VoucherDetailResponse,
+            CreateVoucherRequest,
+            UpdateVoucherRequest,
+            PengaturanResponse,
+            UpdatePengaturanRequest
+        )
+    ),
+    tags(
+        (name = "Auth", description = "Autentikasi & Sesi Pengguna"),
+        (name = "Master", description = "Data Master Program Studi, Jalur & Gelombang"),
+        (name = "Konfigurasi Admin", description = "Pengaturan PMB, Gelombang, Kuota, Matriks Biaya & Voucher"),
+        (name = "Pendaftaran", description = "Alur Formulir & Berkas Pendaftaran Calon Mahasiswa"),
+        (name = "Pembayaran", description = "Tagihan, Voucher & Konfirmasi Keuangan"),
+        (name = "Ujian CBT", description = "Pelaksanaan Tes Online Computer-Based Test"),
+        (name = "Kelulusan", description = "Hasil Seleksi, LoA & Penomoran NIM"),
+        (name = "CMS", description = "Informasi, Berita & Panduan"),
+        (name = "Dashboard", description = "Statistik & Pelacakan Progres")
+    )
+)]
+pub struct ApiDoc;

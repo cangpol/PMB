@@ -1,0 +1,101 @@
+@import "tailwindcss";
+@import "@fontsource/cormorant-garamond/600.css";
+@import "@fontsource/cormorant-garamond/700.css";
+@import "@fontsource/plus-jakarta-sans/400.css";
+@import "@fontsource/plus-jakarta-sans/500.css";
+@import "@fontsource/plus-jakarta-sans/600.css";
+@import "@fontsource/plus-jakarta-sans/700.css";
+
+@theme {
+  --color-biru-950: #061633;
+  --color-biru-900: #0b2559;
+  --color-biru-800: #12378a;
+  --color-biru-700: #1a4bb5;
+  --color-biru-600: #2563eb;
+  --color-biru-500: #3b82f6;
+  --color-biru-200: #bfd4f8;
+  --color-biru-100: #dce8fc;
+  --color-biru-50: #f1f6fe;
+  --color-putih: #ffffff;
+
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans:
+    "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
+
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+
+  --shadow-soft-sm:
+    0 1px 3px 0 rgba(6, 22, 51, 0.06), 0 1px 2px -1px rgba(6, 22, 51, 0.06);
+  --shadow-soft-md:
+    0 4px 6px -1px rgba(6, 22, 51, 0.07), 0 2px 4px -2px rgba(6, 22, 51, 0.05);
+  --shadow-soft-lg:
+    0 10px 15px -3px rgba(6, 22, 51, 0.08), 0 4px 6px -4px rgba(6, 22, 51, 0.04);
+  --shadow-soft-xl:
+    0 20px 25px -5px rgba(6, 22, 51, 0.1), 0 8px 10px -6px rgba(6, 22, 51, 0.04);
+}
+
+:root {
+  --biru-950: #061633;
+  --biru-900: #0b2559;
+  --biru-800: #12378a;
+  --biru-700: #1a4bb5;
+  --biru-600: #2563eb;
+  --biru-500: #3b82f6;
+  --biru-200: #bfd4f8;
+  --biru-100: #dce8fc;
+  --biru-50: #f1f6fe;
+  --putih: #ffffff;
+
+  color: var(--biru-950);
+  background-color: var(--putih);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Aksesibilitas: Hormati prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Pola Hero Halus Berbasis Garis Akademis */
+.hero-pattern {
+  background-color: var(--biru-900);
+  background-image:
+    radial-gradient(
+      circle at 20% 30%,
+      rgba(37, 99, 235, 0.18) 0%,
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 80% 70%,
+      rgba(27, 75, 181, 0.22) 0%,
+      transparent 40%
+    ),
+    linear-gradient(
+      135deg,
+      var(--biru-950) 0%,
+      var(--biru-900) 60%,
+      var(--biru-800) 100%
+    );
+}
+
+/* Fokus Keyboard Aksesibel WCAG */
+:focus-visible {
+  outline: 2px solid var(--biru-600);
+  outline-offset: 2px;
+}

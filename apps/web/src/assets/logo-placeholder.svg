@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 100" fill="none">
+  <!-- PLACEHOLDER LOGO - UNIVERSITAS PIGNATELLI TRIPUTRA -->
+  <!-- TANDAI JELAS: LOGO SEMENTARA / PLACEHOLDER (GANTI DENGAN LOGO RESMI) -->
+  <rect width="420" height="100" rx="14" fill="#0B2559"/>
+  <rect x="2" y="2" width="416" height="96" rx="12" stroke="#1A4BB5" stroke-width="2" stroke-dasharray="6 4"/>
+  
+  <!-- Lambang Kampus / Monogram 'UPT' (Biru & Putih) -->
+  <g transform="translate(18, 14)">
+    <circle cx="36" cy="36" r="34" fill="#12378A" stroke="#BFD4F8" stroke-width="2"/>
+    <!-- Ikon Buku Akademik & Menara Obor -->
+    <path d="M22 46 C28 42, 34 42, 36 45 C38 42, 44 42, 50 46 L50 28 C44 25, 38 25, 36 28 C34 25, 28 25, 22 28 Z" fill="#FFFFFF"/>
+    <path d="M36 24 L36 45" stroke="#0B2559" stroke-width="2"/>
+    <polygon points="36,15 39,21 33,21" fill="#BFD4F8"/>
+  </g>
+
+  <!-- Tipografi Institusi -->
+  <text x="100" y="42" font-family="'Cormorant Garamond', Georgia, serif" font-size="22" font-weight="700" fill="#FFFFFF" letter-spacing="1.5">
+    UNIVERSITAS PIGNATELLI
+  </text>
+  <text x="100" y="65" font-family="'Plus Jakarta Sans', sans-serif" font-size="15" font-weight="600" fill="#BFD4F8" letter-spacing="3.5">
+    TRIPUTRA
+  </text>
+  
+  <!-- Penanda Placeholder Transparan Elegan -->
+  <rect x="290" y="66" width="115" height="20" rx="4" fill="#1A4BB5"/>
+  <text x="298" y="80" font-family="'Plus Jakarta Sans', sans-serif" font-size="9.5" font-weight="700" fill="#FFFFFF" letter-spacing="1">
+    [ LOGO PLACEHOLDER ]
+  </text>
+</svg>
+
