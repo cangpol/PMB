@@ -29,7 +29,9 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     normalized.includes("lunas") ||
     normalized.includes("berhasil") ||
     normalized.includes("lulus") ||
-    normalized.includes("valid")
+    normalized.includes("valid") ||
+    normalized.includes("diakui") ||
+    normalized.includes("selesai")
   ) {
     variant = "berhasil";
     autoIcon = <CheckCircle2 className="w-3.5 h-3.5" />;

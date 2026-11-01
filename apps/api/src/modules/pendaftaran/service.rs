@@ -3,20 +3,28 @@ use uuid::Uuid;
 
 use crate::{
     error::AppError,
-    modules::pendaftaran::{
-        dto::{
-            BerkasCalonItem, BerkasDetailItem, BerkasResponse, CreateDefinisiBerkasRequest,
-            CreateDefinisiFieldRequest, CreateDefinisiLangkahRequest, KonfirmasiUploadRequest,
-            LangkahProgressItem, PendaftarDetailResponse, PresignUploadRequest,
-            SubmitAkademikRequest, SubmitBiodataRequest, SubmitDinamisRequest,
-            UpdateDefinisiBerkasRequest, UpdateDefinisiFieldRequest, UpdateDefinisiLangkahRequest,
-            VerifikasiBerkasRequest,
+    modules::{
+        email_queue::repository::EmailQueueRepository,
+        pendaftaran::{
+            dto::{
+                BerkasCalonItem, BerkasDetailItem, BerkasResponse, CreateDefinisiBerkasRequest,
+                CreateDefinisiFieldRequest, CreateDefinisiLangkahRequest, DashboardSummaryResponse,
+                KonfirmasiUploadRequest, LangkahProgressItem, PendaftarDetailResponse,
+                PendaftaranOfflineRequest, PendaftaranOfflineResponse, PilihProdiRequest,
+                PresignUploadRequest, SubmitAkademikRequest, SubmitBiodataRequest,
+                SubmitDinamisRequest, UpdateDefinisiBerkasRequest, UpdateDefinisiFieldRequest,
+                UpdateDefinisiLangkahRequest, VerifikasiBerkasRequest,
+            },
+            model::{DefinisiBerkas, DefinisiField, DefinisiLangkah, Pendaftar},
+            pdf,
+            repository::PendaftaranRepository,
+            validator::DynamicFormValidator,
         },
-        model::{DefinisiBerkas, DefinisiField, DefinisiLangkah, Pendaftar},
-        repository::PendaftaranRepository,
-        validator::DynamicFormValidator,
     },
-    security::storage::{PresignedDownloadResponse, PresignedUploadResponse, StorageService},
+    security::{
+        password::hash_password,
+        storage::{PresignedDownloadResponse, PresignedUploadResponse, StorageService},
+    },
 };
 
 #[derive(Clone)]
@@ -823,17 +831,52 @@ impl PendaftaranService {
             })
             .collect();
 
+        let user_info: Option<(String, String, String)> =
+            sqlx::query_as("SELECT nama_lengkap, email, no_hp FROM users WHERE id = $1")
+                .bind(p.user_id)
+                .fetch_optional(self.repo.pool())
+                .await
+                .unwrap_or(None);
+
+        let (nama_lengkap, email, no_hp) = user_info.unwrap_or_else(|| {
+            (
+                "Calon Mahasiswa".to_string(),
+                "".to_string(),
+                "".to_string(),
+            )
+        });
+
+        let nama_jalur = self
+            .repo
+            .get_jalur_nama(p.jalur_id)
+            .await
+            .unwrap_or_else(|_| "Jalur Pendaftaran".to_string());
+        let nama_gelombang = self
+            .repo
+            .get_gelombang_nama(p.gelombang_id)
+            .await
+            .unwrap_or_else(|_| "Gelombang Aktif".to_string());
+        let nama_prodi_1 = self
+            .repo
+            .get_prodi_nama(p.prodi_pilihan_1)
+            .await
+            .unwrap_or_else(|_| "Pilihan 1".to_string());
+        let nama_prodi_2 = match p.prodi_pilihan_2 {
+            Some(p2) => self.repo.get_prodi_nama(p2).await.ok(),
+            None => None,
+        };
+
         Ok(PendaftarDetailResponse {
             id: p.id,
             user_id: p.user_id,
-            nama_lengkap: "Calon Mahasiswa".to_string(),
-            email: "".to_string(),
-            no_hp: "".to_string(),
+            nama_lengkap,
+            email,
+            no_hp,
             nomor_pendaftaran: p.nomor_pendaftaran,
             jalur_id: p.jalur_id,
-            nama_jalur: "Jalur Pendaftaran".to_string(),
+            nama_jalur,
             gelombang_id: p.gelombang_id,
-            nama_gelombang: "Gelombang Aktif".to_string(),
+            nama_gelombang,
             status_pendaftaran: p.status_pendaftaran,
             nik: p.nik,
             tempat_lahir: p.tempat_lahir,
@@ -847,9 +890,9 @@ impl PendaftaranService {
             jurusan_sekolah: p.jurusan_sekolah,
             nilai_rapor_avg: p.nilai_rapor_avg,
             prodi_pilihan_1: p.prodi_pilihan_1,
-            nama_prodi_1: "Pilihan 1".to_string(),
+            nama_prodi_1,
             prodi_pilihan_2: p.prodi_pilihan_2,
-            nama_prodi_2: None,
+            nama_prodi_2,
             data_formulir: p.data_formulir,
             catatan_verifikator: p.catatan_verifikator,
             berkas: berkas_resp,
@@ -870,5 +913,415 @@ impl PendaftaranService {
 
     pub async fn list_all(&self) -> Result<Vec<Pendaftar>, AppError> {
         self.repo.list_all_pendaftar().await
+    }
+
+    // ==========================================
+    // 5. ALUR PENDAFTARAN LENGKAP & WIZARD
+    // ==========================================
+
+    pub async fn pilih_prodi_dan_jalur(
+        &self,
+        user_id: Uuid,
+        req: PilihProdiRequest,
+    ) -> Result<PendaftarDetailResponse, AppError> {
+        // 1. Validasi pilihan prodi tidak sama
+        if let Some(p2) = req.prodi_pilihan_2 {
+            if p2 == req.prodi_pilihan_1 {
+                return Err(AppError::BadRequest(
+                    "Pilihan Program Studi 1 dan Pilihan 2 tidak boleh sama".to_string(),
+                ));
+            }
+        }
+
+        // 2. Validasi status gelombang aktif
+        let gelombang_aktif = self.repo.check_gelombang_active(req.gelombang_id).await?;
+        if !gelombang_aktif {
+            return Err(AppError::BadRequest(
+                "Gelombang pendaftaran yang dipilih sedang tidak aktif atau sudah ditutup"
+                    .to_string(),
+            ));
+        }
+
+        // 3. Validasi kuota prodi pilihan 1
+        let kuota_tersedia = self
+            .repo
+            .check_prodi_kuota(req.prodi_pilihan_1, req.gelombang_id)
+            .await?;
+        if !kuota_tersedia {
+            return Err(AppError::BadRequest(
+                "Kuota untuk Program Studi pilihan 1 pada gelombang ini telah terpenuhi"
+                    .to_string(),
+            ));
+        }
+
+        // 4. Cek existing pendaftaran untuk user_id
+        let existing = self.repo.find_by_user_id(user_id).await?;
+        let nomor_pendaftaran = if let Some(ref ex) = existing {
+            if ex.status_pendaftaran != "DRAFT" {
+                return Err(AppError::BadRequest(format!(
+                    "Pendaftaran Anda telah berstatus {} dan tidak dapat diubah kembali ke pemilihan prodi",
+                    ex.status_pendaftaran
+                )));
+            }
+            ex.nomor_pendaftaran.clone()
+        } else {
+            let seq = self.repo.get_next_sequence().await?;
+            format!("PMB-2026-{:04}", seq)
+        };
+
+        // 5. Upsert draft pendaftaran
+        let pendaftar = self
+            .repo
+            .pilih_prodi_draft(
+                user_id,
+                &nomor_pendaftaran,
+                req.jalur_id,
+                req.gelombang_id,
+                req.prodi_pilihan_1,
+                req.prodi_pilihan_2,
+            )
+            .await?;
+
+        // 6. Update state_langkah_pendaftar jika ada definisi_langkah dengan tipe_langkah = 'pilih_prodi'
+        let langkah_list = self.repo.list_definisi_langkah(Some(req.jalur_id)).await?;
+        if let Some(langkah_pilih) = langkah_list
+            .iter()
+            .find(|l| l.tipe_langkah == "pilih_prodi")
+        {
+            self.repo
+                .upsert_state_langkah(
+                    pendaftar.id,
+                    langkah_pilih.id,
+                    "SELESAI",
+                    &serde_json::json!({
+                        "jalur_id": req.jalur_id,
+                        "gelombang_id": req.gelombang_id,
+                        "prodi_1": req.prodi_pilihan_1,
+                        "prodi_2": req.prodi_pilihan_2,
+                    }),
+                )
+                .await?;
+        }
+
+        // 7. Enqueue email notifikasi
+        let user_row: Option<(String, String)> =
+            sqlx::query_as("SELECT email, nama_lengkap FROM users WHERE id = $1")
+                .bind(user_id)
+                .fetch_optional(self.repo.pool())
+                .await
+                .ok()
+                .flatten();
+
+        if let Some((to_email, to_name)) = user_row {
+            let email_repo = EmailQueueRepository::new(self.repo.pool().clone());
+            let _ = email_repo
+                .enqueue(
+                    &to_email,
+                    &to_name,
+                    "Konfirmasi Pemilihan Jalur & Program Studi PMB",
+                    &format!(
+                        "Halo {}, Anda telah berhasil memilih jalur dan program studi PMB dengan Nomor Pendaftaran: {}. Silakan lanjutkan ke pengisian biodata dan unggah berkas persyaratan.",
+                        to_name, nomor_pendaftaran
+                    ),
+                    &format!(
+                        "<p>Halo <strong>{}</strong>,</p><p>Anda telah berhasil memilih jalur dan program studi PMB dengan Nomor Pendaftaran: <strong>{}</strong>.</p><p>Silakan lanjutkan ke pengisian biodata dan unggah berkas persyaratan melalui portal PMB.</p>",
+                        to_name, nomor_pendaftaran
+                    ),
+                    "NOTIFIKASI_LANGKAH",
+                    Some(pendaftar.id),
+                )
+                .await;
+        }
+
+        self.get_my_pendaftaran(user_id).await
+    }
+
+    pub async fn pendaftaran_offline_admin(
+        &self,
+        admin_id: Uuid,
+        req: PendaftaranOfflineRequest,
+    ) -> Result<PendaftaranOfflineResponse, AppError> {
+        // 1. Validasi prodi 1 != prodi 2
+        if let Some(p2) = req.prodi_pilihan_2 {
+            if p2 == req.prodi_pilihan_1 {
+                return Err(AppError::BadRequest(
+                    "Pilihan Program Studi 1 dan Pilihan 2 tidak boleh sama".to_string(),
+                ));
+            }
+        }
+
+        // 2. Validasi gelombang aktif
+        let gelombang_aktif = self.repo.check_gelombang_active(req.gelombang_id).await?;
+        if !gelombang_aktif {
+            return Err(AppError::BadRequest(
+                "Gelombang pendaftaran yang dipilih sedang tidak aktif atau sudah ditutup"
+                    .to_string(),
+            ));
+        }
+
+        // 3. Validasi kuota prodi pilihan 1
+        let kuota_tersedia = self
+            .repo
+            .check_prodi_kuota(req.prodi_pilihan_1, req.gelombang_id)
+            .await?;
+        if !kuota_tersedia {
+            return Err(AppError::BadRequest(
+                "Kuota untuk Program Studi pilihan 1 pada gelombang ini telah terpenuhi"
+                    .to_string(),
+            ));
+        }
+
+        // 4. Cari atau buat user calon mahasiswa berdasarkan email
+        let existing_user: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM users WHERE email = $1")
+                .bind(&req.email)
+                .fetch_optional(self.repo.pool())
+                .await?;
+
+        let (calon_user_id, temp_password) = match existing_user {
+            Some((uid,)) => {
+                // Cek apakah calon ini sudah terdaftar di pendaftar
+                if let Some(ex_pend) = self.repo.find_by_user_id(uid).await? {
+                    return Err(AppError::BadRequest(format!(
+                        "Calon mahasiswa dengan email '{}' sudah terdaftar dengan Nomor: {}",
+                        req.email, ex_pend.nomor_pendaftaran
+                    )));
+                }
+                (uid, None)
+            }
+            None => {
+                let suffix = if req.nik.len() >= 4 {
+                    &req.nik[req.nik.len() - 4..]
+                } else {
+                    "2026"
+                };
+                let generated_pwd = format!("Pmb{}!", suffix);
+                let hashed = hash_password(&generated_pwd).map_err(AppError::Internal)?;
+                let new_uid = Uuid::new_v4();
+
+                sqlx::query(
+                    "INSERT INTO users (id, email, password_hash, nama_lengkap, no_hp, role, is_active, email_verified_at)
+                     VALUES ($1, $2, $3, $4, $5, 'calon_mahasiswa', true, NOW())",
+                )
+                .bind(new_uid)
+                .bind(&req.email)
+                .bind(&hashed)
+                .bind(&req.nama_lengkap)
+                .bind(&req.no_hp)
+                .execute(self.repo.pool())
+                .await?;
+
+                (new_uid, Some(generated_pwd))
+            }
+        };
+
+        // 5. Generate nomor pendaftaran
+        let seq = self.repo.get_next_sequence().await?;
+        let nomor_pendaftaran = format!("PMB-2026-{:04}", seq);
+
+        // 6. Buat record pendaftar offline
+        let pendaftar = self
+            .repo
+            .create_pendaftaran_offline(calon_user_id, &nomor_pendaftaran, &req)
+            .await?;
+
+        // 7. Jika lunas loket, buat pembayaran TUNAI_LOKET
+        let nomor_tagihan = if req.lunas_loket {
+            let nominal = 250_000;
+            let no_tag = self
+                .repo
+                .create_pembayaran_loket(pendaftar.id, admin_id, nominal)
+                .await?;
+            Some(no_tag)
+        } else {
+            None
+        };
+
+        // 8. Tandai langkah pendaftaran jika ada langkah
+        let langkah_list = self.repo.list_definisi_langkah(Some(req.jalur_id)).await?;
+        for langkah in langkah_list {
+            if langkah.tipe_langkah == "pilih_prodi" || langkah.tipe_langkah == "biodata" {
+                let _ = self
+                    .repo
+                    .upsert_state_langkah(
+                        pendaftar.id,
+                        langkah.id,
+                        "SELESAI",
+                        &serde_json::json!({ "mode": "loket_offline", "admin_id": admin_id }),
+                    )
+                    .await;
+            } else if req.lunas_loket && langkah.tipe_langkah == "pembayaran" {
+                let _ = self
+                    .repo
+                    .upsert_state_langkah(
+                        pendaftar.id,
+                        langkah.id,
+                        "SELESAI",
+                        &serde_json::json!({ "metode": "TUNAI_LOKET", "admin_id": admin_id }),
+                    )
+                    .await;
+            }
+        }
+
+        // 9. Log audit
+        let _ = sqlx::query(
+            "INSERT INTO audit_log (id, user_id, action, entity, entity_id, payload, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, NOW())",
+        )
+        .bind(Uuid::new_v4())
+        .bind(admin_id)
+        .bind("PENDAFTARAN_OFFLINE")
+        .bind("pendaftar")
+        .bind(pendaftar.id)
+        .bind(serde_json::json!({
+            "nomor_pendaftaran": nomor_pendaftaran,
+            "email": req.email,
+            "nama_lengkap": req.nama_lengkap,
+            "lunas_loket": req.lunas_loket,
+        }))
+        .execute(self.repo.pool())
+        .await;
+
+        // 10. Enqueue email kredensial akun jika user baru dibuat
+        let email_repo = EmailQueueRepository::new(self.repo.pool().clone());
+        let (email_text, email_html) = if let Some(ref pwd) = temp_password {
+            (
+                format!(
+                    "Halo {},\n\nAkun PMB Anda telah didaftarkan melalui loket pendaftaran offline dengan Nomor Pendaftaran: {}.\nEmail: {}\nPassword Sementara: {}\nSilakan login ke portal PMB untuk memantau status seleksi dan mengunduh Kartu Peserta Ujian.",
+                    req.nama_lengkap, nomor_pendaftaran, req.email, pwd
+                ),
+                format!(
+                    "<p>Halo <strong>{}</strong>,</p><p>Akun PMB Anda telah didaftarkan melalui loket pendaftaran offline dengan Nomor Pendaftaran: <strong>{}</strong>.</p><p>Email: <code>{}</code><br/>Password Sementara: <code>{}</code></p><p>Silakan login ke portal PMB untuk memantau status seleksi dan mengunduh Kartu Peserta Ujian.</p>",
+                    req.nama_lengkap, nomor_pendaftaran, req.email, pwd
+                ),
+            )
+        } else {
+            (
+                format!(
+                    "Halo {},\n\nPendaftaran PMB Anda telah berhasil diproses melalui loket offline dengan Nomor Pendaftaran: {}.\nSilakan login ke portal PMB untuk memeriksa dokumen dan status seleksi.",
+                    req.nama_lengkap, nomor_pendaftaran
+                ),
+                format!(
+                    "<p>Halo <strong>{}</strong>,</p><p>Pendaftaran PMB Anda telah berhasil diproses melalui loket offline dengan Nomor Pendaftaran: <strong>{}</strong>.</p><p>Silakan login ke portal PMB untuk memeriksa dokumen dan status seleksi.</p>",
+                    req.nama_lengkap, nomor_pendaftaran
+                ),
+            )
+        };
+
+        let _ = email_repo
+            .enqueue(
+                &req.email,
+                &req.nama_lengkap,
+                "Informasi Pendaftaran PMB Loket Offline",
+                &email_text,
+                &email_html,
+                "KREDENSIAL_OFFLINE",
+                Some(pendaftar.id),
+            )
+            .await;
+
+        let cetak_bukti_url = format!("/api/pendaftaran/{}/cetak/bukti-pendaftaran", pendaftar.id);
+        let cetak_kartu_url = format!("/api/pendaftaran/{}/cetak/kartu-peserta", pendaftar.id);
+
+        Ok(PendaftaranOfflineResponse {
+            pendaftar_id: pendaftar.id,
+            nomor_pendaftaran,
+            user_id: calon_user_id,
+            email: req.email,
+            temporary_password: temp_password,
+            status_pendaftaran: pendaftar.status_pendaftaran,
+            is_lunas_loket: req.lunas_loket,
+            nomor_tagihan,
+            cetak_bukti_url,
+            cetak_kartu_url,
+        })
+    }
+
+    pub async fn get_dashboard_summary(
+        &self,
+        user_id: Uuid,
+    ) -> Result<DashboardSummaryResponse, AppError> {
+        self.repo.get_dashboard_summary(user_id).await
+    }
+
+    pub async fn generate_bukti_pdf(
+        &self,
+        user_id: Uuid,
+        can_access_all: bool,
+        pendaftar_id: Uuid,
+    ) -> Result<Vec<u8>, AppError> {
+        let pendaftar =
+            self.repo.find_by_id(pendaftar_id).await?.ok_or_else(|| {
+                AppError::NotFound("Data pendaftaran tidak ditemukan".to_string())
+            })?;
+
+        if !can_access_all {
+            if pendaftar.user_id != user_id {
+                return Err(AppError::Forbidden(
+                    "Anda tidak berhak mengakses dokumen pendaftaran ini".to_string(),
+                ));
+            }
+            if pendaftar.status_pendaftaran == "DRAFT" && pendaftar.channel != "offline" {
+                return Err(AppError::BadRequest(
+                    "Bukti Pendaftaran baru dapat diunduh setelah berkas pendaftaran Anda diajukan (bukan draf)".to_string(),
+                ));
+            }
+        }
+
+        let data = self.repo.get_pendaftar_pdf_data(pendaftar_id).await?;
+        let qr_payload = format!(
+            "VERIFIED-PMB|NO:{}|NIK:{}|STATUS:{}",
+            data.nomor_pendaftaran, data.nik, data.status_pendaftaran
+        );
+
+        Ok(pdf::generate_bukti_pendaftaran_pdf(&data, &qr_payload))
+    }
+
+    pub async fn generate_kartu_pdf(
+        &self,
+        user_id: Uuid,
+        can_access_all: bool,
+        pendaftar_id: Uuid,
+    ) -> Result<Vec<u8>, AppError> {
+        let pendaftar =
+            self.repo.find_by_id(pendaftar_id).await?.ok_or_else(|| {
+                AppError::NotFound("Data pendaftaran tidak ditemukan".to_string())
+            })?;
+
+        if !can_access_all {
+            if pendaftar.user_id != user_id {
+                return Err(AppError::Forbidden(
+                    "Anda tidak berhak mengakses dokumen ujian ini".to_string(),
+                ));
+            }
+            if pendaftar.channel != "offline" {
+                let is_paid: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM pembayaran WHERE pendaftar_id = $1 AND jenis_tagihan = 'FORMULIR' AND status_pembayaran = 'LUNAS')"
+                )
+                .bind(pendaftar.id)
+                .fetch_one(self.repo.pool())
+                .await?;
+
+                if !is_paid {
+                    return Err(AppError::Forbidden(
+                        "Kartu Peserta Ujian hanya dapat dicetak setelah tagihan biaya formulir diverifikasi lunas".to_string(),
+                    ));
+                }
+            }
+        }
+
+        let data = self.repo.get_pendaftar_pdf_data(pendaftar_id).await?;
+        let jadwal = self.repo.get_jadwal_ujian_pdf(pendaftar_id).await?;
+
+        let qr_payload = format!(
+            "KARTU-UJIAN-PMB|NO:{}|NAMA:{}|TGL:{}",
+            data.nomor_pendaftaran, data.nama_lengkap, data.tanggal_cetak
+        );
+
+        Ok(pdf::generate_kartu_peserta_pdf(
+            &data,
+            jadwal.as_ref(),
+            &qr_payload,
+        ))
     }
 }

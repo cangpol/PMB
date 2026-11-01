@@ -14,6 +14,13 @@ import {
   Layers,
   LogOut,
   Shield,
+  UserPlus,
+  Tv,
+  UserCheck,
+  HelpCircle,
+  FileText,
+  Image,
+  FileCode,
 } from "lucide-react";
 import { useAuth } from "@/context";
 import logoPlaceholder from "../../assets/logo-placeholder.svg";
@@ -35,6 +42,11 @@ export const AdminLayout: React.FC = () => {
       icon: <LayoutDashboard className="w-4 h-4" />,
     },
     {
+      label: "Pendaftaran Offline Loket",
+      path: "/admin/pendaftaran-offline",
+      icon: <UserPlus className="w-4 h-4" />,
+    },
+    {
       label: "Verifikasi Berkas PMB",
       path: "/admin/berkas",
       icon: <FileCheck2 className="w-4 h-4" />,
@@ -45,9 +57,68 @@ export const AdminLayout: React.FC = () => {
       icon: <CreditCard className="w-4 h-4" />,
     },
     {
-      label: "Seleksi Kelulusan & NIM",
+      label: "Seleksi Kelulusan",
       path: "/admin/seleksi",
       icon: <GraduationCap className="w-4 h-4" />,
+    },
+    {
+      label: "Verifikasi Daftar Ulang",
+      path: "/admin/daftar-ulang",
+      icon: <FileCheck2 className="w-4 h-4" />,
+    },
+  ];
+
+  const cbtItems = [
+    {
+      label: "Jadwal & Sesi CBT",
+      path: "/admin/cbt/sesi",
+      icon: <Tv className="w-4 h-4" />,
+    },
+    {
+      label: "Meja Presensi Pengawas",
+      path: "/admin/cbt/presensi",
+      icon: <UserCheck className="w-4 h-4" />,
+    },
+    {
+      label: "Bank Soal CBT",
+      path: "/admin/cbt/bank-soal",
+      icon: <HelpCircle className="w-4 h-4" />,
+    },
+  ];
+
+  const rplItems = [
+    {
+      label: "Evaluasi & Konversi RPL",
+      path: "/admin/rpl",
+      icon: <FileCheck2 className="w-4 h-4" />,
+    },
+    {
+      label: "Kurikulum Mata Kuliah RPL",
+      path: "/admin/rpl/mata-kuliah",
+      icon: <BookOpen className="w-4 h-4" />,
+    },
+  ];
+
+  const cmsItems = [
+    {
+      label: "Berita & Pengumuman",
+      path: "/admin/cms/berita",
+      icon: <FileText className="w-4 h-4" />,
+    },
+    {
+      label: "Banner Slider Beranda",
+      path: "/admin/cms/banner",
+      icon: <Image className="w-4 h-4" />,
+    },
+    {
+      label: "FAQ Pertanyaan Umum",
+      path: "/admin/cms/faq",
+      icon: <HelpCircle className="w-4 h-4" />,
+    },
+    {
+      label: "Halaman & Kebijakan",
+      path: "/admin/cms/halaman",
+      icon: <FileCode className="w-4 h-4" />,
     },
   ];
 
@@ -171,6 +242,117 @@ export const AdminLayout: React.FC = () => {
               ))}
             </nav>
           </div>
+
+          {/* Kelompok: CBT & Presensi Ujian */}
+          {(isAdmin || user?.role === "pengawas_ujian") && (
+            <div className="bg-putih border border-biru-200 rounded-2xl p-4 shadow-xs space-y-3">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-bold text-biru-800 uppercase tracking-wider">
+                  CBT & Presensi Ujian
+                </span>
+                <p className="text-[11px] text-biru-900">
+                  Sesi, meja pengawas & soal
+                </p>
+              </div>
+
+              <nav className="space-y-1">
+                {cbtItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      isActive(item.path)
+                        ? "bg-biru-700 text-putih shadow-xs"
+                        : "text-biru-900 hover:bg-biru-50 hover:text-biru-950"
+                    }`}
+                  >
+                    <span
+                      className={
+                        isActive(item.path) ? "text-putih" : "text-biru-700"
+                      }
+                    >
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
+
+          {/* Kelompok: Rekognisi Pembelajaran Lampau (RPL) */}
+          {(isAdmin || user?.role === "asesor_rpl") && (
+            <div className="bg-putih border border-biru-200 rounded-2xl p-4 shadow-xs space-y-3">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-bold text-biru-800 uppercase tracking-wider">
+                  Jalur Rekognisi (RPL)
+                </span>
+                <p className="text-[11px] text-biru-900">
+                  Asesmen portofolio & konversi SKS
+                </p>
+              </div>
+
+              <nav className="space-y-1">
+                {rplItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      isActive(item.path)
+                        ? "bg-biru-700 text-putih shadow-xs"
+                        : "text-biru-900 hover:bg-biru-50 hover:text-biru-950"
+                    }`}
+                  >
+                    <span
+                      className={
+                        isActive(item.path) ? "text-putih" : "text-biru-700"
+                      }
+                    >
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
+
+          {/* Kelompok: CMS & Konten Publik */}
+          {isAdmin && (
+            <div className="bg-putih border border-biru-200 rounded-2xl p-4 shadow-xs space-y-3">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-bold text-biru-800 uppercase tracking-wider">
+                  CMS &amp; Konten Publik
+                </span>
+                <p className="text-[11px] text-biru-900">
+                  Berita, banner, FAQ &amp; halaman
+                </p>
+              </div>
+
+              <nav className="space-y-1">
+                {cmsItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      isActive(item.path)
+                        ? "bg-biru-700 text-putih shadow-xs"
+                        : "text-biru-900 hover:bg-biru-50 hover:text-biru-950"
+                    }`}
+                  >
+                    <span
+                      className={
+                        isActive(item.path) ? "text-putih" : "text-biru-700"
+                      }
+                    >
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
 
           {/* Kelompok 2: Konfigurasi PMB (Hanya untuk Admin PMB / Super Admin) */}
           {isAdmin && (

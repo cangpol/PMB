@@ -285,3 +285,78 @@ pub struct PendaftarDetailResponse {
     pub berkas: Vec<BerkasResponse>,
     pub created_at: DateTime<Utc>,
 }
+
+// ==========================================
+// 6. DTO ALUR PENDAFTARAN WIZARD & OFFLINE
+// ==========================================
+
+#[derive(Clone, Debug, Serialize, Deserialize, Validate, ToSchema)]
+pub struct PilihProdiRequest {
+    pub jalur_id: Uuid,
+    pub gelombang_id: Uuid,
+    pub prodi_pilihan_1: Uuid,
+    pub prodi_pilihan_2: Option<Uuid>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Validate, ToSchema)]
+pub struct PendaftaranOfflineRequest {
+    #[validate(length(min = 2, message = "Nama lengkap wajib diisi"))]
+    pub nama_lengkap: String,
+    #[validate(email(message = "Format email tidak valid"))]
+    pub email: String,
+    #[validate(length(min = 9, message = "Nomor HP minimal 9 digit"))]
+    pub no_hp: String,
+    #[validate(length(equal = 16, message = "NIK harus 16 digit"))]
+    pub nik: String,
+    #[validate(length(min = 2, message = "Tempat lahir wajib diisi"))]
+    pub tempat_lahir: String,
+    pub tgl_lahir: NaiveDate,
+    pub jenis_kelamin: String,
+    pub agama: String,
+    pub alamat_lengkap: String,
+    pub nama_ortu: String,
+    pub no_hp_ortu: String,
+    pub asal_sekolah: String,
+    pub jurusan_sekolah: String,
+    pub nilai_rapor_avg: Option<f64>,
+    pub jalur_id: Uuid,
+    pub gelombang_id: Uuid,
+    pub prodi_pilihan_1: Uuid,
+    pub prodi_pilihan_2: Option<Uuid>,
+    pub lunas_loket: bool,
+    pub catatan_loket: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
+pub struct PendaftaranOfflineResponse {
+    pub pendaftar_id: Uuid,
+    pub nomor_pendaftaran: String,
+    pub user_id: Uuid,
+    pub email: String,
+    pub temporary_password: Option<String>,
+    pub status_pendaftaran: String,
+    pub is_lunas_loket: bool,
+    pub nomor_tagihan: Option<String>,
+    pub cetak_bukti_url: String,
+    pub cetak_kartu_url: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
+pub struct DashboardSummaryResponse {
+    pub pendaftar_id: Option<Uuid>,
+    pub nomor_pendaftaran: Option<String>,
+    pub status_pendaftaran: String,
+    pub jalur_nama: Option<String>,
+    pub gelombang_nama: Option<String>,
+    pub prodi_1_nama: Option<String>,
+    pub prodi_2_nama: Option<String>,
+    pub tagihan_lunas: bool,
+    pub nomor_tagihan: Option<String>,
+    pub nominal_tagihan: Option<i64>,
+    pub jadwal_ujian: Option<String>,
+    pub lokasi_ujian: Option<String>,
+    pub pengumuman_status: Option<String>,
+    pub nim_resmi: Option<String>,
+    pub bisa_cetak_bukti: bool,
+    pub bisa_cetak_kartu: bool,
+}

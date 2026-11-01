@@ -8,6 +8,7 @@ import {
   Phone,
   MapPin,
   ExternalLink,
+  GraduationCap,
 } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Drawer } from "../ui/Drawer";
@@ -23,9 +24,12 @@ interface NavLinkItem {
 const NAV_LINKS: NavLinkItem[] = [
   { label: "Beranda", href: "/" },
   { label: "Jalur Masuk", href: "/jalur-masuk" },
-  { label: "Biaya & Beasiswa", href: "/biaya" },
-  { label: "Jadwal Seleksi", href: "/jadwal" },
-  { label: "Informasi Kontak", href: "/kontak" },
+  { label: "Program Studi", href: "/prodi" },
+  { label: "Biaya & UKT", href: "/biaya" },
+  { label: "Jadwal", href: "/jadwal" },
+  { label: "Pengumuman", href: "/pengumuman" },
+  { label: "FAQ", href: "/faq" },
+  { label: "Kontak", href: "/kontak" },
 ];
 
 export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
@@ -45,30 +49,44 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
       </a>
 
       {/* Top Banner Akademik */}
-      <div className="border-b border-biru-800 bg-biru-950 px-4 py-2 text-xs text-biru-200">
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between">
+      <div className="border-b border-biru-900 bg-biru-950 px-4 py-2 text-xs text-biru-200">
+        <div className="mx-auto flex max-w-[1240px] items-center justify-between">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-biru-500" />
-            <span>
-              Penerimaan Mahasiswa Baru Tahun Akademik 2026/2027 Telah Dibuka
+            <ShieldCheck className="h-4 w-4 text-biru-400" />
+            <span className="font-medium">
+              PMB Tahun Akademik 2026/2027 Telah Dibuka Resmi &middot; Beasiswa
+              Unggulan Triputra Group
             </span>
           </div>
-          <div className="hidden sm:flex items-center gap-4 text-biru-200">
-            <span className="flex items-center gap-1.5">
-              <Phone className="h-3.5 w-3.5 text-biru-500" />
-              (0274) 888-999
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Mail className="h-3.5 w-3.5 text-biru-500" />
-              pmb@pignatelli.ac.id
-            </span>
+          <div className="hidden md:flex items-center gap-6 text-biru-200">
+            <a
+              href="tel:+6281234567890"
+              className="flex items-center gap-1.5 hover:text-putih transition-colors"
+            >
+              <Phone className="h-3.5 w-3.5 text-biru-400" />
+              <span>+62 812-3456-7890</span>
+            </a>
+            <a
+              href="mailto:pmb@upitra.ac.id"
+              className="flex items-center gap-1.5 hover:text-putih transition-colors"
+            >
+              <Mail className="h-3.5 w-3.5 text-biru-400" />
+              <span>pmb@upitra.ac.id</span>
+            </a>
+            <Link
+              to="/cek-kelulusan"
+              className="inline-flex items-center gap-1 font-semibold text-biru-300 hover:text-putih transition-colors underline underline-offset-4"
+            >
+              <GraduationCap className="h-3.5 w-3.5" />
+              <span>Cek Kelulusan</span>
+            </Link>
           </div>
         </div>
       </div>
 
       {/* Header & Sticky Navbar */}
       <header className="sticky top-0 z-40 border-b border-biru-100 bg-putih/95 backdrop-blur-md transition-all shadow-soft-sm">
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-[1240px] items-center justify-between px-4 py-3 sm:px-6">
           {/* Logo Brand */}
           <Link
             to="/"
@@ -78,24 +96,27 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
             <img
               src={logoSvg}
               alt="Logo Universitas Pignatelli Triputra"
-              className="h-10 sm:h-12 w-auto object-contain"
+              className="h-10 sm:h-11 w-auto object-contain"
             />
           </Link>
 
           {/* Desktop Navigation Links */}
           <nav
             aria-label="Navigasi Utama"
-            className="hidden lg:flex items-center gap-6 text-sm font-medium text-biru-800"
+            className="hidden xl:flex items-center gap-5 text-sm font-medium text-biru-800"
           >
             {NAV_LINKS.map((link) => {
-              const isActive = location.pathname === link.href;
+              const isActive =
+                link.href === "/"
+                  ? location.pathname === "/"
+                  : location.pathname.startsWith(link.href);
               return (
                 <Link
                   key={link.href}
                   to={link.href}
-                  className={`transition-colors hover:text-biru-950 ${
+                  className={`transition-colors hover:text-biru-950 py-1 ${
                     isActive
-                      ? "font-semibold text-biru-950 underline underline-offset-8 decoration-biru-600 decoration-2"
+                      ? "font-bold text-biru-950 border-b-2 border-biru-700"
                       : ""
                   }`}
                 >
@@ -106,7 +127,12 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
           </nav>
 
           {/* Action Buttons (Desktop) */}
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2.5">
+            <Link to="/cek-kelulusan" className="hidden lg:inline-block">
+              <Button variant="outline" size="sm" className="text-xs">
+                Cek Kelulusan
+              </Button>
+            </Link>
             <Link to="/login">
               <Button variant="ghost" size="sm">
                 Masuk
@@ -124,7 +150,12 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="flex sm:hidden items-center">
+          <div className="flex xl:hidden items-center gap-2">
+            <Link to="/register" className="sm:hidden">
+              <Button variant="primary" size="sm">
+                Daftar
+              </Button>
+            </Link>
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
@@ -142,20 +173,23 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
         side="right"
-        title="Menu Utama PMB"
+        title="Menu Navigasi PMB"
       >
-        <div className="flex flex-col gap-6 py-2">
+        <div className="flex flex-col gap-5 py-2">
           <nav aria-label="Navigasi Mobile" className="flex flex-col gap-1">
             {NAV_LINKS.map((link) => {
-              const isActive = location.pathname === link.href;
+              const isActive =
+                link.href === "/"
+                  ? location.pathname === "/"
+                  : location.pathname.startsWith(link.href);
               return (
                 <Link
                   key={link.href}
                   to={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between rounded-xl px-4 py-3 text-base font-medium transition-colors ${
+                  className={`flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
                     isActive
-                      ? "bg-biru-100 font-semibold text-biru-950"
+                      ? "bg-biru-100 font-bold text-biru-950"
                       : "text-biru-800 hover:bg-biru-50 hover:text-biru-950"
                   }`}
                 >
@@ -164,9 +198,20 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
                 </Link>
               );
             })}
+            <Link
+              to="/cek-kelulusan"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-biru-900 bg-biru-50 border border-biru-200 mt-1"
+            >
+              <span className="flex items-center gap-2 font-semibold">
+                <GraduationCap className="h-4 w-4 text-biru-600" />
+                Cek Status Kelulusan
+              </span>
+              <ArrowRight className="h-4 w-4 text-biru-500" />
+            </Link>
           </nav>
 
-          <div className="border-t border-biru-100 pt-4 flex flex-col gap-3">
+          <div className="border-t border-biru-100 pt-4 flex flex-col gap-2.5">
             <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="outline" className="w-full">
                 Masuk ke Akun
@@ -179,10 +224,11 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
             </Link>
           </div>
 
-          <div className="mt-4 rounded-xl border border-biru-200 bg-biru-50 p-4 text-xs text-biru-800">
+          <div className="rounded-xl border border-biru-200 bg-biru-50 p-4 text-xs text-biru-800 space-y-1.5">
             <p className="font-semibold text-biru-950">Layanan Informasi PMB</p>
-            <p className="mt-1">Senin - Jumat: 08.00 - 16.00 WIB</p>
-            <p className="mt-1 font-medium text-biru-700">
+            <p>Senin &ndash; Jumat: 08.00 &ndash; 16.00 WIB</p>
+            <p>Sabtu: 08.00 &ndash; 13.00 WIB</p>
+            <p className="font-medium text-biru-700">
               WhatsApp: +62 812-3456-7890
             </p>
           </div>
@@ -195,151 +241,187 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
       </main>
 
       {/* Comprehensive Academic Footer */}
-      <footer className="border-t border-biru-200 bg-biru-50 pt-12 pb-8 text-biru-800">
-        <div className="mx-auto max-w-[1200px] px-4 sm:px-6">
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-4 lg:gap-12">
+      <footer className="border-t border-biru-200 bg-biru-950 text-biru-200 pt-14 pb-8">
+        <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-4 lg:gap-12">
             {/* Col 1: Campus Identity */}
-            <div className="md:col-span-1 space-y-4">
-              <img
-                src={logoSvg}
-                alt="Logo Universitas Pignatelli Triputra"
-                className="h-10 w-auto object-contain"
-              />
-              <p className="text-sm leading-relaxed text-biru-700">
-                Lembaga pendidikan tinggi unggul berlandaskan integritas,
-                inovasi, dan kepemimpinan transformatif demi masa depan bangsa.
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-biru-800 flex items-center justify-center text-putih font-serif font-bold text-xl shadow-soft-sm">
+                  U
+                </div>
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-putih tracking-wide">
+                    UNIVERSITAS PIGNATELLI TRIPUTRA
+                  </h3>
+                  <p className="text-xs text-biru-400 font-sans">
+                    Unggul, Berintegritas, Inovatif
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs leading-relaxed text-biru-300">
+                Pendidikan tinggi berbasis karakter, teknologi terapan, dan
+                kemitraan strategis dengan industri Triputra Group untuk
+                mencetak pemimpin masa depan berdaya saing global.
               </p>
+              <div className="pt-2 text-xs text-biru-400">
+                <p className="font-semibold text-putih">Akreditasi Institusi</p>
+                <p>Terakreditasi Baik Sekali oleh BAN-PT</p>
+              </div>
             </div>
 
-            {/* Col 2: Jalur Masuk */}
+            {/* Col 2: Jalur Masuk & Program */}
             <div className="space-y-3">
-              <h4 className="font-serif text-base font-semibold text-biru-950">
-                Jalur Seleksi
+              <h4 className="font-serif text-sm font-bold uppercase tracking-wider text-putih border-b border-biru-800 pb-2">
+                Jalur Penerimaan
               </h4>
-              <ul className="space-y-2 text-sm text-biru-700">
+              <ul className="space-y-2 text-xs text-biru-300">
                 <li>
                   <Link
-                    to="/jalur-masuk#prestasi"
-                    className="hover:text-biru-950 hover:underline"
+                    to="/jalur-masuk#reguler"
+                    className="hover:text-putih transition-colors"
                   >
-                    Jalur Prestasi Unggul
+                    Jalur Reguler (Tes CBT Mandiri)
                   </Link>
                 </li>
                 <li>
                   <Link
-                    to="/jalur-masuk#reguler"
-                    className="hover:text-biru-950 hover:underline"
+                    to="/jalur-masuk#prestasi"
+                    className="hover:text-putih transition-colors"
                   >
-                    Jalur Reguler / Ujian Mandiri
+                    Jalur Prestasi Rapor & Kejuaraan
                   </Link>
                 </li>
                 <li>
                   <Link
                     to="/jalur-masuk#beasiswa"
-                    className="hover:text-biru-950 hover:underline"
+                    className="hover:text-putih transition-colors"
                   >
-                    Program Beasiswa Triputra
+                    Beasiswa Kemitraan Triputra
                   </Link>
                 </li>
                 <li>
                   <Link
-                    to="/jalur-masuk#alih-jenjang"
-                    className="hover:text-biru-950 hover:underline"
+                    to="/jalur-masuk#rpl"
+                    className="hover:text-putih transition-colors"
                   >
-                    Jalur Alih Jenjang & Transfer
+                    Rekognisi Pembelajaran Lampau (RPL)
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/prodi"
+                    className="hover:text-putih transition-colors font-medium text-biru-400"
+                  >
+                    Lihat Semua Program Studi &rarr;
                   </Link>
                 </li>
               </ul>
             </div>
 
-            {/* Col 3: Layanan & Informasi */}
+            {/* Col 3: Informasi & Layanan Calon */}
             <div className="space-y-3">
-              <h4 className="font-serif text-base font-semibold text-biru-950">
-                Informasi & Bantuan
+              <h4 className="font-serif text-sm font-bold uppercase tracking-wider text-putih border-b border-biru-800 pb-2">
+                Informasi Penting
               </h4>
-              <ul className="space-y-2 text-sm text-biru-700">
+              <ul className="space-y-2 text-xs text-biru-300">
                 <li>
                   <Link
                     to="/biaya"
-                    className="hover:text-biru-950 hover:underline"
+                    className="hover:text-putih transition-colors"
                   >
-                    Biaya Kuliah & Simulasi
+                    Biaya Kuliah & Kalkulator UKT
                   </Link>
                 </li>
                 <li>
                   <Link
                     to="/jadwal"
-                    className="hover:text-biru-950 hover:underline"
+                    className="hover:text-putih transition-colors"
                   >
-                    Jadwal & Batas Pendaftaran
+                    Jadwal Gelombang Seleksi
                   </Link>
                 </li>
                 <li>
                   <Link
-                    to="/panduan"
-                    className="hover:text-biru-950 hover:underline"
+                    to="/pengumuman"
+                    className="hover:text-putih transition-colors"
                   >
-                    Buku Panduan Pendaftaran
+                    Berita & Pengumuman PMB
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/cek-kelulusan"
+                    className="hover:text-putih transition-colors"
+                  >
+                    Cek Hasil Kelulusan Seleksi
                   </Link>
                 </li>
                 <li>
                   <Link
                     to="/faq"
-                    className="hover:text-biru-950 hover:underline"
+                    className="hover:text-putih transition-colors"
                   >
-                    Tanya Jawab (FAQ)
+                    Pertanyaan Umum (FAQ)
                   </Link>
                 </li>
               </ul>
             </div>
 
-            {/* Col 4: Kontak Sekretariat PMB */}
+            {/* Col 4: Sekretariat PMB */}
             <div className="space-y-3">
-              <h4 className="font-serif text-base font-semibold text-biru-950">
+              <h4 className="font-serif text-sm font-bold uppercase tracking-wider text-putih border-b border-biru-800 pb-2">
                 Sekretariat PMB
               </h4>
-              <div className="space-y-2 text-sm text-biru-700">
+              <div className="space-y-2.5 text-xs text-biru-300">
                 <div className="flex items-start gap-2.5">
-                  <MapPin className="h-4 w-4 shrink-0 text-biru-600 mt-0.5" />
+                  <MapPin className="h-4 w-4 shrink-0 text-biru-400 mt-0.5" />
                   <span>
-                    Jl. Affandi No. 12, Gejayan, Sleman, D.I. Yogyakarta 55281
+                    Jl. K.S. Tubun No. 2, Manahan, Banjarsari, Kota Surakarta,
+                    Jawa Tengah 57139
                   </span>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <Phone className="h-4 w-4 shrink-0 text-biru-600" />
-                  <span>(0274) 888-999 / +62 812-3456-7890</span>
+                  <Phone className="h-4 w-4 shrink-0 text-biru-400" />
+                  <span>+62 812-3456-7890 (WhatsApp Hotline)</span>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <Mail className="h-4 w-4 shrink-0 text-biru-600" />
-                  <span>pmb@pignatelli.ac.id</span>
+                  <Mail className="h-4 w-4 shrink-0 text-biru-400" />
+                  <span>pmb@upitra.ac.id</span>
+                </div>
+                <div className="pt-2">
+                  <p className="text-[11px] text-biru-400">Jam Operasional:</p>
+                  <p className="text-xs">
+                    Senin &ndash; Jumat: 08.00 &ndash; 16.00 WIB
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Bottom Copyright & Disclaimer */}
-          <div className="mt-12 border-t border-biru-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-biru-600">
+          <div className="mt-12 border-t border-biru-800/80 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-biru-400">
             <p>
               &copy; {CURRENT_YEAR} Universitas Pignatelli Triputra. Hak Cipta
               Dilindungi Undang-Undang.
             </p>
-            <div className="flex items-center gap-6 text-biru-700">
+            <div className="flex items-center gap-6 text-biru-300">
               <Link
                 to="/kebijakan-privasi"
-                className="hover:text-biru-950 hover:underline"
+                className="hover:text-putih hover:underline transition-colors"
               >
                 Kebijakan Privasi
               </Link>
               <Link
                 to="/syarat-ketentuan"
-                className="hover:text-biru-950 hover:underline"
+                className="hover:text-putih hover:underline transition-colors"
               >
                 Syarat & Ketentuan
               </Link>
               {import.meta.env.DEV && (
                 <Link
                   to="/styleguide"
-                  className="inline-flex items-center gap-1 font-semibold text-biru-600 hover:text-biru-950 hover:underline"
+                  className="inline-flex items-center gap-1 font-semibold text-biru-400 hover:text-putih hover:underline"
                 >
                   <ExternalLink className="h-3 w-3" />
                   Styleguide (Dev)

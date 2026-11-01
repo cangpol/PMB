@@ -1,3 +1,4 @@
+use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -5,11 +6,15 @@ use crate::{
     error::AppError,
     modules::{
         dashboard::dto::{
-            AdminDashboardResponse, CalonDashboardResponse, FunnelStat, ProdiStat, StepperStep,
+            AdminDashboardResponse, CalonDashboardResponse, DashboardFilterQuery,
+            DistribusiJalurStat, DistribusiProdiStat, ExecutiveDashboardResponse, FunnelStat,
+            ProdiStat, StatusPendaftaranStat, StepperStep, TrenHarianStat,
         },
         pendaftaran::repository::PendaftaranRepository,
     },
 };
+
+type RawProdiRow = (Uuid, String, String, String, i32, i64, i64, i64);
 
 #[derive(Clone)]
 pub struct DashboardService {
@@ -245,18 +250,14 @@ impl DashboardService {
         let funnel_tahapan = vec![
             FunnelStat {
                 tahapan: "1. Akun Terdaftar".to_string(),
-                jumlah: total_pendaftar.0 + 10,
-            },
-            FunnelStat {
-                tahapan: "2. Formulir Terisi".to_string(),
                 jumlah: total_pendaftar.0,
             },
             FunnelStat {
-                tahapan: "3. Berkas Lengkap".to_string(),
+                tahapan: "2. Berkas Valid".to_string(),
                 jumlah: total_berkas.0,
             },
             FunnelStat {
-                tahapan: "4. Lulus Seleksi".to_string(),
+                tahapan: "3. Lulus Seleksi".to_string(),
                 jumlah: total_lulus.0,
             },
         ];
@@ -270,4 +271,466 @@ impl DashboardService {
             funnel_tahapan,
         })
     }
+
+    // =========================================================================
+    // EXECUTIVE ANALYTICS DASHBOARD
+    // =========================================================================
+
+    pub async fn get_executive_dashboard(
+        &self,
+        filter: &DashboardFilterQuery,
+    ) -> Result<ExecutiveDashboardResponse, AppError> {
+        let (start_dt, end_dt) =
+            parse_date_filters(filter.start_date.as_deref(), filter.end_date.as_deref());
+
+        // 1. KPI Counts
+        let total_pendaftar: (i64,) = sqlx::query_as(
+            "SELECT COALESCE(COUNT(p.id), 0)
+             FROM pendaftar p
+             WHERE ($1::uuid IS NULL OR p.gelombang_id = $1)
+               AND ($2::uuid IS NULL OR p.jalur_id = $2)
+               AND ($3::timestamptz IS NULL OR p.created_at >= $3)
+               AND ($4::timestamptz IS NULL OR p.created_at <= $4)",
+        )
+        .bind(filter.gelombang_id)
+        .bind(filter.jalur_id)
+        .bind(start_dt)
+        .bind(end_dt)
+        .fetch_one(&self.pool)
+        .await?;
+
+        let total_berkas: (i64,) = sqlx::query_as(
+            "SELECT COALESCE(COUNT(DISTINCT p.id), 0)
+             FROM pendaftar p
+             JOIN berkas_pendaftar b ON b.pendaftar_id = p.id
+             WHERE b.status_verifikasi = 'VALID'
+               AND ($1::uuid IS NULL OR p.gelombang_id = $1)
+               AND ($2::uuid IS NULL OR p.jalur_id = $2)
+               AND ($3::timestamptz IS NULL OR p.created_at >= $3)
+               AND ($4::timestamptz IS NULL OR p.created_at <= $4)",
+        )
+        .bind(filter.gelombang_id)
+        .bind(filter.jalur_id)
+        .bind(start_dt)
+        .bind(end_dt)
+        .fetch_one(&self.pool)
+        .await?;
+
+        let total_ujian: (i64,) = sqlx::query_as(
+            "SELECT COALESCE(COUNT(DISTINCT p.id), 0)
+             FROM pendaftar p
+             JOIN peserta_ujian u ON u.pendaftar_id = p.id
+             WHERE u.waktu_selesai IS NOT NULL
+               AND ($1::uuid IS NULL OR p.gelombang_id = $1)
+               AND ($2::uuid IS NULL OR p.jalur_id = $2)
+               AND ($3::timestamptz IS NULL OR p.created_at >= $3)
+               AND ($4::timestamptz IS NULL OR p.created_at <= $4)",
+        )
+        .bind(filter.gelombang_id)
+        .bind(filter.jalur_id)
+        .bind(start_dt)
+        .bind(end_dt)
+        .fetch_one(&self.pool)
+        .await?;
+
+        let total_lulus: (i64,) = sqlx::query_as(
+            "SELECT COALESCE(COUNT(DISTINCT p.id), 0)
+             FROM pendaftar p
+             JOIN hasil_kelulusan h ON h.pendaftar_id = p.id
+             WHERE h.status_kelulusan LIKE 'LULUS%'
+               AND ($1::uuid IS NULL OR p.gelombang_id = $1)
+               AND ($2::uuid IS NULL OR p.jalur_id = $2)
+               AND ($3::timestamptz IS NULL OR p.created_at >= $3)
+               AND ($4::timestamptz IS NULL OR p.created_at <= $4)",
+        )
+        .bind(filter.gelombang_id)
+        .bind(filter.jalur_id)
+        .bind(start_dt)
+        .bind(end_dt)
+        .fetch_one(&self.pool)
+        .await?;
+
+        let total_nim: (i64,) = sqlx::query_as(
+            "SELECT COALESCE(COUNT(DISTINCT p.id), 0)
+             FROM pendaftar p
+             JOIN hasil_kelulusan h ON h.pendaftar_id = p.id
+             WHERE h.nim_resmi IS NOT NULL
+               AND ($1::uuid IS NULL OR p.gelombang_id = $1)
+               AND ($2::uuid IS NULL OR p.jalur_id = $2)
+               AND ($3::timestamptz IS NULL OR p.created_at >= $3)
+               AND ($4::timestamptz IS NULL OR p.created_at <= $4)",
+        )
+        .bind(filter.gelombang_id)
+        .bind(filter.jalur_id)
+        .bind(start_dt)
+        .bind(end_dt)
+        .fetch_one(&self.pool)
+        .await?;
+
+        let total_dana_lunas: (i64,) = sqlx::query_as(
+            "SELECT COALESCE(SUM(pb.nominal_akhir), 0)
+             FROM pembayaran pb
+             JOIN pendaftar p ON p.id = pb.pendaftar_id
+             WHERE pb.status_pembayaran = 'LUNAS'
+               AND ($1::uuid IS NULL OR p.gelombang_id = $1)
+               AND ($2::uuid IS NULL OR p.jalur_id = $2)
+               AND ($3::timestamptz IS NULL OR p.created_at >= $3)
+               AND ($4::timestamptz IS NULL OR p.created_at <= $4)",
+        )
+        .bind(filter.gelombang_id)
+        .bind(filter.jalur_id)
+        .bind(start_dt)
+        .bind(end_dt)
+        .fetch_one(&self.pool)
+        .await?;
+
+        let total_dana_piutang: (i64,) = sqlx::query_as(
+            "SELECT COALESCE(SUM(pb.nominal_akhir), 0)
+             FROM pembayaran pb
+             JOIN pendaftar p ON p.id = pb.pendaftar_id
+             WHERE pb.status_pembayaran = 'MENUNGGU_PEMBAYARAN'
+               AND ($1::uuid IS NULL OR p.gelombang_id = $1)
+               AND ($2::uuid IS NULL OR p.jalur_id = $2)
+               AND ($3::timestamptz IS NULL OR p.created_at >= $3)
+               AND ($4::timestamptz IS NULL OR p.created_at <= $4)",
+        )
+        .bind(filter.gelombang_id)
+        .bind(filter.jalur_id)
+        .bind(start_dt)
+        .bind(end_dt)
+        .fetch_one(&self.pool)
+        .await?;
+
+        // 2. Tren Harian (14 hari terakhir)
+        let tren_rows: Vec<(String, i64, i64, i64)> = sqlx::query_as(
+            "WITH dates AS (
+                SELECT (CURRENT_DATE - i)::date as dt
+                FROM generate_series(0, 13) i
+             )
+             SELECT
+                TO_CHAR(d.dt, 'YYYY-MM-DD') as tanggal,
+                COALESCE(COUNT(DISTINCT p.id), 0) as pendaftar,
+                COALESCE(COUNT(DISTINCT b.pendaftar_id), 0) as terverifikasi,
+                COALESCE(COUNT(DISTINCT pb.pendaftar_id), 0) as bayar
+             FROM dates d
+             LEFT JOIN pendaftar p ON DATE(p.created_at) = d.dt
+                AND ($1::uuid IS NULL OR p.gelombang_id = $1)
+                AND ($2::uuid IS NULL OR p.jalur_id = $2)
+             LEFT JOIN berkas_pendaftar b ON b.pendaftar_id = p.id AND b.status_verifikasi = 'VALID'
+             LEFT JOIN pembayaran pb ON pb.pendaftar_id = p.id AND pb.status_pembayaran = 'LUNAS'
+             GROUP BY d.dt
+             ORDER BY d.dt ASC",
+        )
+        .bind(filter.gelombang_id)
+        .bind(filter.jalur_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let tren_harian = tren_rows
+            .into_iter()
+            .map(
+                |(tanggal, pendaftar, terverifikasi, bayar)| TrenHarianStat {
+                    tanggal,
+                    pendaftar,
+                    terverifikasi,
+                    bayar,
+                },
+            )
+            .collect();
+
+        // 3. Distribusi Program Studi
+        let prodi_rows: Vec<RawProdiRow> = sqlx::query_as(
+            "SELECT
+                ps.id,
+                ps.kode_prodi,
+                ps.nama_prodi,
+                ps.jenjang,
+                ps.kuota,
+                COALESCE(COUNT(p.id), 0) as total_peminat,
+                COALESCE(COUNT(CASE WHEN h.status_kelulusan LIKE 'LULUS%' THEN 1 END), 0) as total_lulus,
+                COALESCE(COUNT(CASE WHEN h.nim_resmi IS NOT NULL THEN 1 END), 0) as total_daftar_ulang
+             FROM program_studi ps
+             LEFT JOIN pendaftar p ON p.prodi_pilihan_1 = ps.id
+                AND ($1::uuid IS NULL OR p.gelombang_id = $1)
+                AND ($2::uuid IS NULL OR p.jalur_id = $2)
+                AND ($3::timestamptz IS NULL OR p.created_at >= $3)
+                AND ($4::timestamptz IS NULL OR p.created_at <= $4)
+             LEFT JOIN hasil_kelulusan h ON h.pendaftar_id = p.id
+             GROUP BY ps.id, ps.kode_prodi, ps.nama_prodi, ps.jenjang, ps.kuota
+             ORDER BY ps.kode_prodi ASC",
+        )
+        .bind(filter.gelombang_id)
+        .bind(filter.jalur_id)
+        .bind(start_dt)
+        .bind(end_dt)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let distribusi_prodi = prodi_rows
+            .into_iter()
+            .map(
+                |(id, kode, nama, jenjang, kuota, peminat, lulus, reg)| DistribusiProdiStat {
+                    prodi_id: id,
+                    kode_prodi: kode,
+                    nama_prodi: nama,
+                    jenjang,
+                    kuota,
+                    total_peminat: peminat,
+                    total_lulus: lulus,
+                    total_daftar_ulang: reg,
+                },
+            )
+            .collect();
+
+        // 4. Distribusi Jalur Masuk
+        let jalur_rows: Vec<(Uuid, String, i64, i64)> = sqlx::query_as(
+            "SELECT
+                jm.id,
+                jm.nama_jalur,
+                COALESCE(COUNT(p.id), 0) as total_pendaftar,
+                COALESCE(COUNT(CASE WHEN h.status_kelulusan LIKE 'LULUS%' THEN 1 END), 0) as total_lulus
+             FROM jalur_masuk jm
+             LEFT JOIN pendaftar p ON p.jalur_id = jm.id
+                AND ($1::uuid IS NULL OR p.gelombang_id = $1)
+                AND ($2::timestamptz IS NULL OR p.created_at >= $2)
+                AND ($3::timestamptz IS NULL OR p.created_at <= $3)
+             LEFT JOIN hasil_kelulusan h ON h.pendaftar_id = p.id
+             GROUP BY jm.id, jm.nama_jalur
+             ORDER BY jm.nama_jalur ASC",
+        )
+        .bind(filter.gelombang_id)
+        .bind(start_dt)
+        .bind(end_dt)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let distribusi_jalur = jalur_rows
+            .into_iter()
+            .map(|(id, nama, pendaftar, lulus)| DistribusiJalurStat {
+                jalur_id: id,
+                nama_jalur: nama,
+                total_pendaftar: pendaftar,
+                total_lulus: lulus,
+            })
+            .collect();
+
+        // 5. Status Pendaftaran Breakdown
+        let status_rows: Vec<(String, i64)> = sqlx::query_as(
+            "SELECT
+                p.status_pendaftaran,
+                COUNT(p.id) as jumlah
+             FROM pendaftar p
+             WHERE ($1::uuid IS NULL OR p.gelombang_id = $1)
+               AND ($2::uuid IS NULL OR p.jalur_id = $2)
+               AND ($3::timestamptz IS NULL OR p.created_at >= $3)
+               AND ($4::timestamptz IS NULL OR p.created_at <= $4)
+             GROUP BY p.status_pendaftaran
+             ORDER BY jumlah DESC",
+        )
+        .bind(filter.gelombang_id)
+        .bind(filter.jalur_id)
+        .bind(start_dt)
+        .bind(end_dt)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let total_status: i64 = status_rows.iter().map(|(_, c)| *c).sum();
+        let status_pendaftaran = status_rows
+            .into_iter()
+            .map(|(status, count)| {
+                let pct = if total_status > 0 {
+                    (count as f64 / total_status as f64) * 100.0
+                } else {
+                    0.0
+                };
+                let label = match status.as_str() {
+                    "DRAFT" => "Draf Pengisian",
+                    "MENUNGGU_PEMBAYARAN" => "Menunggu Pembayaran",
+                    "PEMBAYARAN_DITERIMA" => "Pembayaran Diterima",
+                    "SUBMITTED" => "Formulir Dikirim",
+                    "DALAM_VERIFIKASI" => "Pemeriksaan Dokumen",
+                    "TERVERIFIKASI" => "Dokumen Terverifikasi",
+                    "LULUS" => "Lulus Seleksi",
+                    "TIDAK_LULUS" => "Tidak Lulus",
+                    "DAFTAR_ULANG" => "Daftar Ulang Selesai",
+                    _ => &status,
+                }
+                .to_string();
+
+                StatusPendaftaranStat {
+                    status,
+                    label,
+                    jumlah: count,
+                    persentase: (pct * 10.0).round() / 10.0,
+                }
+            })
+            .collect();
+
+        // 6. Funnel
+        let funnel_tahapan = vec![
+            FunnelStat {
+                tahapan: "1. Pembuatan Formulir".to_string(),
+                jumlah: total_pendaftar.0,
+            },
+            FunnelStat {
+                tahapan: "2. Berkas Terverifikasi".to_string(),
+                jumlah: total_berkas.0,
+            },
+            FunnelStat {
+                tahapan: "3. Mengikuti Ujian CBT".to_string(),
+                jumlah: total_ujian.0,
+            },
+            FunnelStat {
+                tahapan: "4. Lulus Seleksi".to_string(),
+                jumlah: total_lulus.0,
+            },
+            FunnelStat {
+                tahapan: "5. Resmi Mahasiswa (NIM)".to_string(),
+                jumlah: total_nim.0,
+            },
+        ];
+
+        Ok(ExecutiveDashboardResponse {
+            total_pendaftar: total_pendaftar.0,
+            total_berkas_diverifikasi: total_berkas.0,
+            total_peserta_ujian: total_ujian.0,
+            total_lulus: total_lulus.0,
+            total_registrasi_nim: total_nim.0,
+            total_pendapatan_rupiah: total_dana_lunas.0,
+            total_piutang_rupiah: total_dana_piutang.0,
+            tren_harian,
+            distribusi_prodi,
+            distribusi_jalur,
+            status_pendaftaran,
+            funnel_tahapan,
+        })
+    }
+
+    // =========================================================================
+    // EXCEL / CSV EXPORT
+    // =========================================================================
+
+    pub async fn export_excel_dashboard(
+        &self,
+        filter: &DashboardFilterQuery,
+    ) -> Result<Vec<u8>, AppError> {
+        let stats = self.get_executive_dashboard(filter).await?;
+
+        // Menggunakan UTF-8 BOM (\u{FEFF}) agar file CSV dibuka langsung dengan benar di Microsoft Excel
+        let mut csv_data = String::from("\u{FEFF}");
+
+        csv_data.push_str("LAPORAN EKSEKUTIF PMB - UNIVERSITAS PIGNATELLI TRIPUTRA\n");
+        csv_data.push_str(&format!(
+            "Waktu Unduh: {}\n\n",
+            Utc::now().format("%d-%m-%Y %H:%M:%S UTC")
+        ));
+
+        // 1. KPI UTAMA
+        csv_data.push_str("=== RINGKASAN METRIK UTAMA ===\n");
+        csv_data.push_str("Indikator,Nilai\n");
+        csv_data.push_str(&format!("Total Pendaftar,{}\n", stats.total_pendaftar));
+        csv_data.push_str(&format!(
+            "Total Berkas Terverifikasi,{}\n",
+            stats.total_berkas_diverifikasi
+        ));
+        csv_data.push_str(&format!(
+            "Total Peserta Ujian CBT,{}\n",
+            stats.total_peserta_ujian
+        ));
+        csv_data.push_str(&format!("Total Lulus Seleksi,{}\n", stats.total_lulus));
+        csv_data.push_str(&format!(
+            "Total Mahasiswa Baru (NIM),{}\n",
+            stats.total_registrasi_nim
+        ));
+        csv_data.push_str(&format!(
+            "Total Pendapatan Terkumpul (IDR),Rp {}\n",
+            stats.total_pendapatan_rupiah
+        ));
+        csv_data.push_str(&format!(
+            "Total Piutang Berjalan (IDR),Rp {}\n\n",
+            stats.total_piutang_rupiah
+        ));
+
+        // 2. PROGRAM STUDI & KUOTA
+        csv_data.push_str("=== DISTRIBUSI PROGRAM STUDI & KUOTA ===\n");
+        csv_data.push_str("Kode,Program Studi,Jenjang,Kuota,Peminat,Lulus,Daftar Ulang\n");
+        for p in &stats.distribusi_prodi {
+            csv_data.push_str(&format!(
+                "\"{}\",\"{}\",\"{}\",{},{},{},{}\n",
+                p.kode_prodi,
+                p.nama_prodi,
+                p.jenjang,
+                p.kuota,
+                p.total_peminat,
+                p.total_lulus,
+                p.total_daftar_ulang
+            ));
+        }
+        csv_data.push('\n');
+
+        // 3. JALUR PENERIMAAN
+        csv_data.push_str("=== DISTRIBUSI JALUR MASUK ===\n");
+        csv_data.push_str("Jalur Masuk,Total Pendaftar,Total Lulus\n");
+        for j in &stats.distribusi_jalur {
+            csv_data.push_str(&format!(
+                "\"{}\",{},{}\n",
+                j.nama_jalur, j.total_pendaftar, j.total_lulus
+            ));
+        }
+        csv_data.push('\n');
+
+        // 4. STATUS PENDAFTARAN
+        csv_data.push_str("=== STATUS TAHAPAN PENDAFTARAN ===\n");
+        csv_data.push_str("Status,Label,Jumlah,Persentase (%)\n");
+        for s in &stats.status_pendaftaran {
+            csv_data.push_str(&format!(
+                "\"{}\",\"{}\",{},{}%\n",
+                s.status, s.label, s.jumlah, s.persentase
+            ));
+        }
+        csv_data.push('\n');
+
+        // 5. TREN HARIAN
+        csv_data.push_str("=== TREN PENDAFTARAN HARIAN (14 HARI TERAKHIR) ===\n");
+        csv_data.push_str("Tanggal,Pendaftar Baru,Berkas Valid,Pembayaran Lunas\n");
+        for t in &stats.tren_harian {
+            csv_data.push_str(&format!(
+                "{},{},{},{}\n",
+                t.tanggal, t.pendaftar, t.terverifikasi, t.bayar
+            ));
+        }
+
+        Ok(csv_data.into_bytes())
+    }
+}
+
+fn parse_date_filters(
+    start_str: Option<&str>,
+    end_str: Option<&str>,
+) -> (Option<DateTime<Utc>>, Option<DateTime<Utc>>) {
+    let start_dt = start_str.and_then(|s| {
+        DateTime::parse_from_rfc3339(s)
+            .map(|dt| dt.with_timezone(&Utc))
+            .ok()
+            .or_else(|| {
+                NaiveDate::parse_from_str(s, "%Y-%m-%d")
+                    .ok()
+                    .and_then(|nd| nd.and_hms_opt(0, 0, 0))
+                    .map(|ndt| Utc.from_utc_datetime(&ndt))
+            })
+    });
+
+    let end_dt = end_str.and_then(|s| {
+        DateTime::parse_from_rfc3339(s)
+            .map(|dt| dt.with_timezone(&Utc))
+            .ok()
+            .or_else(|| {
+                NaiveDate::parse_from_str(s, "%Y-%m-%d")
+                    .ok()
+                    .and_then(|nd| nd.and_hms_opt(23, 59, 59))
+                    .map(|ndt| Utc.from_utc_datetime(&ndt))
+            })
+    });
+
+    (start_dt, end_dt)
 }

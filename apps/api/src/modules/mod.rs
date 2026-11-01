@@ -1,10 +1,13 @@
 pub mod auth;
+pub mod cbt;
 pub mod cms;
 pub mod dashboard;
+pub mod email_queue;
 pub mod health;
 pub mod kelulusan;
 pub mod konfigurasi;
 pub mod master;
 pub mod pembayaran;
 pub mod pendaftaran;
+pub mod rpl;
 pub mod ujian;

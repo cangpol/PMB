@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /cbt/
+Disallow: /api/
+
+Sitemap: https://pmb.upitra.ac.id/sitemap.xml
+

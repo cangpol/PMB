@@ -1,6 +1,7 @@
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
+    http::{HeaderMap, HeaderValue, StatusCode, header},
     response::IntoResponse,
     routing::{get, post, put},
 };
@@ -14,12 +15,13 @@ use crate::{
     modules::pendaftaran::{
         dto::{
             BerkasCalonItem, BerkasDetailItem, BerkasResponse, CreateDefinisiBerkasRequest,
-            CreateDefinisiFieldRequest, CreateDefinisiLangkahRequest, KonfirmasiUploadRequest,
-            LangkahProgressItem, PendaftarDetailResponse, PresignUploadRequest,
-            PresignedUrlResponse, ReorderFieldsRequest, SubmitAkademikRequest,
-            SubmitBiodataRequest, SubmitDinamisRequest, UpdateDefinisiBerkasRequest,
-            UpdateDefinisiFieldRequest, UpdateDefinisiLangkahRequest, UploadBerkasRequest,
-            VerifikasiBerkasRequest,
+            CreateDefinisiFieldRequest, CreateDefinisiLangkahRequest, DashboardSummaryResponse,
+            KonfirmasiUploadRequest, LangkahProgressItem, PendaftarDetailResponse,
+            PendaftaranOfflineRequest, PendaftaranOfflineResponse, PilihProdiRequest,
+            PresignUploadRequest, PresignedUrlResponse, ReorderFieldsRequest,
+            SubmitAkademikRequest, SubmitBiodataRequest, SubmitDinamisRequest,
+            UpdateDefinisiBerkasRequest, UpdateDefinisiFieldRequest, UpdateDefinisiLangkahRequest,
+            UploadBerkasRequest, VerifikasiBerkasRequest,
         },
         model::{DefinisiBerkas, DefinisiField, DefinisiLangkah},
         repository::PendaftaranRepository,
@@ -40,6 +42,11 @@ use crate::{
         konfirmasi_upload_berkas_handler,
         presign_download_berkas_handler,
         get_langkah_progress_handler,
+        pilih_prodi_handler,
+        get_dashboard_summary_handler,
+        admin_pendaftaran_offline_handler,
+        cetak_bukti_pendaftaran_handler,
+        cetak_kartu_peserta_handler,
         admin_list_fields_handler,
         admin_create_field_handler,
         admin_update_field_handler,
@@ -66,6 +73,10 @@ use crate::{
         SubmitDinamisRequest,
         PresignUploadRequest,
         KonfirmasiUploadRequest,
+        PilihProdiRequest,
+        PendaftaranOfflineRequest,
+        PendaftaranOfflineResponse,
+        DashboardSummaryResponse,
         BerkasCalonItem,
         BerkasDetailItem,
         LangkahProgressItem,
@@ -176,6 +187,18 @@ pub fn pendaftaran_router() -> Router<AppState> {
         .route("/berkas/{id}/presigned-url", get(get_presigned_url_handler))
         .route("/finalisasi", post(finalisasi_handler))
         .route("/admin/list", get(admin_list_pendaftar_handler))
+        // Alur Pendaftaran Lengkap, Dashboard & Cetak PDF
+        .route("/pilih-prodi", post(pilih_prodi_handler))
+        .route("/dashboard-summary", get(get_dashboard_summary_handler))
+        .route("/admin/offline", post(admin_pendaftaran_offline_handler))
+        .route(
+            "/{id}/cetak/bukti-pendaftaran",
+            get(cetak_bukti_pendaftaran_handler),
+        )
+        .route(
+            "/{id}/cetak/kartu-peserta",
+            get(cetak_kartu_peserta_handler),
+        )
 }
 
 // ==========================================
@@ -849,4 +872,144 @@ pub async fn admin_list_pendaftar_handler(
     let service = make_service(&state);
     let list = service.list_all().await?;
     Ok(Json(list))
+}
+
+// ==========================================
+// 6. ALUR WIZARD, DASHBOARD & CETAK PDF
+// ==========================================
+
+#[utoipa::path(
+    post,
+    path = "/api/pendaftaran/pilih-prodi",
+    tag = "Pendaftaran",
+    request_body = PilihProdiRequest,
+    responses(
+        (status = 200, description = "Pemilihan Program Studi berhasil disimpan", body = PendaftarDetailResponse),
+        (status = 400, description = "Validasi gagal atau kuota penuh", body = ApiErrorResponse)
+    )
+)]
+pub async fn pilih_prodi_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    ValidatedJson(req): ValidatedJson<PilihProdiRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let service = make_service(&state);
+    let res = service
+        .pilih_prodi_dan_jalur(auth_user.user_id, req)
+        .await?;
+    Ok(Json(res))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/pendaftaran/dashboard-summary",
+    tag = "Pendaftaran",
+    responses(
+        (status = 200, description = "Ringkasan data dashboard calon mahasiswa", body = DashboardSummaryResponse)
+    )
+)]
+pub async fn get_dashboard_summary_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let service = make_service(&state);
+    let res = service.get_dashboard_summary(auth_user.user_id).await?;
+    Ok(Json(res))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/pendaftaran/admin/offline",
+    tag = "Pendaftaran Admin",
+    request_body = PendaftaranOfflineRequest,
+    responses(
+        (status = 200, description = "Pendaftaran offline loket berhasil", body = PendaftaranOfflineResponse),
+        (status = 400, description = "Validasi gagal atau calon sudah terdaftar", body = ApiErrorResponse),
+        (status = 403, description = "Hanya admin PMB yang berhak mendaftarkan calon offline", body = ApiErrorResponse)
+    )
+)]
+pub async fn admin_pendaftaran_offline_handler(
+    admin: RequireAdmin,
+    State(state): State<AppState>,
+    ValidatedJson(req): ValidatedJson<PendaftaranOfflineRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let service = make_service(&state);
+    let res = service
+        .pendaftaran_offline_admin(admin.user_id, req)
+        .await?;
+    Ok(Json(res))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/pendaftaran/{id}/cetak/bukti-pendaftaran",
+    tag = "Pendaftaran Cetak",
+    params(
+        ("id" = Uuid, Path, description = "ID Pendaftar")
+    ),
+    responses(
+        (status = 200, description = "Dokumen PDF Bukti Pendaftaran", content_type = "application/pdf"),
+        (status = 403, description = "Tidak berhak mengakses dokumen ini", body = ApiErrorResponse),
+        (status = 404, description = "Pendaftar tidak ditemukan", body = ApiErrorResponse)
+    )
+)]
+pub async fn cetak_bukti_pendaftaran_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let service = make_service(&state);
+    let can_access_all = auth_user.is_admin() || auth_user.is_asesor();
+    let pdf_bytes = service
+        .generate_bukti_pdf(auth_user.user_id, can_access_all, id)
+        .await?;
+
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/pdf"),
+    );
+    headers.insert(
+        header::CONTENT_DISPOSITION,
+        HeaderValue::from_static("inline; filename=\"Bukti-Pendaftaran-PMB.pdf\""),
+    );
+
+    Ok((StatusCode::OK, headers, pdf_bytes))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/pendaftaran/{id}/cetak/kartu-peserta",
+    tag = "Pendaftaran Cetak",
+    params(
+        ("id" = Uuid, Path, description = "ID Pendaftar")
+    ),
+    responses(
+        (status = 200, description = "Dokumen PDF Kartu Peserta Ujian", content_type = "application/pdf"),
+        (status = 403, description = "Tidak berhak mengakses dokumen ini", body = ApiErrorResponse),
+        (status = 404, description = "Pendaftar tidak ditemukan", body = ApiErrorResponse)
+    )
+)]
+pub async fn cetak_kartu_peserta_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let service = make_service(&state);
+    let can_access_all = auth_user.is_admin() || auth_user.is_asesor();
+    let pdf_bytes = service
+        .generate_kartu_pdf(auth_user.user_id, can_access_all, id)
+        .await?;
+
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/pdf"),
+    );
+    headers.insert(
+        header::CONTENT_DISPOSITION,
+        HeaderValue::from_static("inline; filename=\"Kartu-Peserta-Ujian-PMB.pdf\""),
+    );
+
+    Ok((StatusCode::OK, headers, pdf_bytes))
 }

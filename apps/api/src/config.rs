@@ -15,6 +15,11 @@ pub struct AppConfig {
     pub s3_access_key: String,
     pub s3_secret_key: String,
     pub s3_bucket: String,
+    pub payment_gateway_provider: String,
+    pub midtrans_server_key: String,
+    pub midtrans_client_key: String,
+    pub midtrans_is_production: bool,
+    pub mock_payment_secret: String,
 }
 
 impl AppConfig {
@@ -59,6 +64,18 @@ impl AppConfig {
         let s3_secret_key = env::var("S3_SECRET_KEY").unwrap_or_else(|_| "minioadmin".to_string());
         let s3_bucket = env::var("S3_BUCKET").unwrap_or_else(|_| "pmb-berkas".to_string());
 
+        let payment_gateway_provider =
+            env::var("PAYMENT_GATEWAY_PROVIDER").unwrap_or_else(|_| "mock".to_string());
+        let midtrans_server_key =
+            env::var("MIDTRANS_SERVER_KEY").unwrap_or_else(|_| "".to_string());
+        let midtrans_client_key =
+            env::var("MIDTRANS_CLIENT_KEY").unwrap_or_else(|_| "".to_string());
+        let midtrans_is_production = env::var("MIDTRANS_IS_PRODUCTION")
+            .map(|v| v.to_lowercase() == "true")
+            .unwrap_or(false);
+        let mock_payment_secret = env::var("MOCK_PAYMENT_SECRET")
+            .unwrap_or_else(|_| "mock-secret-key-pignatelli".to_string());
+
         Self {
             port,
             host,
@@ -73,6 +90,11 @@ impl AppConfig {
             s3_access_key,
             s3_secret_key,
             s3_bucket,
+            payment_gateway_provider,
+            midtrans_server_key,
+            midtrans_client_key,
+            midtrans_is_production,
+            mock_payment_secret,
         }
     }
 }

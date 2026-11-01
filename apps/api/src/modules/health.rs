@@ -67,3 +67,54 @@ pub async fn health_check_handler(State(state): State<AppState>) -> impl IntoRes
         }),
     )
 }
+
+#[utoipa::path(
+    get,
+    path = "/api/health/live",
+    tag = "health",
+    responses(
+        (status = 200, description = "Liveness probe: server aktif")
+    )
+)]
+pub async fn liveness_handler() -> impl IntoResponse {
+    (
+        axum::http::StatusCode::OK,
+        Json(serde_json::json!({
+            "status": "alive",
+            "service": "pmb-api",
+            "timestamp": chrono::Utc::now()
+        })),
+    )
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/health/ready",
+    tag = "health",
+    responses(
+        (status = 200, description = "Readiness probe: database terhubung dan siap melayani request"),
+        (status = 503, description = "Database tidak terhubung")
+    )
+)]
+pub async fn readiness_handler(State(state): State<AppState>) -> impl IntoResponse {
+    let db_ok = sqlx::query("SELECT 1").execute(&state.db).await.is_ok();
+    if db_ok {
+        (
+            axum::http::StatusCode::OK,
+            Json(serde_json::json!({
+                "status": "ready",
+                "database": "connected",
+                "timestamp": chrono::Utc::now()
+            })),
+        )
+    } else {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({
+                "status": "unready",
+                "database": "disconnected",
+                "timestamp": chrono::Utc::now()
+            })),
+        )
+    }
+}

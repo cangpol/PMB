@@ -12,6 +12,7 @@ import {
   ChevronDown,
   CheckCircle2,
   FolderOpen,
+  BookOpen,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "../ui/Avatar";
 import {
@@ -47,6 +48,11 @@ const DASHBOARD_NAV_ITEMS: NavItem[] = [
     label: "Formulir Pendaftaran",
     href: "/portal/formulir",
     icon: FileText,
+  },
+  {
+    label: "Portofolio & Jalur RPL",
+    href: "/portal/rpl",
+    icon: BookOpen,
   },
   {
     label: "Pembayaran Biaya",

@@ -292,14 +292,23 @@ export const ProdiPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="pt-6 mt-6 border-t border-biru-100">
-                  <Link to="/register">
+                <div className="pt-6 mt-6 border-t border-biru-100 flex items-center gap-2">
+                  <Link to={`/prodi/${prodi.id}`} className="flex-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs font-semibold"
+                    >
+                      Detail Prodi
+                    </Button>
+                  </Link>
+                  <Link to={`/register?prodi=${prodi.kode}`} className="flex-1">
                     <Button
                       variant="primary"
                       size="sm"
-                      className="w-full gap-2"
+                      className="w-full text-xs font-bold gap-1"
                     >
-                      <span>Pilih Prodi Ini & Daftar</span>
+                      <span>Daftar</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Button>
                   </Link>

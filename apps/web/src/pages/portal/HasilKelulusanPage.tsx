@@ -1,36 +1,81 @@
-import React, { useState } from "react";
-import { Printer } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  Printer,
+  Download,
+  Clock,
+  AlertCircle,
+  ArrowRight,
+  GraduationCap,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   Button,
-  StatusBadge,
   CardSkeleton,
-  EmptyState,
   ErrorState,
+  Card,
 } from "../../components/common";
-import { useAuth } from "@/context";
+import { fetchApi } from "../../services/api";
 import logoPlaceholder from "../../assets/logo-placeholder.svg";
 
-export const HasilKelulusanPage: React.FC = () => {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isError, setIsError] = useState<boolean>(false);
+interface CekKelulusanResponse {
+  pendaftar_id: string;
+  nomor_pendaftaran: string;
+  nama_lengkap: string;
+  jalur_nama: string;
+  gelombang_nama: string;
+  status_kelulusan: string; // 'LULUS_PILIHAN_1', 'LULUS_PILIHAN_2', 'CADANGAN', 'TIDAK_LULUS', 'BELUM_DIPUTUSKAN'
+  prodi_diterima?: string | null;
+  jenjang_diterima?: string | null;
+  fakultas_diterima?: string | null;
+  pilihan_ke?: number | null;
+  skor_akhir: number;
+  nim_resmi?: string | null;
+  nomor_surat_loa?: string | null;
+  tanggal_sk?: string | null;
+  is_published: boolean;
+  tgl_pengumuman?: string | null;
+  is_pengumuman_buka: boolean;
+  status_daftar_ulang: string;
+  pesan: string;
+}
 
-  const kelulusan = {
-    nomorPendaftaran: "PMB-2026-0042",
-    status: "LULUS_PILIHAN_1",
-    namaProdi: "Informatika",
-    jenjang: "S1",
-    fakultas: "Fakultas Sains & Teknologi",
-    skorAkhir: 85.0,
-    nimResmi: "2601020042",
-    nomorLoa: "SK/PMB-UPT/2026/0042",
-    tanggalSk: "31 Oktober 2026",
-    uktNominal: 7000000,
+export const HasilKelulusanPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [data, setData] = useState<CekKelulusanResponse | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isError, setIsError] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+
+  const loadHasil = async () => {
+    setIsLoading(true);
+    setIsError(false);
+    try {
+      const res = await fetchApi<CekKelulusanResponse>("/api/kelulusan/cek");
+      setData(res);
+    } catch (err: unknown) {
+      const e = err as { pesan?: string };
+      setErrorMessage(e.pesan || "Gagal memuat pengumuman kelulusan.");
+      setIsError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadHasil();
+  }, []);
+
+  const handleDownloadLoa = () => {
+    window.open("/api/kelulusan/loa/pdf", "_blank");
   };
 
   const handlePrint = () => {
     window.print();
   };
+
+  const isLulus =
+    data?.status_kelulusan === "LULUS_PILIHAN_1" ||
+    data?.status_kelulusan === "LULUS_PILIHAN_2";
 
   return (
     <div className="space-y-6">
@@ -38,25 +83,35 @@ export const HasilKelulusanPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-biru-200">
         <div>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-biru-950">
-            Pengumuman Kelulusan & Surat Penerimaan Resmi
+            Pengumuman Kelulusan Seleksi PMB
           </h1>
-          <p className="text-xs text-biru-800">
-            Surat Keputusan Rektor Penerimaan Mahasiswa Baru Universitas
-            Pignatelli Triputra
+          <p className="text-xs sm:text-sm text-biru-800">
+            Hasil Seleksi Penerimaan Mahasiswa Baru Universitas Pignatelli
+            Triputra Tahun Akademik 2026/2027
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <StatusBadge status="berhasil" label="Status: Lulus Pilihan 1" />
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handlePrint}
-            className="gap-1.5 text-xs"
-          >
-            <Printer className="w-3.5 h-3.5 text-biru-700" />
-            <span>Cetak SK / LoA</span>
-          </Button>
-        </div>
+        {data && data.is_pengumuman_buka && isLulus && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleDownloadLoa}
+              className="gap-1.5 text-xs text-biru-900 border-biru-300"
+            >
+              <Download className="w-3.5 h-3.5 text-biru-700" />
+              <span>Unduh LoA PDF</span>
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handlePrint}
+              className="gap-1.5 text-xs text-biru-900 border-biru-300"
+            >
+              <Printer className="w-3.5 h-3.5 text-biru-700" />
+              <span>Cetak SK</span>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Loading State */}
@@ -71,179 +126,304 @@ export const HasilKelulusanPage: React.FC = () => {
       {!isLoading && isError && (
         <ErrorState
           title="Gagal Memuat Hasil Kelulusan"
-          message="Terjadi kesalahan jaringan saat memverifikasi status kelulusan Anda."
-          onRetry={() => {
-            setIsError(false);
-            setIsLoading(false);
-          }}
+          message={errorMessage}
+          onRetry={loadHasil}
         />
       )}
 
-      {/* Empty State */}
-      {!isLoading && !isError && !kelulusan.nomorLoa && (
-        <EmptyState
-          title="Pengumuman Belum Dirilis"
-          description="Rapat pleno kelulusan gelombang ini belum selesai. Pengumuman resmi akan diumumkan sesuai jadwal kalender akademik PMB."
-        />
+      {/* Pengumuman Belum Buka / Belum Diputuskan */}
+      {!isLoading && !isError && data && !data.is_pengumuman_buka && (
+        <Card className="p-8 sm:p-12 text-center border-biru-200 bg-putih rounded-3xl shadow-sm space-y-4 max-w-2xl mx-auto">
+          <div className="w-16 h-16 rounded-full bg-biru-100 flex items-center justify-center mx-auto text-biru-900">
+            <Clock className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-biru-950 font-serif">
+            Pengumuman Belum Dibuka
+          </h2>
+          <p className="text-sm text-biru-800 max-w-md mx-auto leading-relaxed">
+            {data.pesan ||
+              "Hasil sidang pleno kelulusan sedang dalam proses verifikasi akhir panitia PMB. Harap periksa kembali sesuai jadwal yang telah ditentukan."}
+          </p>
+          {data.tgl_pengumuman && (
+            <div className="inline-block bg-biru-50 border border-biru-200 px-4 py-2 rounded-xl text-xs font-semibold text-biru-900">
+              Jadwal Rilis:{" "}
+              {new Date(data.tgl_pengumuman).toLocaleString("id-ID")}
+            </div>
+          )}
+        </Card>
       )}
 
-      {/* Dokumen Fisik Letter of Acceptance (LoA) */}
-      {!isLoading && !isError && kelulusan.nomorLoa && (
-        <div className="bg-putih border-2 border-biru-300 rounded-3xl p-8 sm:p-12 shadow-xl space-y-8 print:border-none print:shadow-none print:p-0">
-          {/* KOP Surat Resmi Universitas */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b-2 border-biru-950 text-center sm:text-left">
-            <div className="flex items-center gap-4">
-              <img
-                src={logoPlaceholder}
-                alt="Logo Universitas Pignatelli Triputra"
-                className="h-16 w-auto object-contain"
-              />
+      {/* Status: CADANGAN */}
+      {!isLoading &&
+        !isError &&
+        data &&
+        data.is_pengumuman_buka &&
+        data.status_kelulusan === "CADANGAN" && (
+          <Card className="p-8 border-biru-200 bg-biru-50/70 rounded-3xl space-y-4 max-w-3xl mx-auto">
+            <div className="flex items-center gap-3 text-biru-950">
+              <AlertCircle className="w-8 h-8 flex-shrink-0 text-biru-700" />
               <div>
-                <h2 className="font-serif text-xl sm:text-2xl font-bold text-biru-950 uppercase tracking-wide">
-                  Universitas Pignatelli Triputra
+                <h2 className="text-xl font-bold font-serif text-biru-950">
+                  Status Anda: CADANGAN (Waitlist)
                 </h2>
-                <p className="text-xs text-biru-800 font-medium">
-                  Panitia Penerimaan Mahasiswa Baru TA 2026/2027
-                </p>
-                <p className="text-[11px] text-biru-700 font-light">
-                  Jl. Sam Ratulangi No. 16, Surakarta, Jawa Tengah •
-                  pmb.pignatellitriputra.ac.id
+                <p className="text-xs text-biru-800">
+                  Nomor Pendaftaran: {data.nomor_pendaftaran}
                 </p>
               </div>
             </div>
-            <div className="text-right sm:border-l-2 sm:border-biru-200 sm:pl-6">
-              <span className="text-[11px] font-bold text-biru-800 block uppercase">
-                Nomor SK / LoA
-              </span>
-              <span className="font-mono text-xs font-bold text-biru-950 block">
-                {kelulusan.nomorLoa}
-              </span>
-              <span className="text-[11px] text-biru-700 block mt-1">
-                {kelulusan.tanggalSk}
-              </span>
-            </div>
-          </div>
-
-          {/* Pernyataan Kelulusan */}
-          <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-biru-50/80 border border-biru-200 text-center space-y-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-biru-800">
-                Keputusan Yudisium Seleksi Masuk
-              </span>
-              <p className="font-serif text-3xl font-bold text-biru-950">
-                DINYATAKAN DITERIMA / LULUS SELEKSI
-              </p>
-              <p className="text-xs text-biru-900 font-medium">
-                Sebagai Calon Mahasiswa Baru Program Sarjana (S1) Angkatan 2026
-              </p>
-            </div>
-
-            <p className="text-sm text-biru-900 leading-relaxed font-light pt-2">
-              Berdasarkan hasil evaluasi dokumen akademik, nilai rapor, dan
-              pencapaian ujian Computer-Based Test (CBT) yang dilaksanakan
-              secara daring, Rektor Universitas Pignatelli Triputra menerbitkan
-              Surat Keputusan Penerimaan resmi kepada:
+            <p className="text-sm text-biru-900 leading-relaxed">
+              Nilai seleksi Anda telah memenuhi standar kelulusan, namun kuota
+              utama program studi pilihan saat ini telah terpenuhi. Anda
+              ditempatkan pada daftar cadangan. Panitia PMB akan menghubungi
+              Anda melalui email dan WhatsApp apabila terdapat kuota yang
+              tersedia dari calon mahasiswa yang tidak melakukan daftar ulang.
             </p>
+            <div className="pt-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => navigate("/portal/dashboard")}
+              >
+                Kembali ke Dashboard
+              </Button>
+            </div>
+          </Card>
+        )}
 
-            {/* Rincian Identitas Mahasiswa Baru */}
-            <div className="p-6 rounded-2xl bg-putih border border-biru-200 space-y-3 text-xs sm:text-sm">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1.5 border-b border-biru-100">
-                <span className="text-biru-800 font-medium">Nama Lengkap</span>
-                <span className="sm:col-span-2 font-bold text-biru-950">
-                  {user?.nama_lengkap || "Budi Santoso"}
-                </span>
+      {/* Status: TIDAK LULUS */}
+      {!isLoading &&
+        !isError &&
+        data &&
+        data.is_pengumuman_buka &&
+        data.status_kelulusan === "TIDAK_LULUS" && (
+          <Card className="p-8 border-biru-200 bg-putih rounded-3xl space-y-4 max-w-3xl mx-auto text-center">
+            <div className="w-14 h-14 rounded-full bg-biru-100 flex items-center justify-center mx-auto text-biru-800">
+              <GraduationCap className="w-7 h-7" />
+            </div>
+            <h2 className="text-xl font-bold font-serif text-biru-950">
+              Terima Kasih Atas Partisipasi Anda
+            </h2>
+            <p className="text-sm text-biru-800 max-w-lg mx-auto leading-relaxed">
+              Mohon maaf, berdasarkan hasil evaluasi sidang pleno, saat ini
+              nilai seleksi Anda belum memenuhi batas kuota penerimaan pada
+              jalur ini. Jangan berkecil hati, Anda masih dapat mendaftar pada
+              gelombang berikutnya atau berkonsultasi dengan tim konselor PMB
+              kami.
+            </p>
+            <div className="pt-2 flex justify-center gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => navigate("/portal/dashboard")}
+              >
+                Ke Dashboard
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() =>
+                  window.open("https://wa.me/6281234567890", "_blank")
+                }
+              >
+                Konsultasi Jalur Lain
+              </Button>
+            </div>
+          </Card>
+        )}
+
+      {/* Status: LULUS (Pilihan 1 atau Pilihan 2) */}
+      {!isLoading && !isError && data && data.is_pengumuman_buka && isLulus && (
+        <div className="space-y-6">
+          {/* Banner Selamat */}
+          <Card className="bg-gradient-to-r from-biru-900 to-biru-950 text-putih p-6 sm:p-8 rounded-3xl shadow-xl border border-biru-800">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="bg-putih/20 text-putih px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                    {data.status_kelulusan === "LULUS_PILIHAN_1"
+                      ? "Lulus Pilihan 1"
+                      : "Lulus Pilihan 2"}
+                  </span>
+                  <span className="text-xs text-biru-200">
+                    Skor Seleksi: {data.skor_akhir.toFixed(2)}
+                  </span>
+                </div>
+                <h2 className="font-serif text-2xl sm:text-3xl font-bold text-putih">
+                  Selamat, {data.nama_lengkap}!
+                </h2>
+                <p className="text-xs sm:text-sm text-biru-200 leading-relaxed max-w-2xl">
+                  Anda resmi dinyatakan diterima sebagai calon mahasiswa baru{" "}
+                  <strong className="text-putih font-semibold">
+                    {data.jenjang_diterima} {data.prodi_diterima}
+                  </strong>{" "}
+                  ({data.fakultas_diterima}) Universitas Pignatelli Triputra.
+                </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1.5 border-b border-biru-100">
-                <span className="text-biru-800 font-medium">
-                  Nomor Pendaftaran PMB
-                </span>
-                <span className="sm:col-span-2 font-mono font-bold text-biru-950">
-                  {kelulusan.nomorPendaftaran}
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1.5 border-b border-biru-100">
-                <span className="text-biru-800 font-medium">
-                  Program Studi Diterima
-                </span>
-                <span className="sm:col-span-2 font-bold text-biru-950">
-                  {kelulusan.jenjang} {kelulusan.namaProdi} (
-                  {kelulusan.fakultas})
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1.5 border-b border-biru-100">
-                <span className="text-biru-800 font-medium">
-                  Nomor Induk Mahasiswa (NIM) Resmi
-                </span>
-                <span className="sm:col-span-2 font-mono text-base font-bold text-biru-700">
-                  {kelulusan.nimResmi}
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1.5 border-b border-biru-100">
-                <span className="text-biru-800 font-medium">
-                  Skor Evaluasi Akhir
-                </span>
-                <span className="sm:col-span-2 font-mono font-bold text-biru-950">
-                  {kelulusan.skorAkhir.toFixed(1)} / 100.0
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1.5">
-                <span className="text-biru-800 font-medium">
-                  Biaya UKT Semester 1
-                </span>
-                <span className="sm:col-span-2 font-mono font-bold text-biru-950">
-                  Rp {kelulusan.uktNominal.toLocaleString("id-ID")}
-                </span>
+
+              {/* Call to action: Daftar Ulang */}
+              <div className="flex-shrink-0 w-full md:w-auto">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => navigate("/portal/daftar-ulang")}
+                  className="w-full md:w-auto bg-putih hover:bg-biru-50 text-biru-950 font-bold gap-2 px-6 py-3 shadow-lg"
+                >
+                  <span>Lanjut ke Daftar Ulang</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
               </div>
             </div>
-          </div>
+          </Card>
 
-          {/* Ketentuan Daftar Ulang */}
-          <div className="p-5 rounded-2xl bg-biru-50/60 border border-biru-200 text-xs text-biru-900 space-y-2">
-            <span className="font-bold text-biru-950 block">
-              Instruksi Registrasi Ulang:
-            </span>
-            <ol className="list-decimal list-inside space-y-1 text-biru-800 leading-relaxed">
-              <li>
-                Lakukan pelunasan UKT Semester 1 paling lambat 14 hari kerja
-                setelah surat ini diterbitkan.
-              </li>
-              <li>
-                Bawa cetakan SK / Letter of Acceptance (LoA) ini beserta berkas
-                fisik asli pada saat orientasi kampus.
-              </li>
-              <li>
-                Akun Sistem Informasi Akademik (SIAKAD) mahasiswa akan aktif
-                setelah pembayaran UKT terverifikasi.
-              </li>
-            </ol>
-          </div>
+          {/* Dokumen Fisik Letter of Acceptance (LoA) */}
+          <div className="bg-putih border-2 border-biru-300 rounded-3xl p-8 sm:p-12 shadow-xl space-y-8 print:border-none print:shadow-none print:p-0">
+            {/* KOP Surat Resmi Universitas */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b-2 border-biru-950 text-center sm:text-left">
+              <div className="flex items-center gap-4">
+                <img
+                  src={logoPlaceholder}
+                  alt="Logo Universitas Pignatelli Triputra"
+                  className="h-16 w-auto object-contain"
+                />
+                <div>
+                  <h3 className="font-serif text-lg sm:text-xl font-bold text-biru-950 tracking-wide uppercase">
+                    Universitas Pignatelli Triputra
+                  </h3>
+                  <p className="text-xs text-biru-800">
+                    Panitia Penerimaan Mahasiswa Baru (PMB) TA 2026/2027
+                  </p>
+                  <p className="text-[11px] text-biru-700 font-sans">
+                    Jl. Bawean No.9, Danukusuman, Kec. Serengan, Surakarta, Jawa
+                    Tengah 57156
+                  </p>
+                </div>
+              </div>
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-bold text-biru-950 font-mono">
+                  {data.nomor_surat_loa || "SK/PMB-UPT/2026/0001"}
+                </p>
+                <p className="text-[11px] text-biru-700">
+                  Surakarta, {data.tanggal_sk || "2026"}
+                </p>
+              </div>
+            </div>
 
-          {/* Tanda Tangan Rektor */}
-          <div className="pt-8 flex justify-between items-end text-xs">
-            <div className="space-y-1 text-biru-700">
-              <p className="font-mono text-[10px]">
-                Dokumen ini sah dan diterbitkan secara elektronik.
-              </p>
-              <p className="font-mono text-[10px]">
-                Verifikasi keaslian via pmb.pignatellitriputra.ac.id/verifikasi
+            {/* Judul Surat Resmi */}
+            <div className="text-center space-y-1">
+              <h4 className="font-serif text-base sm:text-lg font-bold text-biru-950 uppercase tracking-wider underline">
+                Surat Keputusan Penerimaan Mahasiswa Baru
+              </h4>
+              <p className="text-xs font-mono text-biru-800">
+                Nomor: {data.nomor_surat_loa || "SK/PMB-UPT/2026/0001"}
               </p>
             </div>
-            <div className="text-center space-y-1 sm:pr-8">
-              <p className="text-biru-800">Surakarta, {kelulusan.tanggalSk}</p>
-              <p className="font-bold text-biru-950">
-                Rektor Universitas Pignatelli Triputra,
+
+            {/* Narasi Keputusan */}
+            <div className="space-y-4 text-xs sm:text-sm text-biru-950 leading-relaxed font-sans">
+              <p>
+                Rektor Universitas Pignatelli Triputra, berdasarkan hasil
+                evaluasi dan rapat sidang pleno seleksi penerimaan mahasiswa
+                baru tahun akademik 2026/2027, dengan ini menerbitkan keputusan
+                penerimaan resmi kepada:
               </p>
-              <div className="h-16 flex items-center justify-center">
-                <span className="font-serif italic text-biru-600 font-bold text-lg">
-                  [Tanda Tangan Digital Terverifikasi]
-                </span>
+
+              {/* Tabel Biodata Penerima */}
+              <div className="bg-biru-50/60 border border-biru-200 rounded-2xl p-4 sm:p-6 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1 border-b border-biru-100">
+                  <span className="text-biru-700 font-medium">
+                    Nomor Pendaftaran
+                  </span>
+                  <span className="sm:col-span-2 font-mono font-bold text-biru-950">
+                    {data.nomor_pendaftaran}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1 border-b border-biru-100">
+                  <span className="text-biru-700 font-medium">
+                    Nama Lengkap
+                  </span>
+                  <span className="sm:col-span-2 font-bold text-biru-950 uppercase">
+                    {data.nama_lengkap}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1 border-b border-biru-100">
+                  <span className="text-biru-700 font-medium">
+                    Jalur Pendaftaran
+                  </span>
+                  <span className="sm:col-span-2 text-biru-950">
+                    {data.jalur_nama}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1 border-b border-biru-100">
+                  <span className="text-biru-700 font-medium">
+                    Program Studi Diterima
+                  </span>
+                  <span className="sm:col-span-2 font-bold text-biru-950 text-sm">
+                    {data.jenjang_diterima} {data.prodi_diterima}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1 border-b border-biru-100">
+                  <span className="text-biru-700 font-medium">Fakultas</span>
+                  <span className="sm:col-span-2 text-biru-950">
+                    {data.fakultas_diterima}
+                  </span>
+                </div>
+                {data.nim_resmi && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1">
+                    <span className="text-biru-900 font-bold">
+                      NIM Resmi Terbit
+                    </span>
+                    <span className="sm:col-span-2 font-mono font-extrabold text-biru-950 text-sm">
+                      {data.nim_resmi}
+                    </span>
+                  </div>
+                )}
               </div>
-              <p className="font-bold text-biru-950 underline underline-offset-4">
-                Dr. Yohanes Sudarsono, M.Kom.
+
+              <p>
+                Kepada calon mahasiswa yang bersangkutan diwajibkan untuk
+                menyelesaikan tahapan registrasi ulang administrasi dan
+                pembayaran Uang Kuliah Tunggal (UKT) sebelum batas waktu yang
+                ditentukan.
               </p>
-              <p className="text-[11px] text-biru-800 font-mono">
-                NIDN: 0612087501
-              </p>
+            </div>
+
+            {/* Tanda Tangan & QR Verifikasi Otentisitas */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-6 border-t border-biru-200">
+              <div className="flex items-center gap-4 text-left">
+                <div className="w-20 h-20 bg-biru-100 border border-biru-300 rounded-xl flex items-center justify-center p-2 text-center text-[10px] text-biru-800 font-mono">
+                  [QR-CODE VERIFIKASI]
+                </div>
+                <div className="text-[11px] text-biru-800 space-y-0.5">
+                  <p className="font-semibold text-biru-950">
+                    Dokumen Digital Terverifikasi
+                  </p>
+                  <p>Keabsahan dokumen ini dapat diverifikasi di:</p>
+                  <p className="font-mono text-biru-700 text-[10px]">
+                    https://pmb.pignatelli.ac.id/verifikasi-loa/
+                    {data.pendaftar_id}
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-center sm:text-right space-y-1">
+                <p className="text-xs text-biru-800">
+                  Surakarta, {data.tanggal_sk || "2026"}
+                </p>
+                <p className="text-xs font-bold text-biru-950">
+                  Rektor Universitas Pignatelli Triputra
+                </p>
+                <div className="h-14 flex items-center justify-center sm:justify-end">
+                  <span className="px-3 py-1 rounded border border-biru-400 bg-biru-50 text-[11px] font-serif italic text-biru-800">
+                    [Tanda Tangan Digital Resmi]
+                  </span>
+                </div>
+                <p className="text-xs font-bold text-biru-950 underline">
+                  Rektorat PMB Universitas Pignatelli Triputra
+                </p>
+                <p className="text-[11px] text-biru-700">
+                  NIP. 197805122005011002
+                </p>
+              </div>
             </div>
           </div>
         </div>

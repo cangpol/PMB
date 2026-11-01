@@ -15,14 +15,16 @@ use api::{
     config::AppConfig,
     modules::{
         auth::{admin_router, auth_router, handler::me_handler},
+        cbt::cbt_router,
         cms::cms_router,
         dashboard::dashboard_router,
-        health::health_check_handler,
+        health::{health_check_handler, liveness_handler, readiness_handler},
         kelulusan::kelulusan_router,
         konfigurasi::konfigurasi_router,
         master::master_router,
         pembayaran::pembayaran_router,
         pendaftaran::pendaftaran_router,
+        rpl::rpl_router,
         ujian::ujian_router,
     },
     openapi::ApiDoc,
@@ -90,9 +92,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 6. Siapkan Shared AppState
     let state = AppState::new(db_pool, session_store, config.clone());
 
-    // 7. Setup CORS
+    // 6b. Jalankan Background Worker Antrean Email
+    tokio::spawn(api::modules::email_queue::start_email_worker(
+        state.db.clone(),
+        state.mail_sender.clone(),
+    ));
+
+    // 7. Setup CORS Ketat & Keamanan Asal Permintaan
     let cors = CorsLayer::new()
-        .allow_origin(Any)
         .allow_methods([
             Method::GET,
             Method::POST,
@@ -100,8 +107,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Method::DELETE,
             Method::OPTIONS,
         ])
-        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::COOKIE])
-        .allow_credentials(false);
+        .allow_headers([
+            header::CONTENT_TYPE,
+            header::AUTHORIZATION,
+            header::COOKIE,
+            header::ACCEPT,
+            header::HeaderName::from_static("x-signature-key"),
+        ]);
+
+    let origins: Vec<header::HeaderValue> = config
+        .cors_origin
+        .iter()
+        .filter_map(|s| s.parse::<header::HeaderValue>().ok())
+        .collect();
+
+    let cors = if !origins.is_empty() {
+        cors.allow_origin(origins).allow_credentials(true)
+    } else {
+        cors.allow_origin(Any).allow_credentials(false)
+    };
 
     // 8. Komposisi Router Modular Monolith
     let api_router = Router::new()
@@ -112,17 +136,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest("/pendaftaran", pendaftaran_router())
         .nest("/pembayaran", pembayaran_router())
         .nest("/ujian", ujian_router())
+        .nest("/cbt", cbt_router())
         .nest("/kelulusan", kelulusan_router())
+        .nest("/rpl", rpl_router())
         .nest("/cms", cms_router())
         .nest("/dashboard", dashboard_router())
         .route("/me", get(me_handler))
         .route("/health", get(health_check_handler))
+        .route("/health/live", get(liveness_handler))
+        .route("/health/ready", get(readiness_handler))
         .route("/openapi.json", get(openapi_json_handler));
 
     let app = Router::new()
+        .route("/health", get(health_check_handler))
+        .route("/health/live", get(liveness_handler))
+        .route("/health/ready", get(readiness_handler))
         .nest("/api", api_router)
         .merge(SwaggerUi::new("/swagger-ui").url("/api/openapi.json", ApiDoc::openapi()))
         .merge(SwaggerUi::new("/api/docs").url("/api/openapi.json", ApiDoc::openapi()))
+        .layer(axum::middleware::from_fn(security_headers_middleware))
         .layer(cors)
         .with_state(state);
 
@@ -144,4 +176,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn openapi_json_handler() -> impl IntoResponse {
     let doc = ApiDoc::openapi();
     Json(doc)
+}
+
+/// Middleware HTTP Security Headers (OWASP Top 10 Best Practices)
+async fn security_headers_middleware(
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let mut response = next.run(req).await;
+    let headers = response.headers_mut();
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        header::HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(
+        header::X_FRAME_OPTIONS,
+        header::HeaderValue::from_static("DENY"),
+    );
+    headers.insert(
+        header::HeaderName::from_static("x-xss-protection"),
+        header::HeaderValue::from_static("1; mode=block"),
+    );
+    headers.insert(
+        header::REFERRER_POLICY,
+        header::HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+    headers.insert(
+        header::HeaderName::from_static("permissions-policy"),
+        header::HeaderValue::from_static("geolocation=(), camera=(), microphone=()"),
+    );
+    headers.insert(
+        header::CONTENT_SECURITY_POLICY,
+        header::HeaderValue::from_static(
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https: http:;",
+        ),
+    );
+    response
 }

@@ -27,6 +27,11 @@ postgres-data/
 redis-data/
 minio-data/
 
+# Test Artifacts & Playwright
+apps/web/test-results/
+apps/web/playwright-report/
+backups/
+
 # OS / Editor files
 .DS_Store
 Thumbs.db

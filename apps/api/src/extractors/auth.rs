@@ -40,6 +40,10 @@ impl AuthUser {
     pub fn is_calon(&self) -> bool {
         self.role == "calon_mahasiswa" || self.role == "super_admin"
     }
+
+    pub fn has_any_role(&self, roles: &[&str]) -> bool {
+        roles.contains(&self.role.as_str())
+    }
 }
 
 impl<S> FromRequestParts<S> for AuthUser

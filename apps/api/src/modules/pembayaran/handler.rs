@@ -1,7 +1,8 @@
 use axum::{
     Json, Router,
-    extract::{Path, State},
-    response::IntoResponse,
+    extract::{Path, Query, State},
+    http::header,
+    response::{IntoResponse, Response},
     routing::{get, post},
 };
 use utoipa::OpenApi;
@@ -13,8 +14,11 @@ use crate::{
     modules::{
         pembayaran::{
             dto::{
-                CekVoucherRequest, CekVoucherResponse, KonfirmasiBayarRequest,
-                PembayaranDetailResponse, PilihMetodeRequest,
+                AdminTransaksiItem, CekVoucherRequest, CekVoucherResponse, ChargePaymentRequest,
+                FilterTransaksiKeuanganRequest, KonfirmasiBayarRequest, ListTransaksiAdminResponse,
+                MidtransWebhookPayload, MockWebhookPayload, PembayaranDetailResponse,
+                PilihMetodeRequest, RekonsiliasiResponse, RingkasanKeuanganResponse,
+                TagihanWithTransaksiResponse, TransaksiDetailResponse,
             },
             repository::PembayaranRepository,
             service::PembayaranService,
@@ -30,16 +34,32 @@ use crate::{
         cek_voucher_handler,
         get_my_tagihan_handler,
         buat_tagihan_formulir_handler,
+        charge_payment_handler,
+        midtrans_webhook_handler,
+        mock_webhook_handler,
         simulasi_va_bayar_handler,
         admin_konfirmasi_bayar_handler,
-        admin_list_pembayaran_handler
+        admin_konfirmasi_manual_handler,
+        admin_rekonsiliasi_handler,
+        admin_list_pembayaran_handler,
+        admin_ekspor_transaksi_handler
     ),
     components(schemas(
         CekVoucherRequest,
         CekVoucherResponse,
         PilihMetodeRequest,
+        ChargePaymentRequest,
         KonfirmasiBayarRequest,
         PembayaranDetailResponse,
+        TransaksiDetailResponse,
+        TagihanWithTransaksiResponse,
+        MidtransWebhookPayload,
+        MockWebhookPayload,
+        FilterTransaksiKeuanganRequest,
+        RingkasanKeuanganResponse,
+        AdminTransaksiItem,
+        ListTransaksiAdminResponse,
+        RekonsiliasiResponse,
         ApiErrorResponse
     ))
 )]
@@ -50,9 +70,18 @@ pub fn pembayaran_router() -> Router<AppState> {
         .route("/cek-voucher", post(cek_voucher_handler))
         .route("/my-tagihan", get(get_my_tagihan_handler))
         .route("/buat-tagihan", post(buat_tagihan_formulir_handler))
+        .route("/charge", post(charge_payment_handler))
+        .route("/webhook/midtrans", post(midtrans_webhook_handler))
+        .route("/webhook/mock", post(mock_webhook_handler))
         .route("/simulasi-va-bayar/{id}", post(simulasi_va_bayar_handler))
         .route("/admin/konfirmasi", post(admin_konfirmasi_bayar_handler))
+        .route(
+            "/admin/konfirmasi-manual",
+            post(admin_konfirmasi_manual_handler),
+        )
+        .route("/admin/rekonsiliasi/{id}", post(admin_rekonsiliasi_handler))
         .route("/admin/list", get(admin_list_pembayaran_handler))
+        .route("/admin/ekspor", get(admin_ekspor_transaksi_handler))
 }
 
 #[utoipa::path(
@@ -70,8 +99,11 @@ pub async fn cek_voucher_handler(
     State(state): State<AppState>,
     ValidatedJson(req): ValidatedJson<CekVoucherRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let service = PembayaranService::new(PembayaranRepository::new(state.db.clone()));
-    let res = service.cek_voucher(req).await?;
+    let service = PembayaranService::new(
+        PembayaranRepository::new(state.db.clone()),
+        state.payment_gateway.clone(),
+    );
+    let res = service.cek_voucher(req, None, None).await?;
     Ok(Json(res))
 }
 
@@ -80,7 +112,7 @@ pub async fn cek_voucher_handler(
     path = "/api/pembayaran/my-tagihan",
     tag = "Pembayaran",
     responses(
-        (status = 200, description = "Daftar tagihan pendaftar aktif", body = Vec<PembayaranDetailResponse>),
+        (status = 200, description = "Tagihan aktif pendaftar", body = Option<TagihanWithTransaksiResponse>),
         (status = 401, description = "Belum login", body = ApiErrorResponse)
     )
 )]
@@ -96,8 +128,11 @@ pub async fn get_my_tagihan_handler(
             AppError::NotFound("Belum ada formulir pendaftaran untuk akun ini".to_string())
         })?;
 
-    let service = PembayaranService::new(PembayaranRepository::new(state.db.clone()));
-    let res = service.list_tagihan_pendaftar(pendaftar.id).await?;
+    let service = PembayaranService::new(
+        PembayaranRepository::new(state.db.clone()),
+        state.payment_gateway.clone(),
+    );
+    let res = service.get_my_active_tagihan(pendaftar.id).await?;
     Ok(Json(res))
 }
 
@@ -107,8 +142,8 @@ pub async fn get_my_tagihan_handler(
     tag = "Pembayaran",
     request_body = PilihMetodeRequest,
     responses(
-        (status = 200, description = "Tagihan pendaftaran berhasil diterbitkan", body = PembayaranDetailResponse),
-        (status = 400, description = "Permintaan tidak valid", body = ApiErrorResponse)
+        (status = 200, description = "Tagihan berhasil diterbitkan", body = TagihanWithTransaksiResponse),
+        (status = 401, description = "Belum login", body = ApiErrorResponse)
     )
 )]
 pub async fn buat_tagihan_formulir_handler(
@@ -121,15 +156,161 @@ pub async fn buat_tagihan_formulir_handler(
         .find_by_user_id(auth_user.user_id)
         .await?
         .ok_or_else(|| {
-            AppError::BadRequest("Silakan isi formulir biodata terlebih dahulu".to_string())
+            AppError::NotFound(
+                "Silakan isi tahap awal formulir pendaftaran terlebih dahulu".to_string(),
+            )
         })?;
 
-    let biaya_asli = 250_000; // Standar biaya formulir pendaftaran PMB
-    let service = PembayaranService::new(PembayaranRepository::new(state.db.clone()));
+    let service = PembayaranService::new(
+        PembayaranRepository::new(state.db.clone()),
+        state.payment_gateway.clone(),
+    );
+
     let res = service
-        .buat_tagihan_formulir(pendaftar.id, biaya_asli, req)
+        .buat_atau_ambil_tagihan_formulir(
+            pendaftar.id,
+            pendaftar.prodi_pilihan_1,
+            pendaftar.jalur_id,
+            pendaftar.gelombang_id,
+            req.kode_voucher,
+        )
         .await?;
+
     Ok(Json(res))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/pembayaran/charge",
+    tag = "Pembayaran",
+    request_body = ChargePaymentRequest,
+    responses(
+        (status = 200, description = "Transaksi gateway berhasil dibuat (VA / QRIS)", body = TransaksiDetailResponse),
+        (status = 401, description = "Belum login", body = ApiErrorResponse)
+    )
+)]
+pub async fn charge_payment_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<ChargePaymentRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let repo = PembayaranRepository::new(state.db.clone());
+    let tagihan = repo
+        .find_tagihan_by_id(req.tagihan_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Tagihan pembayaran tidak ditemukan".to_string()))?;
+
+    // Proteksi IDOR: pastikan tagihan milik pendaftar user aktif (kecuali admin/keuangan)
+    if !auth_user.has_any_role(&["keuangan", "admin_pmb", "super_admin"]) {
+        let pendaftar_repo = PendaftaranRepository::new(state.db.clone());
+        let pendaftar = pendaftar_repo
+            .find_by_user_id(auth_user.user_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Data pendaftar tidak ditemukan".to_string()))?;
+
+        if tagihan.pendaftar_id != pendaftar.id {
+            return Err(AppError::Forbidden(
+                "Anda tidak memiliki hak akses untuk memproses tagihan pendaftar lain".to_string(),
+            ));
+        }
+    }
+
+    // Ambil data user
+    let user_row: (String, String, Option<String>) =
+        sqlx::query_as("SELECT nama_lengkap, email, no_hp FROM users WHERE id = $1")
+            .bind(auth_user.user_id)
+            .fetch_one(&state.db)
+            .await?;
+
+    let service = PembayaranService::new(repo, state.payment_gateway.clone());
+
+    let res = service
+        .charge_tagihan(
+            req.tagihan_id,
+            &req.metode_pembayaran,
+            &user_row.0,
+            &user_row.1,
+            user_row.2.as_deref().unwrap_or("08123456789"),
+        )
+        .await?;
+
+    Ok(Json(res))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/pembayaran/webhook/midtrans",
+    tag = "Pembayaran",
+    request_body = MidtransWebhookPayload,
+    responses(
+        (status = 200, description = "Webhook Midtrans berhasil diproses")
+    )
+)]
+pub async fn midtrans_webhook_handler(
+    State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
+    Json(payload): Json<MidtransWebhookPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    // Proteksi rate limit pada endpoint notifikasi webhook
+    state
+        .rate_limiter
+        .check_rate_limit(&format!("webhook:midtrans:{}", payload.order_id), 120, 60)
+        .await?;
+
+    let header_sig = headers
+        .get("x-signature-key")
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.to_string());
+
+    let service = PembayaranService::new(
+        PembayaranRepository::new(state.db.clone()),
+        state.payment_gateway.clone(),
+    );
+
+    let (settled, message) = service.handle_midtrans_webhook(payload, header_sig).await?;
+    Ok(Json(serde_json::json!({
+        "status": "ok",
+        "settled": settled,
+        "message": message
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/pembayaran/webhook/mock",
+    tag = "Pembayaran",
+    request_body = MockWebhookPayload,
+    responses(
+        (status = 200, description = "Webhook mock dev berhasil diproses")
+    )
+)]
+pub async fn mock_webhook_handler(
+    State(state): State<AppState>,
+    Json(payload): Json<MockWebhookPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    if state.payment_gateway.provider_name() != "mock" {
+        return Err(AppError::Forbidden(
+            "Mock webhook dinonaktifkan pada provider gateway aktif".to_string(),
+        ));
+    }
+
+    // Proteksi rate limit pada endpoint notifikasi mock webhook
+    state
+        .rate_limiter
+        .check_rate_limit(&format!("webhook:mock:{}", payload.order_id), 120, 60)
+        .await?;
+
+    let service = PembayaranService::new(
+        PembayaranRepository::new(state.db.clone()),
+        state.payment_gateway.clone(),
+    );
+
+    let (settled, message) = service.handle_mock_webhook(payload).await?;
+    Ok(Json(serde_json::json!({
+        "status": "ok",
+        "settled": settled,
+        "message": message
+    })))
 }
 
 #[utoipa::path(
@@ -137,33 +318,63 @@ pub async fn buat_tagihan_formulir_handler(
     path = "/api/pembayaran/simulasi-va-bayar/{id}",
     tag = "Pembayaran",
     params(
-        ("id" = Uuid, Path, description = "ID Pembayaran")
+        ("id" = Uuid, Path, description = "ID Tagihan atau Pembayaran yang akan disimulasikan lunas")
     ),
     responses(
-        (status = 200, description = "Simulasi pelunasan Virtual Account berhasil"),
+        (status = 200, description = "Simulasi pembayaran lunas berhasil"),
+        (status = 403, description = "Akses ditolak atau bukan mode mock", body = ApiErrorResponse),
         (status = 404, description = "Tagihan tidak ditemukan", body = ApiErrorResponse)
     )
 )]
 pub async fn simulasi_va_bayar_handler(
-    State(state): State<AppState>,
+    auth_user: AuthUser,
     Path(id): Path<Uuid>,
+    State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    let service = PembayaranService::new(PembayaranRepository::new(state.db.clone()));
+    if state.payment_gateway.provider_name() != "mock" {
+        return Err(AppError::Forbidden(
+            "Simulasi pembayaran hanya diizinkan pada mode Mock Gateway (lingkungan dev/pengujian)"
+                .to_string(),
+        ));
+    }
+
+    let repo = PembayaranRepository::new(state.db.clone());
+    let tagihan = repo
+        .find_tagihan_by_id(id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Tagihan pembayaran tidak ditemukan".to_string()))?;
+
+    // Otorisasi: pemilik tagihan atau staf berwenang
+    if !auth_user.has_any_role(&["keuangan", "admin_pmb", "super_admin"]) {
+        let pendaftar_repo = PendaftaranRepository::new(state.db.clone());
+        let pendaftar = pendaftar_repo
+            .find_by_user_id(auth_user.user_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Data pendaftar tidak ditemukan".to_string()))?;
+
+        if tagihan.pendaftar_id != pendaftar.id {
+            return Err(AppError::Forbidden(
+                "Anda tidak berhak mensimulasikan pembayaran tagihan ini".to_string(),
+            ));
+        }
+    }
+
+    let service = PembayaranService::new(repo, state.payment_gateway.clone());
     service.simulasi_va_bayar(id).await?;
     Ok(Json(serde_json::json!({
         "status": "ok",
-        "pesan": "Pembayaran Virtual Account berhasil dilunasi secara otomatis"
+        "pesan": "Simulasi pembayaran lunas berhasil dicatat. Status pendaftaran telah maju."
     })))
 }
 
 #[utoipa::path(
     post,
     path = "/api/pembayaran/admin/konfirmasi",
-    tag = "Pembayaran Admin",
+    tag = "Pembayaran",
     request_body = KonfirmasiBayarRequest,
     responses(
         (status = 200, description = "Konfirmasi pembayaran berhasil diproses"),
-        (status = 403, description = "Akses khusus staf keuangan", body = ApiErrorResponse)
+        (status = 403, description = "Akses ditolak (bukan admin)", body = ApiErrorResponse)
     )
 )]
 pub async fn admin_konfirmasi_bayar_handler(
@@ -171,51 +382,168 @@ pub async fn admin_konfirmasi_bayar_handler(
     State(state): State<AppState>,
     Json(req): Json<KonfirmasiBayarRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    if !auth_user.is_keuangan() {
+    if !auth_user.has_any_role(&["keuangan", "admin_pmb", "super_admin"]) {
         return Err(AppError::Forbidden(
             "Hanya staf bagian keuangan yang dapat memverifikasi pembayaran".to_string(),
         ));
     }
-    let service = PembayaranService::new(PembayaranRepository::new(state.db.clone()));
-    let payload = serde_json::to_value(&req).ok();
-    let p_id = req.pembayaran_id;
-    service.konfirmasi_keuangan(auth_user.user_id, req).await?;
 
-    let _ = crate::security::record_audit_log(
-        &state.db,
-        Some(auth_user.user_id),
-        "KONFIRMASI_PEMBAYARAN",
-        "pembayaran",
-        Some(p_id),
-        None,
-        payload,
+    let service = PembayaranService::new(
+        PembayaranRepository::new(state.db.clone()),
+        state.payment_gateway.clone(),
+    );
+    service
+        .manual_settle_tagihan(auth_user.user_id, req.pembayaran_id, req.catatan)
+        .await?;
+
+    Ok(Json(serde_json::json!({
+        "status": "ok",
+        "pesan": "Status pembayaran berhasil diverifikasi dan kemajuan pendaftar telah dimutakhirkan"
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/pembayaran/admin/konfirmasi-manual",
+    tag = "Pembayaran",
+    request_body = KonfirmasiBayarRequest,
+    responses(
+        (status = 200, description = "Pelunasan tagihan manual berhasil diproses"),
+        (status = 403, description = "Akses ditolak (bukan admin)", body = ApiErrorResponse)
     )
-    .await;
+)]
+pub async fn admin_konfirmasi_manual_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<KonfirmasiBayarRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    if !auth_user.has_any_role(&["keuangan", "admin_pmb", "super_admin"]) {
+        return Err(AppError::Forbidden(
+            "Hanya staf bagian keuangan yang dapat memverifikasi pembayaran".to_string(),
+        ));
+    }
 
-    Ok(Json(
-        serde_json::json!({"status": "ok", "pesan": "Status pembayaran berhasil diverifikasi"}),
-    ))
+    let service = PembayaranService::new(
+        PembayaranRepository::new(state.db.clone()),
+        state.payment_gateway.clone(),
+    );
+    service
+        .manual_settle_tagihan(auth_user.user_id, req.pembayaran_id, req.catatan)
+        .await?;
+
+    Ok(Json(serde_json::json!({
+        "status": "ok",
+        "pesan": "Pelunasan tagihan manual berhasil dicatat. Status pendaftar telah maju."
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/pembayaran/admin/rekonsiliasi/{id}",
+    tag = "Pembayaran",
+    params(
+        ("id" = Uuid, Path, description = "ID Transaksi pembayaran yang akan direkonsiliasi")
+    ),
+    responses(
+        (status = 200, description = "Hasil rekonsiliasi gateway", body = RekonsiliasiResponse),
+        (status = 403, description = "Akses ditolak", body = ApiErrorResponse)
+    )
+)]
+pub async fn admin_rekonsiliasi_handler(
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    if !auth_user.has_any_role(&["keuangan", "admin_pmb", "super_admin"]) {
+        return Err(AppError::Forbidden(
+            "Hanya staf bagian keuangan yang dapat melakukan rekonsiliasi gateway".to_string(),
+        ));
+    }
+
+    let service = PembayaranService::new(
+        PembayaranRepository::new(state.db.clone()),
+        state.payment_gateway.clone(),
+    );
+    let res = service.rekonsiliasi_transaksi(id).await?;
+    Ok(Json(res))
 }
 
 #[utoipa::path(
     get,
     path = "/api/pembayaran/admin/list",
-    tag = "Pembayaran Admin",
+    tag = "Pembayaran",
+    params(
+        ("q" = Option<String>, Query, description = "Kata kunci pencarian"),
+        ("status" = Option<String>, Query, description = "Filter status pembayaran"),
+        ("metode" = Option<String>, Query, description = "Filter metode pembayaran"),
+        ("page" = Option<i64>, Query, description = "Halaman"),
+        ("limit" = Option<i64>, Query, description = "Jumlah data per halaman")
+    ),
     responses(
-        (status = 200, description = "Daftar seluruh transaksi pembayaran", body = Vec<PembayaranDetailResponse>),
+        (status = 200, description = "Daftar seluruh transaksi pembayaran", body = ListTransaksiAdminResponse),
         (status = 403, description = "Akses ditolak", body = ApiErrorResponse)
     )
 )]
 pub async fn admin_list_pembayaran_handler(
     auth_user: AuthUser,
     State(state): State<AppState>,
+    Query(filter): Query<FilterTransaksiKeuanganRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    if !auth_user.is_keuangan() && !auth_user.is_admin() {
+    if !auth_user.has_any_role(&["keuangan", "admin_pmb", "super_admin"]) {
         return Err(AppError::Forbidden(
-            "Akses khusus staf keuangan dan admin PMB".to_string(),
+            "Hanya staf bagian keuangan yang dapat melihat daftar transaksi".to_string(),
         ));
     }
-    let service = PembayaranService::new(PembayaranRepository::new(state.db.clone()));
-    let list = service.list_all().await?;
-    Ok(Json(list))
+
+    let service = PembayaranService::new(
+        PembayaranRepository::new(state.db.clone()),
+        state.payment_gateway.clone(),
+    );
+    let res = service.list_transaksi_keuangan(&filter).await?;
+    Ok(Json(res))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/pembayaran/admin/ekspor",
+    tag = "Pembayaran",
+    params(
+        ("q" = Option<String>, Query, description = "Kata kunci pencarian"),
+        ("status" = Option<String>, Query, description = "Filter status pembayaran"),
+        ("metode" = Option<String>, Query, description = "Filter metode pembayaran")
+    ),
+    responses(
+        (status = 200, description = "File CSV rekonsiliasi keuangan transaksi PMB")
+    )
+)]
+pub async fn admin_ekspor_transaksi_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Query(filter): Query<FilterTransaksiKeuanganRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    if !auth_user.has_any_role(&["keuangan", "admin_pmb", "super_admin"]) {
+        return Err(AppError::Forbidden(
+            "Hanya staf bagian keuangan yang dapat mengekspor laporan transaksi".to_string(),
+        ));
+    }
+
+    let service = PembayaranService::new(
+        PembayaranRepository::new(state.db.clone()),
+        state.payment_gateway.clone(),
+    );
+    let csv = service.ekspor_transaksi_csv(&filter).await?;
+
+    let filename = format!(
+        "laporan_keuangan_pmb_{}.csv",
+        chrono::Utc::now().format("%Y%m%d_%H%M%S")
+    );
+
+    Ok(Response::builder()
+        .header(header::CONTENT_TYPE, "text/csv; charset=utf-8")
+        .header(
+            header::CONTENT_DISPOSITION,
+            format!("attachment; filename=\"{}\"", filename),
+        )
+        .body(csv)
+        .unwrap())
 }

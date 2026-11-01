@@ -26,6 +26,7 @@ pub struct Pendaftar {
     pub prodi_pilihan_1: Uuid,
     pub prodi_pilihan_2: Option<Uuid>,
     pub data_formulir: serde_json::Value,
+    pub channel: String,
     pub catatan_verifikator: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
