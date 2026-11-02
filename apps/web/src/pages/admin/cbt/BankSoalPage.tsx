@@ -189,10 +189,10 @@ export const BankSoalPage: React.FC = () => {
 
       toast({
         title: "Impor Selesai",
-        description: `Berhasil mengimpor ${data.berhasil} soal. Gagal: ${data.gagal}.`,
+        description: `Berhasil mengimpor ${data.total_sukses} soal. Gagal: ${data.total_gagal}.`,
       });
 
-      if (data.berhasil > 0) {
+      if (data.total_sukses > 0) {
         loadBankSoal();
       }
     } catch (err: unknown) {
@@ -678,20 +678,20 @@ export const BankSoalPage: React.FC = () => {
                 </div>
                 <div className="flex gap-4">
                   <span className="text-emerald-600">
-                    ✓ Berhasil: {importResult.berhasil}
+                    ✓ Berhasil: {importResult.total_sukses}
                   </span>
                   <span className="text-rose-600">
-                    ✗ Gagal: {importResult.gagal}
+                    ✗ Gagal: {importResult.total_gagal}
                   </span>
                 </div>
 
-                {importResult.errors && importResult.errors.length > 0 && (
+                {importResult.error_baris && importResult.error_baris.length > 0 && (
                   <div className="mt-2 pt-2 border-t border-slate-200">
                     <p className="font-semibold text-rose-700 mb-1">
                       Rincian Baris Error:
                     </p>
                     <ul className="max-h-32 overflow-y-auto space-y-1 text-[11px] text-rose-600">
-                      {importResult.errors.map((err, i) => (
+                      {importResult.error_baris.map((err, i) => (
                         <li key={i}>
                           Baris {err.baris}: {err.pesan}
                         </li>

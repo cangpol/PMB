@@ -191,6 +191,7 @@ export const TahunGelombangPage: React.FC = () => {
       if (editingGelombang) {
         const updatePayload: UpdateGelombangRequest = {
           nama_gelombang: payload.nama_gelombang,
+          nomor_gelombang: payload.nomor_gelombang,
           tahun_akademik_id: payload.tahun_akademik_id,
           status: payload.status,
           tgl_mulai: payload.tgl_mulai,

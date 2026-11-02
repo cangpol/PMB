@@ -1,52 +1,22 @@
 import * as React from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 import {
-  Menu,
-  ArrowRight,
   ShieldCheck,
   Mail,
   Phone,
   MapPin,
   ExternalLink,
   GraduationCap,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "../ui/Button";
-import { Drawer } from "../ui/Drawer";
-import logoSvg from "../../assets/logo-placeholder.svg";
+import { PublicNavbar } from "./PublicNavbar";
 
 const CURRENT_YEAR = 2026;
-
-interface NavLinkItem {
-  label: string;
-  href: string;
-}
-
-const NAV_LINKS: NavLinkItem[] = [
-  { label: "Beranda", href: "/" },
-  { label: "Jalur Masuk", href: "/jalur-masuk" },
-  { label: "Program Studi", href: "/prodi" },
-  { label: "Biaya & UKT", href: "/biaya" },
-  { label: "Jadwal", href: "/jadwal" },
-  { label: "Pengumuman", href: "/pengumuman" },
-  { label: "FAQ", href: "/faq" },
-  { label: "Kontak", href: "/kontak" },
-];
 
 export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
   children,
 }) => {
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const [isScrolled, setIsScrolled] = React.useState(false);
-  const location = useLocation();
-
-  React.useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   return (
     <div className="flex min-h-screen flex-col bg-putih text-biru-950 font-sans selection:bg-biru-100 selection:text-biru-950">
       {/* Skip to main content for accessibility */}
@@ -59,15 +29,15 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
 
       {/* Top Banner Akademik */}
       <div className="border-b border-biru-900 bg-biru-950 px-4 py-2 text-xs text-biru-200">
-        <div className="mx-auto flex max-w-[1240px] items-center justify-between">
+        <div className="mx-auto flex max-w-[1280px] items-center justify-between">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-biru-400" />
-            <span className="font-medium">
+            <ShieldCheck className="h-4 w-4 text-biru-400 shrink-0" />
+            <span className="font-medium truncate">
               PMB Tahun Akademik 2026/2027 Telah Dibuka Resmi &middot; Beasiswa
               Unggulan Triputra Group
             </span>
           </div>
-          <div className="hidden md:flex items-center gap-6 text-biru-200">
+          <div className="hidden md:flex items-center gap-6 text-biru-200 shrink-0">
             <a
               href="tel:+6281234567890"
               className="flex items-center gap-1.5 hover:text-putih transition-colors"
@@ -93,166 +63,8 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
         </div>
       </div>
 
-      {/* Header & Sticky Navbar */}
-      <header
-        className={`sticky top-0 z-40 transition-all duration-200 ${
-          isScrolled
-            ? "border-b border-biru-200/80 bg-putih/90 shadow-soft-sm backdrop-blur-md"
-            : "border-b border-transparent bg-putih/95 sm:bg-putih/85 backdrop-blur-sm"
-        }`}
-      >
-        <div className="mx-auto flex max-w-[1240px] items-center justify-between px-4 py-3 sm:px-6">
-          {/* Logo Brand */}
-          <Link
-            to="/"
-            className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-biru-500"
-            aria-label="Beranda PMB Universitas Pignatelli Triputra"
-          >
-            <img
-              src={logoSvg}
-              alt="Logo Universitas Pignatelli Triputra"
-              className="h-10 sm:h-11 w-auto object-contain"
-            />
-          </Link>
-
-          {/* Desktop Navigation Links */}
-          <nav
-            aria-label="Navigasi Utama"
-            className="hidden xl:flex items-center gap-5 text-sm font-medium text-biru-800"
-          >
-            {NAV_LINKS.map((link) => {
-              const isActive =
-                link.href === "/"
-                  ? location.pathname === "/"
-                  : location.pathname.startsWith(link.href);
-              return (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className={`transition-colors hover:text-biru-950 py-1 ${
-                    isActive
-                      ? "font-bold text-biru-950 border-b-2 border-biru-700"
-                      : ""
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Action Buttons (Desktop) */}
-          <div className="hidden sm:flex items-center gap-2.5">
-            <Link to="/cek-kelulusan" className="hidden lg:inline-block">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs text-biru-800 hover:text-biru-950"
-              >
-                Cek Kelulusan
-              </Button>
-            </Link>
-            <Link to="/login">
-              <Button variant="outline" size="sm">
-                Masuk
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button
-                variant="primary"
-                size="sm"
-                rightIcon={<ArrowRight className="h-4 w-4" />}
-              >
-                Daftar Sekarang
-              </Button>
-            </Link>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="flex xl:hidden items-center gap-2">
-            <Link to="/register" className="sm:hidden">
-              <Button variant="primary" size="sm">
-                Daftar
-              </Button>
-            </Link>
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(true)}
-              aria-label="Buka menu navigasi utama"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-biru-200 bg-putih text-biru-900 shadow-soft-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-biru-500"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Mobile Drawer Navigation */}
-      <Drawer
-        isOpen={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-        side="right"
-        title="Menu Navigasi PMB"
-      >
-        <div className="flex flex-col gap-5 py-2">
-          <nav aria-label="Navigasi Mobile" className="flex flex-col gap-1">
-            {NAV_LINKS.map((link) => {
-              const isActive =
-                link.href === "/"
-                  ? location.pathname === "/"
-                  : location.pathname.startsWith(link.href);
-              return (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-biru-100 font-bold text-biru-950"
-                      : "text-biru-800 hover:bg-biru-50 hover:text-biru-950"
-                  }`}
-                >
-                  <span>{link.label}</span>
-                  <ArrowRight className="h-4 w-4 text-biru-500" />
-                </Link>
-              );
-            })}
-            <Link
-              to="/cek-kelulusan"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-biru-900 bg-biru-50 border border-biru-200 mt-1"
-            >
-              <span className="flex items-center gap-2 font-semibold">
-                <GraduationCap className="h-4 w-4 text-biru-600" />
-                Cek Status Kelulusan
-              </span>
-              <ArrowRight className="h-4 w-4 text-biru-500" />
-            </Link>
-          </nav>
-
-          <div className="border-t border-biru-100 pt-4 flex flex-col gap-2.5">
-            <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="outline" className="w-full">
-                Masuk ke Akun
-              </Button>
-            </Link>
-            <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="primary" className="w-full">
-                Daftar Sekarang
-              </Button>
-            </Link>
-          </div>
-
-          <div className="rounded-xl border border-biru-200 bg-biru-50 p-4 text-xs text-biru-800 space-y-1.5">
-            <p className="font-semibold text-biru-950">Layanan Informasi PMB</p>
-            <p>Senin &ndash; Jumat: 08.00 &ndash; 16.00 WIB</p>
-            <p>Sabtu: 08.00 &ndash; 13.00 WIB</p>
-            <p className="font-medium text-biru-700">
-              WhatsApp: +62 812-3456-7890
-            </p>
-          </div>
-        </div>
-      </Drawer>
+      {/* Satu Komponen Navbar Terpadu untuk Seluruh Halaman Publik */}
+      <PublicNavbar />
 
       {/* Main Content Area with bottom padding on mobile for sticky floating action */}
       <main id="main-content" className="flex-1 pb-20 sm:pb-0">

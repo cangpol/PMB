@@ -227,6 +227,7 @@ export const FakultasProdiPage: React.FC = () => {
     try {
       if (editingProdi) {
         const updatePayload: UpdateProdiKonfigurasiRequest = {
+          kode_prodi: prodiForm.kode_prodi,
           nama_prodi: prodiForm.nama_prodi,
           jenjang: prodiForm.jenjang,
           fakultas: prodiForm.fakultas,

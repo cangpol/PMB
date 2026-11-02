@@ -283,8 +283,8 @@ export const PresensiCbtPage: React.FC = () => {
                     {lastCheckIn.nama_peserta}
                   </p>
                   <p className="font-mono text-xs text-emerald-300">
-                    No: {lastCheckIn.nomor_peserta} • Metode:{" "}
-                    {lastCheckIn.metode_presensi}
+                    No: {lastCheckIn.nomor_peserta} • Status:{" "}
+                    {lastCheckIn.status_presensi}
                   </p>
                 </div>
               </div>

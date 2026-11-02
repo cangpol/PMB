@@ -68,6 +68,7 @@ import {
   TooltipTrigger,
   TooltipContent,
   FileUpload,
+  Logo,
 } from "../../components/ui";
 import {
   H3,
@@ -477,6 +478,45 @@ export const StyleguidePage: React.FC = () => {
               </CardContent>
             </Card>
 
+            {/* Logo Component Demo */}
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Identitas Institusi & Logo (Official Logo & Monogram Fallback)
+                </CardTitle>
+                <CardDescription>
+                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit (mencegah CLS)
+                  dan fallback monogram institusi jika terjadi kegagalan pemuatan gambar.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Mode Standar (Latar Terang / Navbar)
+                  </h4>
+                  <div className="p-4 rounded-xl border border-biru-100 bg-putih inline-block">
+                    <Logo width={220} height={44} />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Mode Gelap (Latar Gelap / Hero / Footer)
+                  </h4>
+                  <div className="p-4 rounded-xl bg-biru-950 border border-biru-900 inline-block">
+                    <Logo width={220} height={44} theme="dark" />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Fallback Monogram Otomatis (Saat URL Gambar Invalid)
+                  </h4>
+                  <div className="p-4 rounded-xl border border-biru-100 bg-biru-50/50 inline-block">
+                    <Logo width={220} height={44} src="/invalid-path-to-logo.svg" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Sparkline KPI Micro Visualizer */}
             <Card>
               <CardHeader>
@@ -537,6 +577,45 @@ export const StyleguidePage: React.FC = () => {
               </CardContent>
             </Card>
 
+            {/* Logo Component Demo */}
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Identitas Institusi & Logo (Official Logo & Monogram Fallback)
+                </CardTitle>
+                <CardDescription>
+                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit (mencegah CLS)
+                  dan fallback monogram institusi jika terjadi kegagalan pemuatan gambar.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Mode Standar (Latar Terang / Navbar)
+                  </h4>
+                  <div className="p-4 rounded-xl border border-biru-100 bg-putih inline-block">
+                    <Logo width={220} height={44} />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Mode Gelap (Latar Gelap / Hero / Footer)
+                  </h4>
+                  <div className="p-4 rounded-xl bg-biru-950 border border-biru-900 inline-block">
+                    <Logo width={220} height={44} theme="dark" />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Fallback Monogram Otomatis (Saat URL Gambar Invalid)
+                  </h4>
+                  <div className="p-4 rounded-xl border border-biru-100 bg-biru-50/50 inline-block">
+                    <Logo width={220} height={44} src="/invalid-path-to-logo.svg" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Elevation & Soft Blue Shadows */}
             <Card>
               <CardHeader>
@@ -584,6 +663,45 @@ export const StyleguidePage: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Logo Component Demo */}
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Identitas Institusi & Logo (Official Logo & Monogram Fallback)
+                </CardTitle>
+                <CardDescription>
+                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit (mencegah CLS)
+                  dan fallback monogram institusi jika terjadi kegagalan pemuatan gambar.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Mode Standar (Latar Terang / Navbar)
+                  </h4>
+                  <div className="p-4 rounded-xl border border-biru-100 bg-putih inline-block">
+                    <Logo width={220} height={44} />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Mode Gelap (Latar Gelap / Hero / Footer)
+                  </h4>
+                  <div className="p-4 rounded-xl bg-biru-950 border border-biru-900 inline-block">
+                    <Logo width={220} height={44} theme="dark" />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Fallback Monogram Otomatis (Saat URL Gambar Invalid)
+                  </h4>
+                  <div className="p-4 rounded-xl border border-biru-100 bg-biru-50/50 inline-block">
+                    <Logo width={220} height={44} src="/invalid-path-to-logo.svg" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* 2. BUTTONS & BADGES */}
@@ -607,6 +725,17 @@ export const StyleguidePage: React.FC = () => {
                     <Button variant="secondary">Tombol Secondary</Button>
                     <Button variant="outline">Tombol Outline</Button>
                     <Button variant="ghost">Tombol Ghost</Button>
+                  </div>
+                  <div className="mt-3 p-4 rounded-xl bg-biru-950 flex flex-wrap items-center gap-3">
+                    <span className="text-xs text-biru-300 mr-2">Varian Hero (Latar Gelap):</span>
+                    <Button variant="white">Tombol White (Hero CTA)</Button>
+                    <Button variant="outline-white">Tombol Outline White</Button>
+                  </div>
+                  {/* Varian Hero / Latar Gelap */}
+                  <div className="mt-3 p-4 rounded-xl bg-biru-950 flex flex-wrap items-center gap-3">
+                    <span className="text-xs text-biru-300 mr-2">Varian Hero (Latar Gelap):</span>
+                    <Button variant="white">Tombol White (Hero CTA)</Button>
+                    <Button variant="outline-white">Tombol Outline White</Button>
                   </div>
                 </div>
 
@@ -652,6 +781,45 @@ export const StyleguidePage: React.FC = () => {
                     <Button variant="secondary" disabled>
                       Tombol Dinonaktifkan
                     </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Logo Component Demo */}
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Identitas Institusi & Logo (Official Logo & Monogram Fallback)
+                </CardTitle>
+                <CardDescription>
+                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit (mencegah CLS)
+                  dan fallback monogram institusi jika terjadi kegagalan pemuatan gambar.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Mode Standar (Latar Terang / Navbar)
+                  </h4>
+                  <div className="p-4 rounded-xl border border-biru-100 bg-putih inline-block">
+                    <Logo width={220} height={44} />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Mode Gelap (Latar Gelap / Hero / Footer)
+                  </h4>
+                  <div className="p-4 rounded-xl bg-biru-950 border border-biru-900 inline-block">
+                    <Logo width={220} height={44} theme="dark" />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Fallback Monogram Otomatis (Saat URL Gambar Invalid)
+                  </h4>
+                  <div className="p-4 rounded-xl border border-biru-100 bg-biru-50/50 inline-block">
+                    <Logo width={220} height={44} src="/invalid-path-to-logo.svg" />
                   </div>
                 </div>
               </CardContent>
@@ -953,6 +1121,83 @@ export const StyleguidePage: React.FC = () => {
                     <Avatar size="xl">
                       <AvatarFallback initials="TR" />
                     </Avatar>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Logo Component Demo */}
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Identitas Institusi & Logo (Official Logo & Monogram Fallback)
+                </CardTitle>
+                <CardDescription>
+                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit (mencegah CLS) dan fallback monogram institusi jika terjadi kegagalan pemuatan gambar.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Mode Standar (Latar Terang / Navbar)
+                  </h4>
+                  <div className="p-4 rounded-xl border border-biru-100 bg-putih inline-block">
+                    <Logo width={220} height={44} />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Mode Gelap (Latar Gelap / Hero / Footer)
+                  </h4>
+                  <div className="p-4 rounded-xl bg-biru-950 border border-biru-900 inline-block">
+                    <Logo width={220} height={44} theme="dark" />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Fallback Monogram Otomatis (Saat URL Gambar Invalid)
+                  </h4>
+                  <div className="p-4 rounded-xl border border-biru-100 bg-biru-50/50 inline-block">
+                    <Logo width={220} height={44} src="/invalid-path-to-logo.svg" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Logo Component Demo */}
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Identitas Institusi & Logo (Official Logo & Monogram Fallback)
+                </CardTitle>
+                <CardDescription>
+                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit (mencegah CLS)
+                  dan fallback monogram institusi jika terjadi kegagalan pemuatan gambar.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Mode Standar (Latar Terang / Navbar)
+                  </h4>
+                  <div className="p-4 rounded-xl border border-biru-100 bg-putih inline-block">
+                    <Logo width={220} height={44} />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Mode Gelap (Latar Gelap / Hero / Footer)
+                  </h4>
+                  <div className="p-4 rounded-xl bg-biru-950 border border-biru-900 inline-block">
+                    <Logo width={220} height={44} theme="dark" />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-biru-700 mb-3">
+                    Fallback Monogram Otomatis (Saat URL Gambar Invalid)
+                  </h4>
+                  <div className="p-4 rounded-xl border border-biru-100 bg-biru-50/50 inline-block">
+                    <Logo width={220} height={44} src="/invalid-path-to-logo.svg" />
                   </div>
                 </div>
               </CardContent>

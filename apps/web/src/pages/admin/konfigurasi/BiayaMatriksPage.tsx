@@ -275,7 +275,7 @@ export const BiayaMatriksPage: React.FC = () => {
         prodi_id: simulasiProdi,
         jalur_id: simulasiJalur,
         gelombang_id: simulasiGelombang,
-        kode_voucher: simulasiVoucher.trim() || null,
+        voucher_kode: simulasiVoucher.trim() || undefined,
       });
       setSimulasiResult(res);
     } catch (err: unknown) {
@@ -744,9 +744,9 @@ export const BiayaMatriksPage: React.FC = () => {
                   <h3 className="font-serif text-base font-bold text-biru-950">
                     Rincian Komponen Biaya & Skema Pembayaran
                   </h3>
-                  {simulasiResult.voucher_info && (
+                  {simulasiResult.voucher_pesan && (
                     <Badge variant="menunggu">
-                      {simulasiResult.voucher_info}
+                      {simulasiResult.voucher_pesan}
                     </Badge>
                   )}
                 </div>
@@ -789,7 +789,7 @@ export const BiayaMatriksPage: React.FC = () => {
                         <span>Total Biaya Asli:</span>
                         <span className="font-mono">
                           Rp{" "}
-                          {simulasiResult.total_biaya_asli.toLocaleString(
+                          {simulasiResult.total_nominal_asli.toLocaleString(
                             "id-ID",
                           )}
                         </span>
@@ -807,7 +807,7 @@ export const BiayaMatriksPage: React.FC = () => {
                         <span>Total Akhir:</span>
                         <span className="font-mono text-base text-biru-300">
                           Rp{" "}
-                          {simulasiResult.total_setelah_diskon.toLocaleString(
+                          {simulasiResult.total_akhir.toLocaleString(
                             "id-ID",
                           )}
                         </span>
@@ -816,7 +816,7 @@ export const BiayaMatriksPage: React.FC = () => {
                         <span>Minimal Pembayaran Pertama:</span>
                         <span className="font-mono font-bold text-putih">
                           Rp{" "}
-                          {simulasiResult.minimal_bayar_pertama.toLocaleString(
+                          {simulasiResult.estimasi_cicilan_pertama.toLocaleString(
                             "id-ID",
                           )}
                         </span>

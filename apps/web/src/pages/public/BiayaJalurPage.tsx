@@ -1,23 +1,24 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   CreditCard,
   CheckCircle2,
   ArrowRight,
   Sparkles,
   FileCheck,
+  ShieldCheck,
 } from "lucide-react";
-import {
-  Button,
-  Card,
-  CardSkeleton,
-  EmptyState,
-  ErrorState,
-} from "../../components/common";
+import { Button, Card } from "../../components/common";
+import { getProdiList, formatRupiah } from "../../services/prodi";
+import { SeoHead } from "../../components/common/SeoHead";
 
 export const BiayaJalurPage: React.FC = () => {
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isError, setIsError] = useState<boolean>(false);
+  // Query program studi untuk tabel biaya UKT transparan
+  const { data: prodiList = [], isLoading: isProdiLoading } = useQuery({
+    queryKey: ["public-prodi-list"],
+    queryFn: getProdiList,
+  });
 
   const jalurList = [
     {
@@ -29,7 +30,7 @@ export const BiayaJalurPage: React.FC = () => {
         "Jalur umum terbuka untuk seluruh lulusan SMA/SMK/MA sederajat dengan seleksi berbasis Computer-Based Test (CBT) dan evaluasi nilai rapor semester 1-5.",
       keuntungan: [
         "Terbuka untuk semua jurusan sekolah menengah",
-        "Peluang memilih 2 program studi",
+        "Peluang memilih 2 program studi prioritas",
         "Bisa menggunakan voucher promo gelombang",
       ],
       syarat: [
@@ -95,221 +96,194 @@ export const BiayaJalurPage: React.FC = () => {
   ];
 
   return (
-    <div className="bg-biru-50/30 flex flex-col">
-      <main className="flex-1 max-w-[1200px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
+    <div className="bg-putih flex flex-col min-h-screen">
+      <SeoHead
+        title="Biaya Kuliah & Jalur Masuk - PMB Universitas Pignatelli Triputra"
+        description="Transparansi skema biaya kuliah UKT flat per semester bebas uang gedung dan informasi jalur seleksi PMB Universitas Pignatelli Triputra."
+      />
+
+      <main className="flex-1 max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-biru-100 text-biru-900 text-xs font-semibold">
             <CreditCard className="w-4 h-4 text-biru-700" />
             <span>Skema Biaya Transparan & Jalur Seleksi</span>
           </div>
-          <h1 className="font-serif text-4xl sm:text-5xl font-bold text-biru-950">
+          <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-biru-950">
             Pilihan Jalur Masuk & Biaya Kuliah
           </h1>
-          <p className="text-base text-biru-800/90 leading-relaxed font-light">
+          <p className="text-sm sm:text-base text-biru-800 leading-relaxed font-normal">
             Universitas Pignatelli Triputra berkomitmen menyediakan pendidikan
             tinggi berkualitas yang inklusif, terjangkau, dan didukung penuh
-            oleh program beasiswa industri.
+            oleh program beasiswa kemitraan industri Triputra Group.
           </p>
         </div>
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <CardSkeleton />
-            <CardSkeleton />
-          </div>
-        )}
-
-        {/* Error State */}
-        {!isLoading && isError && (
-          <ErrorState
-            title="Gagal Memuat Informasi Jalur"
-            message="Terjadi gangguan saat memuat informasi rincian biaya jalur pendaftaran."
-            onRetry={() => {
-              setIsError(false);
-              setIsLoading(false);
-            }}
-          />
-        )}
-
-        {/* Empty State */}
-        {!isLoading && !isError && jalurList.length === 0 && (
-          <EmptyState
-            title="Jalur Pendaftaran Belum Dibuka"
-            description="Saat ini belum ada periode jalur pendaftaran yang aktif dibuka."
-          />
-        )}
-
-        {/* Data List Jalur */}
-        {!isLoading && !isError && jalurList.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {jalurList.map((jalur) => (
-              <Card
-                key={jalur.id}
-                className="flex flex-col justify-between hover:border-biru-600 transition-all hover:shadow-md"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-biru-100">
-                    <div>
-                      <h3 className="font-serif text-xl sm:text-2xl font-bold text-biru-950">
-                        {jalur.nama}
-                      </h3>
-                      <span className="text-xs text-biru-800 font-medium">
-                        {jalur.badge}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs text-biru-800 block">
-                        Biaya Formulir
-                      </span>
-                      <span className="font-mono text-xl font-bold text-biru-950">
-                        {jalur.biayaFormulir === 0
-                          ? "Gratis (Rp 0)"
-                          : `Rp ${jalur.biayaFormulir.toLocaleString("id-ID")}`}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-biru-900/80 leading-relaxed font-light">
-                    {jalur.deskripsi}
-                  </p>
-
-                  <div className="space-y-2 pt-2">
-                    <span className="text-xs font-bold text-biru-950 block flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-biru-700" />
-                      Keuntungan & Fasilitas Jalur:
+        {/* Data List Jalur Seleksi */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {jalurList.map((jalur) => (
+            <Card
+              key={jalur.id}
+              className="flex flex-col justify-between hover:border-biru-400 transition-all hover:shadow-soft-md"
+            >
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-biru-100">
+                  <div>
+                    <h3 className="font-serif text-xl sm:text-2xl font-bold text-biru-950">
+                      {jalur.nama}
+                    </h3>
+                    <span className="text-xs text-biru-700 font-semibold">
+                      {jalur.badge}
                     </span>
-                    <ul className="space-y-1.5">
-                      {jalur.keuntungan.map((untung, i) => (
-                        <li
-                          key={i}
-                          className="flex items-start gap-2 text-xs text-biru-900"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5 text-biru-700 flex-shrink-0 mt-0.5" />
-                          <span>{untung}</span>
-                        </li>
-                      ))}
-                    </ul>
                   </div>
-
-                  <div className="space-y-2 pt-2 border-t border-biru-100">
-                    <span className="text-xs font-bold text-biru-950 block flex items-center gap-1.5">
-                      <FileCheck className="w-3.5 h-3.5 text-biru-700" />
-                      Persyaratan Dokumen:
+                  <div className="text-right">
+                    <span className="text-xs text-biru-700 block">
+                      Biaya Formulir
                     </span>
-                    <ul className="space-y-1 text-xs text-biru-800 list-disc list-inside">
-                      {jalur.syarat.map((syarat, i) => (
-                        <li key={i}>{syarat}</li>
-                      ))}
-                    </ul>
+                    <span className="font-sans text-xl font-bold text-biru-950 tabular-nums">
+                      {jalur.biayaFormulir === 0
+                        ? "Gratis (Rp 0)"
+                        : `Rp ${jalur.biayaFormulir.toLocaleString("id-ID")}`}
+                    </span>
                   </div>
                 </div>
 
-                <div className="pt-6 mt-6 border-t border-biru-100">
-                  <Link to="/register">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="w-full gap-2"
-                    >
-                      <span>Daftar Lewat Jalur Ini</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
+                <p className="text-sm text-biru-900/80 leading-relaxed font-sans">
+                  {jalur.deskripsi}
+                </p>
 
-        {/* Tabel Komponen UKT Standar */}
-        <div className="pt-6 space-y-6">
+                <div className="space-y-2 pt-2">
+                  <span className="text-xs font-bold text-biru-950 block flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-biru-700" />
+                    Keuntungan & Fasilitas Jalur:
+                  </span>
+                  <ul className="space-y-1.5">
+                    {jalur.keuntungan.map((untung, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start gap-2 text-xs text-biru-900"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-biru-700 flex-shrink-0 mt-0.5" />
+                        <span>{untung}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t border-biru-100">
+                  <span className="text-xs font-bold text-biru-950 block flex items-center gap-1.5">
+                    <FileCheck className="w-3.5 h-3.5 text-biru-700" />
+                    Persyaratan Dokumen:
+                  </span>
+                  <ul className="space-y-1 text-xs text-biru-800 list-disc list-inside">
+                    {jalur.syarat.map((syarat, i) => (
+                      <li key={i}>{syarat}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="pt-6 mt-6 border-t border-biru-100">
+                <Link to="/register">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="w-full gap-2 font-bold"
+                  >
+                    <span>Daftar Lewat Jalur Ini</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Tabel Komponen UKT Standar Seluruh 10 Prodi */}
+        <div className="pt-8 space-y-6">
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <h2 className="font-serif text-3xl font-bold text-biru-950">
               Transparansi Uang Kuliah Tunggal (UKT)
             </h2>
-            <p className="text-xs text-biru-800">
+            <p className="text-xs sm:text-sm text-biru-800">
               Biaya kuliah flat per semester tanpa uang pangkal/gedung
-              tersembunyi. Termasuk biaya ujian, praktikum lab, dan akses
-              perpustakaan digital.
+              tersembunyi. Termasuk biaya ujian, praktikum lab industri, dan
+              akses fasilitas digital kampus.
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-biru-200 bg-putih shadow-2xs">
+          <div className="overflow-x-auto rounded-2xl border border-biru-200 bg-putih shadow-soft-xs">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-biru-900 text-putih">
-                  <th className="py-3 px-4 font-bold">Program Studi</th>
-                  <th className="py-3 px-4 font-bold">Jenjang</th>
-                  <th className="py-3 px-4 font-bold text-right">
+                <tr className="bg-biru-950 text-putih">
+                  <th className="py-3.5 px-4 font-bold">Program Studi</th>
+                  <th className="py-3.5 px-4 font-bold">Jenjang</th>
+                  <th className="py-3.5 px-4 font-bold">Fakultas</th>
+                  <th className="py-3.5 px-4 font-bold text-right">
                     Uang Gedung (SPI)
                   </th>
-                  <th className="py-3 px-4 font-bold text-right">
+                  <th className="py-3.5 px-4 font-bold text-right">
                     UKT per Semester
                   </th>
-                  <th className="py-3 px-4 font-bold">Keterangan Fasilitas</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-biru-100 text-biru-950">
-                <tr className="hover:bg-biru-50/50">
-                  <td className="py-3 px-4 font-bold">S1 Sistem Informasi</td>
-                  <td className="py-3 px-4">Sarjana (8 Smt)</td>
-                  <td className="py-3 px-4 text-right font-mono text-biru-700 font-bold">
-                    Rp 0 (Bebas Uang Gedung)
-                  </td>
-                  <td className="py-3 px-4 text-right font-mono font-bold">
-                    Rp 6.500.000
-                  </td>
-                  <td className="py-3 px-4 text-biru-800">
-                    Termasuk Lisensi Enterprise ERP & Cloud Lab
-                  </td>
-                </tr>
-                <tr className="hover:bg-biru-50/50">
-                  <td className="py-3 px-4 font-bold">S1 Informatika</td>
-                  <td className="py-3 px-4">Sarjana (8 Smt)</td>
-                  <td className="py-3 px-4 text-right font-mono text-biru-700 font-bold">
-                    Rp 0 (Bebas Uang Gedung)
-                  </td>
-                  <td className="py-3 px-4 text-right font-mono font-bold">
-                    Rp 7.000.000
-                  </td>
-                  <td className="py-3 px-4 text-biru-800">
-                    Termasuk Akses Server GPU AI & Cybersecurity Lab
-                  </td>
-                </tr>
-                <tr className="hover:bg-biru-50/50">
-                  <td className="py-3 px-4 font-bold">
-                    S1 Akuntansi Bisnis Digital
-                  </td>
-                  <td className="py-3 px-4">Sarjana (8 Smt)</td>
-                  <td className="py-3 px-4 text-right font-mono text-biru-700 font-bold">
-                    Rp 0 (Bebas Uang Gedung)
-                  </td>
-                  <td className="py-3 px-4 text-right font-mono font-bold">
-                    Rp 6.000.000
-                  </td>
-                  <td className="py-3 px-4 text-biru-800">
-                    Termasuk Software Audit Forensik & Sertifikasi Accurate
-                  </td>
-                </tr>
-                <tr className="hover:bg-biru-50/50">
-                  <td className="py-3 px-4 font-bold">
-                    D3 Manajemen Pemasaran Digital
-                  </td>
-                  <td className="py-3 px-4">Diploma 3 (6 Smt)</td>
-                  <td className="py-3 px-4 text-right font-mono text-biru-700 font-bold">
-                    Rp 0 (Bebas Uang Gedung)
-                  </td>
-                  <td className="py-3 px-4 text-right font-mono font-bold">
-                    Rp 5.000.000
-                  </td>
-                  <td className="py-3 px-4 text-biru-800">
-                    Termasuk Magang Industri Terjamin di Triputra Group
-                  </td>
-                </tr>
+              <tbody className="divide-y divide-biru-100 text-biru-950 font-sans">
+                {isProdiLoading ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-biru-700">
+                      Memuat data biaya resmi program studi...
+                    </td>
+                  </tr>
+                ) : prodiList.length > 0 ? (
+                  prodiList.map((prodi) => (
+                    <tr
+                      key={prodi.id}
+                      className="hover:bg-biru-50/60 transition-colors"
+                    >
+                      <td className="py-3.5 px-4 font-bold text-biru-950">
+                        <Link
+                          to={`/program-studi/${prodi.slug || prodi.id}`}
+                          className="hover:text-biru-700 hover:underline"
+                        >
+                          {prodi.jenjang} {prodi.nama_prodi}
+                        </Link>
+                      </td>
+                      <td className="py-3.5 px-4 text-biru-800">
+                        {prodi.jenjang === "D3"
+                          ? "Diploma 3 (6 Smt)"
+                          : "Sarjana (8 Smt)"}
+                      </td>
+                      <td className="py-3.5 px-4 text-biru-700">
+                        {prodi.fakultas}
+                      </td>
+                      <td className="py-3.5 px-4 text-right text-biru-700 font-semibold tabular-nums">
+                        Rp 0 (Bebas Uang Gedung)
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-bold text-biru-950 tabular-nums">
+                        {prodi.biaya_ukt_min
+                          ? formatRupiah(prodi.biaya_ukt_min)
+                          : "Segera diumumkan"}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-6 text-center text-biru-700">
+                      Data biaya program studi sedang dipersiapkan.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-biru-50 border border-biru-200 text-xs text-biru-800 flex items-start sm:items-center gap-3">
+            <ShieldCheck className="w-5 h-5 text-biru-600 shrink-0 mt-0.5 sm:mt-0" />
+            <p>
+              Tersedia fasilitas cicilan UKT hingga 3 kali per semester tanpa
+              bunga, serta beasiswa penuh hingga 100% untuk calon mahasiswa
+              berprestasi.
+            </p>
           </div>
         </div>
       </main>

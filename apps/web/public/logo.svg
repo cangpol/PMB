@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 64" fill="none" width="320" height="64">
+  <!-- Lambang Geometri Monogram UPITRA -->
+  <g transform="translate(4, 4)">
+    <!-- Heksagon Luar -->
+    <path d="M28 2L52 16V44L28 58L4 44V16L28 2Z" stroke="#1A4BB5" stroke-width="3" fill="#0B2559"/>
+    <!-- Kubus Isometrik Dalam (P/U monogram 3D) -->
+    <path d="M28 14L42 22V38L28 46L14 38V22L28 14Z" fill="#12378A"/>
+    <path d="M28 14L42 22L28 30L14 22L28 14Z" fill="#3B82F6"/>
+    <path d="M14 22L28 30V46L14 38V22Z" fill="#1A4BB5"/>
+    <path d="M42 22L28 30V46L42 38V22Z" fill="#2563EB"/>
+    <!-- Inti Titik Emas Pengetahuan -->
+    <circle cx="28" cy="30" r="3" fill="#DCE8FC"/>
+  </g>
+
+  <!-- Tipografi Teks Institusi -->
+  <g transform="translate(72, 14)">
+    <text x="0" y="16" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="15" font-weight="800" letter-spacing="1.5" fill="#061633">
+      UNIVERSITAS
+    </text>
+    <text x="0" y="32" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="#1A4BB5">
+      PIGNATELLI TRIPUTRA
+    </text>
+    <text x="0" y="44" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="8.5" font-weight="600" letter-spacing="1" fill="#4B6B99">
+      SURAKARTA &#8226; PMB 2026/2027
+    </text>
+  </g>
+</svg>

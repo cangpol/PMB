@@ -29,6 +29,11 @@ const JalurMasukPage = lazy(() =>
 const ProdiPage = lazy(() =>
   import("./pages/public/ProdiPage").then((m) => ({ default: m.ProdiPage })),
 );
+const ProdiBandingkanPage = lazy(() =>
+  import("./pages/public/ProdiBandingkanPage").then((m) => ({
+    default: m.ProdiBandingkanPage,
+  })),
+);
 const ProdiDetailPage = lazy(() =>
   import("./pages/public/ProdiDetailPage").then((m) => ({
     default: m.ProdiDetailPage,
@@ -327,6 +332,16 @@ export const App: React.FC = () => {
                 <Route element={<PublicLayout />}>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/jalur-masuk" element={<JalurMasukPage />} />
+                  <Route path="/program-studi" element={<ProdiPage />} />
+                  <Route
+                    path="/program-studi/bandingkan"
+                    element={<ProdiBandingkanPage />}
+                  />
+                  <Route
+                    path="/program-studi/:slug"
+                    element={<ProdiDetailPage />}
+                  />
+                  {/* Kompatibilitas Tautan Lama */}
                   <Route path="/prodi" element={<ProdiPage />} />
                   <Route path="/prodi/:id" element={<ProdiDetailPage />} />
                   <Route path="/biaya" element={<BiayaJalurPage />} />

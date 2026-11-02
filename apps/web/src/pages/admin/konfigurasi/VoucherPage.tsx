@@ -151,6 +151,8 @@ export const VoucherPage: React.FC = () => {
 
       if (editingVoucher) {
         const updatePayload: UpdateVoucherRequest = {
+          nilai_diskon: payload.nilai_diskon,
+          tipe_diskon: payload.tipe_diskon,
           kuota: payload.kuota,
           tgl_kadaluarsa: payload.tgl_kadaluarsa,
           batas_jalur_id: payload.batas_jalur_id,

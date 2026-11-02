@@ -61,6 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ('pengawas@triputra.id', $1, 'pengawas_ujian', 'Pengawas Ujian CBT PMB', '081100000004', TRUE, TRUE),
             ('asesor@triputra.id', $1, 'asesor_rpl', 'Asesor Program RPL PMB', '081100000005', TRUE, TRUE),
             ('calon@triputra.id', $1, 'calon_mahasiswa', 'Calon Mahasiswa Demo', '081100000006', TRUE, TRUE),
+            ('maba@triputra.id', $1, 'calon_mahasiswa', 'Calon Mahasiswa Demo', '081100000007', TRUE, TRUE),
             -- Akun Domain Resmi Institusi
             ('superadmin@pignatelli.ac.id', $2, 'super_admin', 'Super Administrator UPT', '081100000011', TRUE, TRUE),
             ('superadmin@upitra.ac.id', $2, 'super_admin', 'Super Administrator UPITRA', '081100000012', TRUE, TRUE),
@@ -97,9 +98,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let fak_saintek_id = sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO fakultas (kode_fakultas, nama_fakultas, deskripsi, is_active)
-        VALUES ('FST', '[CONTOH] Fakultas Sains dan Teknologi', 'Fakultas bidang komputasi dan teknologi informasi', TRUE)
-        ON CONFLICT (kode_fakultas) DO UPDATE SET nama_fakultas = EXCLUDED.nama_fakultas
+        INSERT INTO fakultas (kode_fakultas, nama_fakultas, slug, deskripsi_singkat, deskripsi, urutan_tampil, is_active)
+        VALUES ('FST', 'Fakultas Sains & Teknologi', 'sains-teknologi', 'Pengembangan kompetensi rekayasa perangkat lunak, sistem informasi industri, dan komputasi cerdas.', '[DRAF - verifikasi kampus] Fakultas Sains & Teknologi menyelenggarakan pendidikan terapan bidang sains komputer.', 1, TRUE)
+        ON CONFLICT (kode_fakultas) DO UPDATE SET nama_fakultas = EXCLUDED.nama_fakultas, slug = EXCLUDED.slug, deskripsi_singkat = EXCLUDED.deskripsi_singkat, urutan_tampil = EXCLUDED.urutan_tampil
         RETURNING id;
         "#,
     )
@@ -108,83 +109,308 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let fak_feb_id = sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO fakultas (kode_fakultas, nama_fakultas, deskripsi, is_active)
-        VALUES ('FEB', '[CONTOH] Fakultas Ekonomi dan Bisnis', 'Fakultas bidang akuntansi, manajemen dan bisnis', TRUE)
-        ON CONFLICT (kode_fakultas) DO UPDATE SET nama_fakultas = EXCLUDED.nama_fakultas
+        INSERT INTO fakultas (kode_fakultas, nama_fakultas, slug, deskripsi_singkat, deskripsi, urutan_tampil, is_active)
+        VALUES ('FEB', 'Fakultas Ekonomika Bisnis', 'ekonomika-bisnis', 'Pusat keunggulan ilmu manajemen bisnis, tata kelola korporasi, dan audit akuntansi profesional.', '[DRAF - verifikasi kampus] Fakultas Ekonomika Bisnis menghasilkan praktisi bisnis dan akuntan berintegritas.', 2, TRUE)
+        ON CONFLICT (kode_fakultas) DO UPDATE SET nama_fakultas = EXCLUDED.nama_fakultas, slug = EXCLUDED.slug, deskripsi_singkat = EXCLUDED.deskripsi_singkat, urutan_tampil = EXCLUDED.urutan_tampil
         RETURNING id;
         "#,
     )
     .fetch_one(&pool)
     .await?;
 
-    // 4. Seeding Program Studi [CONTOH]
-    println!("[4/9] Melakukan seeding Master Program Studi [CONTOH]...");
+    let fak_fsh_id = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        INSERT INTO fakultas (kode_fakultas, nama_fakultas, slug, deskripsi_singkat, deskripsi, urutan_tampil, is_active)
+        VALUES ('FSH', 'Fakultas Sosial Humaniora', 'sosial-humaniora', 'Pendidikan pariwisata strategis, komunikasi lintas budaya, dan literasi bahasa Inggris terapan.', '[DRAF - verifikasi kampus] Fakultas Sosial Humaniora berfokus pada hospitalitas pariwisata dan komunikasi bisnis internasional.', 3, TRUE)
+        ON CONFLICT (kode_fakultas) DO UPDATE SET nama_fakultas = EXCLUDED.nama_fakultas, slug = EXCLUDED.slug, deskripsi_singkat = EXCLUDED.deskripsi_singkat, urutan_tampil = EXCLUDED.urutan_tampil
+        RETURNING id;
+        "#,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let fak_fkes_id = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        INSERT INTO fakultas (kode_fakultas, nama_fakultas, slug, deskripsi_singkat, deskripsi, urutan_tampil, is_active)
+        VALUES ('FKES', 'Fakultas Kesehatan', 'kesehatan', 'Pendidikan tenaga kesehatan profesional berfokus pada keselamatan kerja, fisioterapi, dan keperawatan.', '[DRAF - verifikasi kampus] Fakultas Kesehatan membekali calon praktisi kesehatan dengan standar keselamatan kerja dan pelayanan medis terpadu.', 4, TRUE)
+        ON CONFLICT (kode_fakultas) DO UPDATE SET nama_fakultas = EXCLUDED.nama_fakultas, slug = EXCLUDED.slug, deskripsi_singkat = EXCLUDED.deskripsi_singkat, urutan_tampil = EXCLUDED.urutan_tampil
+        RETURNING id;
+        "#,
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    // 4. Seeding Program Studi Resmi UPITRA (10 Program Studi)
+    println!("[4/9] Melakukan seeding Master Program Studi Resmi (10 Prodi)...");
+    struct ProdiSeed {
+        kode: &'static str,
+        nama: &'static str,
+        jenjang: &'static str,
+        slug: &'static str,
+        fak_id: Uuid,
+        fakultas: &'static str,
+        k_fakultas: &'static str,
+        gelar: &'static str,
+        lama_studi: i32,
+        akreditasi: Option<&'static str>,
+        deskripsi: &'static str,
+        passing: f64,
+        kuota: i32,
+        daya_tampung: Option<i32>,
+        ukt: i64,
+        biaya_min: Option<i64>,
+        biaya_maks: Option<i64>,
+        urutan: i32,
+    }
+
     let list_prodi = vec![
-        (
-            "SI-01",
-            "[CONTOH] Sistem Informasi",
-            "S1",
-            fak_saintek_id,
-            "Fakultas Sains & Teknologi",
-            "FST",
-            70.0,
-            80,
-            6500000i64,
-        ),
-        (
-            "IF-02",
-            "[CONTOH] Informatika",
-            "S1",
-            fak_saintek_id,
-            "Fakultas Sains & Teknologi",
-            "FST",
-            75.0,
-            100,
-            7000000i64,
-        ),
-        (
-            "AKT-01",
-            "[CONTOH] Akuntansi Bisnis",
-            "S1",
-            fak_feb_id,
-            "Fakultas Ekonomi & Bisnis",
-            "FEB",
-            75.0,
-            60,
-            6000000i64,
-        ),
-        (
-            "MNJ-01",
-            "[CONTOH] Manajemen Pemasaran",
-            "D3",
-            fak_feb_id,
-            "Fakultas Ekonomi & Bisnis",
-            "FEB",
-            65.0,
-            50,
-            5000000i64,
-        ),
+        ProdiSeed {
+            kode: "IF",
+            nama: "Informatika",
+            jenjang: "S1",
+            slug: "s1-informatika",
+            fak_id: fak_saintek_id,
+            fakultas: "Fakultas Sains & Teknologi",
+            k_fakultas: "FST",
+            gelar: "S.Kom.",
+            lama_studi: 8,
+            akreditasi: Some("Baik Sekali (BAN-PT)"),
+            deskripsi: "[DRAF - verifikasi kampus] Fokus pada rekayasa perangkat lunak, kecerdasan buatan, komputasi awan, dan sistem terdistribusi.",
+            passing: 75.0,
+            kuota: 100,
+            daya_tampung: Some(100),
+            ukt: 7000000,
+            biaya_min: Some(7000000),
+            biaya_maks: Some(7000000),
+            urutan: 1,
+        },
+        ProdiSeed {
+            kode: "SI",
+            nama: "Sistem Informasi",
+            jenjang: "S1",
+            slug: "s1-sistem-informasi",
+            fak_id: fak_saintek_id,
+            fakultas: "Fakultas Sains & Teknologi",
+            k_fakultas: "FST",
+            gelar: "S.Kom.",
+            lama_studi: 8,
+            akreditasi: Some("Baik Sekali (BAN-PT)"),
+            deskripsi: "[DRAF - verifikasi kampus] Integrasi proses bisnis dengan teknologi informasi enterprise dan manajemen basis data.",
+            passing: 70.0,
+            kuota: 80,
+            daya_tampung: Some(80),
+            ukt: 6500000,
+            biaya_min: Some(6500000),
+            biaya_maks: Some(6500000),
+            urutan: 2,
+        },
+        ProdiSeed {
+            kode: "SE",
+            nama: "Software Engineering",
+            jenjang: "S1",
+            slug: "s1-software-engineering",
+            fak_id: fak_saintek_id,
+            fakultas: "Fakultas Sains & Teknologi",
+            k_fakultas: "FST",
+            gelar: "S.Kom.",
+            lama_studi: 8,
+            akreditasi: None,
+            deskripsi: "[DRAF - verifikasi kampus] Disiplin rekayasa perangkat lunak terapan, automated testing, dan CI/CD pipeline industri.",
+            passing: 65.0,
+            kuota: 0,
+            daya_tampung: None,
+            ukt: 0,
+            biaya_min: None,
+            biaya_maks: None,
+            urutan: 3,
+        },
+        ProdiSeed {
+            kode: "MNJ",
+            nama: "Manajemen",
+            jenjang: "S1",
+            slug: "s1-manajemen",
+            fak_id: fak_feb_id,
+            fakultas: "Fakultas Ekonomika Bisnis",
+            k_fakultas: "FEB",
+            gelar: "S.M.",
+            lama_studi: 8,
+            akreditasi: None,
+            deskripsi: "[DRAF - verifikasi kampus] Manajemen operasional bisnis, rantai pasok, kepemimpinan organisasi, dan pemasaran modern.",
+            passing: 65.0,
+            kuota: 0,
+            daya_tampung: None,
+            ukt: 0,
+            biaya_min: None,
+            biaya_maks: None,
+            urutan: 4,
+        },
+        ProdiSeed {
+            kode: "AKT",
+            nama: "Akuntansi",
+            jenjang: "S1",
+            slug: "s1-akuntansi",
+            fak_id: fak_feb_id,
+            fakultas: "Fakultas Ekonomika Bisnis",
+            k_fakultas: "FEB",
+            gelar: "S.Ak.",
+            lama_studi: 8,
+            akreditasi: Some("Baik (BAN-PT)"),
+            deskripsi: "[DRAF - verifikasi kampus] Tata kelola pelaporan keuangan, audit profesional, sistem informasi akuntansi, dan perpajakan.",
+            passing: 70.0,
+            kuota: 60,
+            daya_tampung: Some(60),
+            ukt: 6000000,
+            biaya_min: Some(6000000),
+            biaya_maks: Some(6000000),
+            urutan: 5,
+        },
+        ProdiSeed {
+            kode: "PAR",
+            nama: "Pariwisata",
+            jenjang: "S1",
+            slug: "s1-pariwisata",
+            fak_id: fak_fsh_id,
+            fakultas: "Fakultas Sosial Humaniora",
+            k_fakultas: "FSH",
+            gelar: "S.Par.",
+            lama_studi: 8,
+            akreditasi: None,
+            deskripsi: "[DRAF - verifikasi kampus] Manajemen destinasi wisata, industri perhotelan, event management, dan pariwisata berkelanjutan.",
+            passing: 65.0,
+            kuota: 0,
+            daya_tampung: None,
+            ukt: 0,
+            biaya_min: None,
+            biaya_maks: None,
+            urutan: 6,
+        },
+        ProdiSeed {
+            kode: "BIG",
+            nama: "Bahasa Inggris",
+            jenjang: "S1",
+            slug: "s1-bahasa-inggris",
+            fak_id: fak_fsh_id,
+            fakultas: "Fakultas Sosial Humaniora",
+            k_fakultas: "FSH",
+            gelar: "S.Li.",
+            lama_studi: 8,
+            akreditasi: None,
+            deskripsi: "[DRAF - verifikasi kampus] Linguistik terapan, komunikasi bisnis internasional, dan penerjemahan dokumen korporat.",
+            passing: 65.0,
+            kuota: 0,
+            daya_tampung: None,
+            ukt: 0,
+            biaya_min: None,
+            biaya_maks: None,
+            urutan: 7,
+        },
+        ProdiSeed {
+            kode: "K3",
+            nama: "Keselamatan dan Kesehatan Kerja (K3)",
+            jenjang: "S1",
+            slug: "s1-k3",
+            fak_id: fak_fkes_id,
+            fakultas: "Fakultas Kesehatan",
+            k_fakultas: "FKES",
+            gelar: "S.K.K.K.",
+            lama_studi: 8,
+            akreditasi: None,
+            deskripsi: "[DRAF - verifikasi kampus] Manajemen risiko kecelakaan kerja, higiene industri, ergonomi, dan audit regulasi SMK3.",
+            passing: 65.0,
+            kuota: 0,
+            daya_tampung: None,
+            ukt: 0,
+            biaya_min: None,
+            biaya_maks: None,
+            urutan: 8,
+        },
+        ProdiSeed {
+            kode: "FIS",
+            nama: "Fisioterapi",
+            jenjang: "S1",
+            slug: "s1-fisioterapi",
+            fak_id: fak_fkes_id,
+            fakultas: "Fakultas Kesehatan",
+            k_fakultas: "FKES",
+            gelar: "S.Ftr.",
+            lama_studi: 8,
+            akreditasi: None,
+            deskripsi: "[DRAF - verifikasi kampus] Pemulihan gerak dan fungsi tubuh, fisioterapi muskuloskeletal, olahraga, dan rehabilitasi.",
+            passing: 65.0,
+            kuota: 0,
+            daya_tampung: None,
+            ukt: 0,
+            biaya_min: None,
+            biaya_maks: None,
+            urutan: 9,
+        },
+        ProdiSeed {
+            kode: "KEP",
+            nama: "Keperawatan",
+            jenjang: "D3",
+            slug: "d3-keperawatan",
+            fak_id: fak_fkes_id,
+            fakultas: "Fakultas Kesehatan",
+            k_fakultas: "FKES",
+            gelar: "A.Md.Kep.",
+            lama_studi: 6,
+            akreditasi: None,
+            deskripsi: "[DRAF - verifikasi kampus] Asuhan keperawatan terapan, kegawatdaruratan, dan etika profesi keperawatan klinis.",
+            passing: 65.0,
+            kuota: 0,
+            daya_tampung: None,
+            ukt: 0,
+            biaya_min: None,
+            biaya_maks: None,
+            urutan: 10,
+        },
     ];
 
     let mut prodi_ids = Vec::new();
-    for (kode, nama, jenjang, fak_id, fakultas, k_fakultas, passing, kuota, ukt) in list_prodi {
+    for p in list_prodi {
         let p_id = sqlx::query_scalar::<_, Uuid>(
             r#"
-            INSERT INTO program_studi (kode_prodi, nama_prodi, jenjang, fakultas_id, fakultas, kode_fakultas, passing_score, kuota, ukt_nominal, is_active)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE)
-            ON CONFLICT (kode_prodi) DO UPDATE SET nama_prodi = EXCLUDED.nama_prodi, fakultas_id = EXCLUDED.fakultas_id
+            INSERT INTO program_studi (
+                kode_prodi, kode_singkat, nama_prodi, jenjang, slug, fakultas_id, fakultas, kode_fakultas,
+                gelar, lama_studi_semester, akreditasi, deskripsi_singkat, passing_score, kuota, daya_tampung,
+                ukt_nominal, biaya_ukt_min, biaya_ukt_maks, urutan_tampil, is_active
+            )
+            VALUES ($1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, TRUE)
+            ON CONFLICT (kode_prodi) DO UPDATE SET
+                nama_prodi = EXCLUDED.nama_prodi,
+                slug = EXCLUDED.slug,
+                fakultas_id = EXCLUDED.fakultas_id,
+                fakultas = EXCLUDED.fakultas,
+                kode_fakultas = EXCLUDED.kode_fakultas,
+                gelar = EXCLUDED.gelar,
+                lama_studi_semester = EXCLUDED.lama_studi_semester,
+                akreditasi = EXCLUDED.akreditasi,
+                deskripsi_singkat = EXCLUDED.deskripsi_singkat,
+                daya_tampung = EXCLUDED.daya_tampung,
+                biaya_ukt_min = EXCLUDED.biaya_ukt_min,
+                biaya_ukt_maks = EXCLUDED.biaya_ukt_maks,
+                urutan_tampil = EXCLUDED.urutan_tampil
             RETURNING id;
             "#,
         )
-        .bind(kode)
-        .bind(nama)
-        .bind(jenjang)
-        .bind(fak_id)
-        .bind(fakultas)
-        .bind(k_fakultas)
-        .bind(passing)
-        .bind(kuota)
-        .bind(ukt)
+        .bind(p.kode)
+        .bind(p.nama)
+        .bind(p.jenjang)
+        .bind(p.slug)
+        .bind(p.fak_id)
+        .bind(p.fakultas)
+        .bind(p.k_fakultas)
+        .bind(p.gelar)
+        .bind(p.lama_studi)
+        .bind(p.akreditasi)
+        .bind(p.deskripsi)
+        .bind(p.passing)
+        .bind(p.kuota)
+        .bind(p.daya_tampung)
+        .bind(p.ukt)
+        .bind(p.biaya_min)
+        .bind(p.biaya_maks)
+        .bind(p.urutan)
         .fetch_one(&pool)
         .await?;
         prodi_ids.push(p_id);
@@ -528,8 +754,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("========================================================");
     println!("  [SUKSES] Seeding database selesai secara idempoten!   ");
     println!("  Akun Default:");
-    println!("    - Admin : admin@pignatelli.ac.id (Password: AdminUPT2026!)");
-    println!("    - Calon : calon@pignatelli.ac.id (Password: CalonUPT2026!)");
+    println!("    - Admin Demo : admin@triputra.id (Password: Pignatelli2026!)");
+    println!("    - Calon Demo : calon@triputra.id (Password: Pignatelli2026!)");
+    println!("    - Admin UPT  : admin@pignatelli.ac.id (Password: AdminUPT2026!)");
+    println!("    - Calon UPT  : calon@pignatelli.ac.id (Password: CalonUPT2026!)");
     println!("  Data [CONTOH] siap diuji dan dikustomisasi di panel admin.");
     println!("========================================================");
 

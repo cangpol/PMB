@@ -68,6 +68,10 @@
   --biru-50: #f1f6fe;
   --putih: #ffffff;
 
+  /* Layout Header & Viewport Tokens */
+  --navbar-h: 72px;
+  scroll-padding-top: var(--navbar-h);
+
   color: var(--biru-950);
   background-color: var(--putih);
   font-family: var(--font-sans);

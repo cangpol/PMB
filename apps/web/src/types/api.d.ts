@@ -4,7572 +4,9912 @@
  */
 
 export interface paths {
-  "/api/auth/register": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Registrasi calon mahasiswa baru */
-    post: operations["register_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/auth/login": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Autentikasi akun */
-    post: operations["login_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/auth/logout": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Logout sesi */
-    post: operations["logout_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/auth/me": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Profil pengguna aktif */
-    get: operations["me_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/auth/verify-email": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Verifikasi alamat email pengguna */
-    post: operations["verify_email_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/auth/forgot-password": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Permintaan reset kata sandi */
-    post: operations["forgot_password_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/auth/reset-password": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Reset kata sandi dengan token */
-    post: operations["reset_password_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/auth/change-password": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Ganti password akun aktif */
-    post: operations["change_password_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/users": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar seluruh pengguna sistem PMB */
-    get: operations["admin_list_users_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/users/{id}/role": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Perbarui peran pengguna (Super Admin only) */
-    put: operations["admin_update_role_handler"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/master/prodi": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar program studi */
-    get: operations["list_prodi_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/master/jalur": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar jalur pendaftaran */
-    get: operations["list_jalur_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/master/gelombang": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar gelombang pendaftaran */
-    get: operations["list_gelombang_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/my": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Detail formulir pendaftar */
-    get: operations["get_my_pendaftaran_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/upload-berkas": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Unggah dan catat metadata berkas */
-    post: operations["upload_berkas_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/berkas/{id}/presigned-url": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Akses presigned URL dokumen */
-    get: operations["get_presigned_url_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pembayaran/my-tagihan": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar tagihan pendaftar */
-    get: operations["get_my_tagihan_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/dashboard/calon": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Statistik & progress calon mahasiswa */
-    get: operations["get_calon_dashboard_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/dashboard/admin": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Statistik eksekutif PMB */
-    get: operations["get_admin_dashboard_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/health": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Status kesehatan layanan API, PostgreSQL, dan Redis */
-    get: operations["health_check_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/tahun-akademik": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar tahun akademik */
-    get: operations["list_tahun_akademik_handler"];
-    put?: never;
-    /** Tambah tahun akademik baru */
-    post: operations["create_tahun_akademik_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/tahun-akademik/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Ubah tahun akademik */
-    put: operations["update_tahun_akademik_handler"];
-    post?: never;
-    /** Hapus tahun akademik */
-    delete: operations["delete_tahun_akademik_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/fakultas": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar fakultas */
-    get: operations["list_fakultas_handler"];
-    put?: never;
-    /** Tambah fakultas baru */
-    post: operations["create_fakultas_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/fakultas/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Ubah fakultas */
-    put: operations["update_fakultas_handler"];
-    post?: never;
-    /** Hapus fakultas */
-    delete: operations["delete_fakultas_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/gelombang": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar gelombang pendaftaran admin */
-    get: operations["list_gelombang_admin_handler"];
-    put?: never;
-    /** Tambah gelombang pendaftaran */
-    post: operations["create_gelombang_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/gelombang/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Ubah gelombang */
-    put: operations["update_gelombang_handler"];
-    post?: never;
-    /** Hapus gelombang */
-    delete: operations["delete_gelombang_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/prodi": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar program studi admin */
-    get: operations["list_prodi_admin_handler"];
-    put?: never;
-    /** Tambah prodi baru */
-    post: operations["create_prodi_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/prodi/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Ubah program studi */
-    put: operations["update_prodi_handler"];
-    post?: never;
-    /** Hapus prodi */
-    delete: operations["delete_prodi_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/kuota-prodi": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar alokasi kuota prodi per gelombang */
-    get: operations["list_kuota_prodi_gelombang_handler"];
-    /** Set kuota prodi untuk gelombang tertentu */
-    put: operations["set_kuota_prodi_gelombang_handler"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/jalur": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar jalur pendaftaran admin */
-    get: operations["list_jalur_admin_handler"];
-    put?: never;
-    /** Tambah jalur masuk baru */
-    post: operations["create_jalur_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/jalur/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Ubah jalur masuk */
-    put: operations["update_jalur_handler"];
-    post?: never;
-    /** Hapus jalur masuk */
-    delete: operations["delete_jalur_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/komponen-biaya": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar komponen biaya */
-    get: operations["list_komponen_biaya_handler"];
-    put?: never;
-    /** Tambah komponen biaya */
-    post: operations["create_komponen_biaya_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/komponen-biaya/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Ubah komponen biaya */
-    put: operations["update_komponen_biaya_handler"];
-    post?: never;
-    /** Hapus komponen biaya */
-    delete: operations["delete_komponen_biaya_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/matriks-biaya": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar matriks biaya pendaftaran & kuliah */
-    get: operations["list_matriks_biaya_handler"];
-    put?: never;
-    /** Tambah matriks biaya */
-    post: operations["create_matriks_biaya_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/matriks-biaya/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Ubah matriks biaya */
-    put: operations["update_matriks_biaya_handler"];
-    post?: never;
-    /** Hapus matriks biaya */
-    delete: operations["delete_matriks_biaya_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/matriks-biaya/hitung": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Simulasi dan kalkulator perhitungan biaya */
-    post: operations["hitung_biaya_simulasi_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/vouchers": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar voucher diskon */
-    get: operations["list_vouchers_handler"];
-    put?: never;
-    /** Tambah voucher baru */
-    post: operations["create_voucher_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/vouchers/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Ubah voucher */
-    put: operations["update_voucher_handler"];
-    post?: never;
-    /** Hapus voucher */
-    delete: operations["delete_voucher_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/admin/konfigurasi/pengaturan": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar pengaturan PMB */
-    get: operations["list_pengaturan_handler"];
-    /** Ubah pengaturan PMB */
-    put: operations["update_pengaturan_handler"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/fields": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ambil definisi kolom form aktif */
-    get: operations["get_fields_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/submit-dinamis": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Simpan formulir pendaftaran dinamis */
-    post: operations["submit_formulir_dinamis_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/berkas/syarat": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar syarat berkas dan status unggah calon */
-    get: operations["get_berkas_syarat_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/berkas/presign-upload": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Minta Presigned PUT URL MinIO untuk unggah berkas */
-    post: operations["presign_upload_berkas_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/berkas/konfirmasi": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Konfirmasi unggahan berkas ke database */
-    post: operations["konfirmasi_upload_berkas_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/berkas/{id}/presign-download": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Minta Presigned GET URL MinIO berumur pendek (15 menit) */
-    get: operations["presign_download_berkas_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/langkah": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ambil progres alur langkah pendaftaran */
-    get: operations["get_langkah_progress_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/admin/form-builder/fields": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Admin: Daftar seluruh kolom form */
-    get: operations["admin_list_fields_handler"];
-    put?: never;
-    /** Admin: Tambah kolom form baru */
-    post: operations["admin_create_field_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/admin/form-builder/fields/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Admin: Ubah kolom form */
-    put: operations["admin_update_field_handler"];
-    post?: never;
-    /** Admin: Hapus kolom form */
-    delete: operations["admin_delete_field_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/admin/form-builder/fields/reorder": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Admin: Reorder urutan kolom form */
-    post: operations["admin_reorder_fields_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/admin/form-builder/berkas": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Admin: Daftar syarat berkas */
-    get: operations["admin_list_definisi_berkas_handler"];
-    put?: never;
-    /** Admin: Tambah syarat berkas baru */
-    post: operations["admin_create_definisi_berkas_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/admin/form-builder/berkas/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Admin: Ubah syarat berkas */
-    put: operations["admin_update_definisi_berkas_handler"];
-    post?: never;
-    /** Admin: Hapus syarat berkas */
-    delete: operations["admin_delete_definisi_berkas_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/admin/form-builder/langkah": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Admin: Daftar langkah alur pendaftaran */
-    get: operations["admin_list_definisi_langkah_handler"];
-    put?: never;
-    /** Admin: Tambah langkah pendaftaran baru */
-    post: operations["admin_create_definisi_langkah_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/admin/form-builder/langkah/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Admin: Ubah langkah pendaftaran */
-    put: operations["admin_update_definisi_langkah_handler"];
-    post?: never;
-    /** Admin: Hapus langkah pendaftaran */
-    delete: operations["admin_delete_definisi_langkah_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/admin/berkas-list": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Admin: Daftar seluruh berkas masuk calon untuk diverifikasi */
-    get: operations["admin_list_berkas_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/pilih-prodi": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Pilih jalur, gelombang, dan prodi calon mahasiswa */
-    post: operations["pilih_prodi_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/dashboard-summary": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ambil ringkasan dashboard calon mahasiswa */
-    get: operations["get_dashboard_summary_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/admin/offline": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Input pendaftaran offline di loket PMB oleh panitia */
-    post: operations["admin_pendaftaran_offline_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/{id}/cetak/bukti-pendaftaran": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Cetak dokumen resmi Bukti Pendaftaran (PDF) */
-    get: operations["cetak_bukti_pendaftaran_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pendaftaran/{id}/cetak/kartu-peserta": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Cetak dokumen resmi Kartu Peserta Ujian (PDF) */
-    get: operations["cetak_kartu_peserta_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pembayaran/charge": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Pilih metode pembayaran dan charge gateway (VA / QRIS) */
-    post: operations["charge_payment_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pembayaran/admin/rekonsiliasi/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Rekonsiliasi status transaksi ke gateway */
-    post: operations["admin_rekonsiliasi_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pembayaran/admin/konfirmasi-manual": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Konfirmasi pelunasan tagihan secara manual */
-    post: operations["admin_konfirmasi_manual_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/pembayaran/admin/ekspor": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ekspor data transaksi PMB ke file CSV */
-    get: operations["admin_ekspor_transaksi_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cbt/my-sesi": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ambil data sesi ujian & status presensi calon mahasiswa */
-    get: operations["get_my_sesi_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cbt/mulai": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Mulai atau lanjutkan sesi ujian CBT */
-    post: operations["mulai_cbt_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cbt/autosave": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Simpan otomatis jawaban atau penanda ragu-ragu */
-    post: operations["autosave_jawaban_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cbt/submit": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Submit akhir ujian CBT dan hitung nilai otomatis */
-    post: operations["submit_cbt_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cbt/admin/presensi/check-in": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Check-in presensi peserta via Scan QR atau input manual */
-    post: operations["check_in_presensi_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cbt/admin/sesi/{id}/live-stream": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Stream SSE snapshot real-time peserta ujian */
-    get: operations["live_stream_sesi_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cbt/admin/bank-soal": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar butir bank soal */
-    get: operations["list_bank_soal_handler"];
-    put?: never;
-    /** Tambah soal baru ke bank soal */
-    post: operations["create_bank_soal_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cbt/admin/bank-soal/import": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Impor bank soal dari Excel/CSV */
-    post: operations["import_bank_soal_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cbt/admin/paket": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar paket ujian */
-    get: operations["list_paket_handler"];
-    put?: never;
-    /** Buat paket ujian baru */
-    post: operations["create_paket_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cbt/admin/sesi": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar jadwal sesi ujian */
-    get: operations["list_sesi_handler"];
-    put?: never;
-    /** Jadwalkan sesi ujian baru */
-    post: operations["create_sesi_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cbt/admin/sesi/{id}/assign": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Assign peserta pendaftar ke sesi ujian */
-    post: operations["assign_peserta_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cbt/admin/sesi/{id}/snapshot": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Snapshot real-time metrik dan peserta sesi ujian */
-    get: operations["get_sesi_snapshot_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cbt/admin/sesi/{id}/peserta": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar peserta dan status presensi sesi ujian */
-    get: operations["get_sesi_peserta_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/cek": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Cek status kelulusan calon mahasiswa */
-    get: operations["get_cek_kelulusan_calon_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/loa/pdf": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Download LoA PDF */
-    get: operations["download_loa_pdf_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/daftar-ulang": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Informasi daftar ulang calon */
-    get: operations["get_daftar_ulang_info_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/daftar-ulang/berkas": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Upload berkas daftar ulang */
-    post: operations["upload_berkas_daftar_ulang_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/admin/rumus": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar konfigurasi rumus penilaian per jalur */
-    get: operations["get_rumus_penilaian_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/admin/rumus/{jalur_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Update rumus penilaian jalur */
-    post: operations["update_rumus_penilaian_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/admin/proses-ranking": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Proses ranking dan buat draf kelulusan */
-    post: operations["proses_ranking_kelulusan_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/admin/draf": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ambil draf kelulusan aktif */
-    get: operations["get_draf_kelulusan_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/admin/approve/{sidang_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Setujui sidang kelulusan */
-    post: operations["approve_sidang_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/admin/publish/{sidang_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Publikasikan hasil sidang kelulusan */
-    post: operations["publish_sidang_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/admin/kandidat/status": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Ubah status kelulusan kandidat manual */
-    post: operations["update_status_kandidat_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/admin/daftar-ulang/verifikasi/{berkas_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Verifikasi berkas daftar ulang */
-    post: operations["verifikasi_berkas_daftar_ulang_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/admin/generate-nim/{pendaftar_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Terbitkan NIM resmi mahasiswa */
-    post: operations["generate_nim_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/admin/ekspor-siakad": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ekspor data mahasiswa baru untuk SIAKAD */
-    get: operations["ekspor_siakad_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/admin/daftar-ulang/list": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar calon mahasiswa yang lulus dan status daftar ulangnya */
-    get: operations["list_daftar_ulang_admin_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/kelulusan/admin/daftar-ulang/berkas/{pendaftar_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar berkas daftar ulang calon */
-    get: operations["list_berkas_daftar_ulang_admin_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rpl/mata-kuliah/{prodi_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar mata kuliah kurikulum program studi aktif */
-    get: operations["get_mata_kuliah_by_prodi_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rpl/my-permohonan": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Detail permohonan RPL milik calon mahasiswa login */
-    get: operations["get_my_permohonan_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rpl/submit": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Simpan draf atau ajukan permohonan RPL calon */
-    post: operations["submit_permohonan_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rpl/admin/permohonan": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar rekapitulasi permohonan RPL (terfilter otomatis untuk asesor) */
-    get: operations["list_permohonan_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rpl/admin/permohonan/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Detail lengkap permohonan RPL calon */
-    get: operations["get_permohonan_detail_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rpl/admin/assign-asesor/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Admin menugaskan asesor RPL */
-    post: operations["assign_asesor_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rpl/asesor/penilaian/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Simpan penilaian mata kuliah atau finalisasi konversi SKS */
-    post: operations["submit_penilaian_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rpl/admin/laporan/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ambil data laporan Berita Acara Rekognisi RPL */
-    get: operations["get_laporan_rpl_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rpl/admin/laporan/{id}/export": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Unduh Berita Acara Rekognisi RPL dalam format CSV */
-    get: operations["export_laporan_csv_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rpl/admin/mata-kuliah": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar semua mata kuliah kurikulum */
-    get: operations["list_all_mata_kuliah_handler"];
-    put?: never;
-    /** Tambah mata kuliah kurikulum baru */
-    post: operations["create_mata_kuliah_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/rpl/admin/mata-kuliah/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Perbarui mata kuliah kurikulum */
-    put: operations["update_mata_kuliah_handler"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/posts": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar artikel / pengumuman terpublikasi */
-    get: operations["list_posts_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/posts/{slug}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Detail artikel / pengumuman berdasarkan slug */
-    get: operations["get_post_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/banners": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar banner homepage slider aktif */
-    get: operations["list_banners_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/faqs": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar pertanyaan umum aktif */
-    get: operations["list_faqs_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/pages/{slug}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Halaman statis / kebijakan privasi berdasarkan slug */
-    get: operations["get_page_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/admin/posts": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar seluruh artikel untuk admin */
-    get: operations["admin_list_posts_handler"];
-    put?: never;
-    /** Buat artikel / pengumuman baru */
-    post: operations["admin_create_post_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/admin/posts/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Detail artikel untuk admin */
-    get: operations["admin_get_post_handler"];
-    /** Perbarui artikel */
-    put: operations["admin_update_post_handler"];
-    post?: never;
-    /** Hapus artikel */
-    delete: operations["admin_delete_post_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/admin/banners": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar banner admin */
-    get: operations["admin_list_banners_handler"];
-    put?: never;
-    /** Buat banner baru */
-    post: operations["admin_create_banner_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/admin/banners/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Detail banner admin */
-    get: operations["admin_get_banner_handler"];
-    /** Perbarui banner */
-    put: operations["admin_update_banner_handler"];
-    post?: never;
-    /** Hapus banner */
-    delete: operations["admin_delete_banner_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/admin/faqs": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar seluruh FAQ admin */
-    get: operations["admin_list_faqs_handler"];
-    put?: never;
-    /** Buat FAQ baru */
-    post: operations["admin_create_faq_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/admin/faqs/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Detail FAQ admin */
-    get: operations["admin_get_faq_handler"];
-    /** Perbarui FAQ */
-    put: operations["admin_update_faq_handler"];
-    post?: never;
-    /** Hapus FAQ */
-    delete: operations["admin_delete_faq_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/admin/pages": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Daftar halaman statis admin */
-    get: operations["admin_list_pages_handler"];
-    put?: never;
-    /** Buat halaman statis baru */
-    post: operations["admin_create_page_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/admin/pages/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Detail halaman statis admin */
-    get: operations["admin_get_page_handler"];
-    /** Perbarui halaman statis */
-    put: operations["admin_update_page_handler"];
-    post?: never;
-    /** Hapus halaman statis */
-    delete: operations["admin_delete_page_handler"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/cms/admin/upload-presign": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Minta presigned URL untuk unggah media / foto banner */
-    post: operations["admin_upload_presign_handler"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/dashboard/admin/stats": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Analisis data eksekutif PMB dengan filter periode */
-    get: operations["get_executive_dashboard_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/dashboard/admin/export-excel": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Ekspor laporan analitik eksekutif dalam format spreadsheet CSV */
-    get: operations["export_excel_dashboard_handler"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/api/admin/konfigurasi/fakultas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_fakultas_handler"];
+        put?: never;
+        post: operations["create_fakultas_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/fakultas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update_fakultas_handler"];
+        post?: never;
+        delete: operations["delete_fakultas_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/gelombang": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_gelombang_admin_handler"];
+        put?: never;
+        post: operations["create_gelombang_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/gelombang/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update_gelombang_handler"];
+        post?: never;
+        delete: operations["delete_gelombang_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/jalur": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_jalur_admin_handler"];
+        put?: never;
+        post: operations["create_jalur_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/jalur/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update_jalur_handler"];
+        post?: never;
+        delete: operations["delete_jalur_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/komponen-biaya": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_komponen_biaya_handler"];
+        put?: never;
+        post: operations["create_komponen_biaya_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/komponen-biaya/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update_komponen_biaya_handler"];
+        post?: never;
+        delete: operations["delete_komponen_biaya_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/kuota-prodi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_kuota_prodi_gelombang_handler"];
+        put: operations["set_kuota_prodi_gelombang_handler"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/matriks-biaya": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_matriks_biaya_handler"];
+        put?: never;
+        post: operations["create_matriks_biaya_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/matriks-biaya/hitung": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["hitung_biaya_simulasi_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/matriks-biaya/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update_matriks_biaya_handler"];
+        post?: never;
+        delete: operations["delete_matriks_biaya_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/pengaturan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_pengaturan_handler"];
+        put: operations["update_pengaturan_handler"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/prodi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_prodi_admin_handler"];
+        put?: never;
+        post: operations["create_prodi_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/prodi/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update_prodi_handler"];
+        post?: never;
+        delete: operations["delete_prodi_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/tahun-akademik": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_tahun_akademik_handler"];
+        put?: never;
+        post: operations["create_tahun_akademik_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/tahun-akademik/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update_tahun_akademik_handler"];
+        post?: never;
+        delete: operations["delete_tahun_akademik_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/vouchers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_vouchers_handler"];
+        put?: never;
+        post: operations["create_voucher_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/konfigurasi/vouchers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update_voucher_handler"];
+        post?: never;
+        delete: operations["delete_voucher_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_list_users_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["admin_update_role_handler"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/change-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["change_password_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["forgot_password_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["login_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["logout_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["me_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["register_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reset_password_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["verify_email_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/admin/bank-soal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_bank_soal_handler"];
+        put?: never;
+        post: operations["create_bank_soal_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/admin/paket": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_paket_handler"];
+        put?: never;
+        post: operations["create_paket_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/admin/presensi/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["check_in_presensi_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/admin/sesi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_sesi_handler"];
+        put?: never;
+        post: operations["create_sesi_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/admin/sesi/{id}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["assign_peserta_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/autosave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["autosave_jawaban_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/mulai": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["mulai_ujian_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/my-sesi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_my_sesi_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["submit_ujian_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/admin/banners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_list_banners_handler"];
+        put?: never;
+        post: operations["admin_create_banner_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/admin/banners/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_get_banner_handler"];
+        put: operations["admin_update_banner_handler"];
+        post?: never;
+        delete: operations["admin_delete_banner_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/admin/faqs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_list_faqs_handler"];
+        put?: never;
+        post: operations["admin_create_faq_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/admin/faqs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_get_faq_handler"];
+        put: operations["admin_update_faq_handler"];
+        post?: never;
+        delete: operations["admin_delete_faq_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/admin/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_list_pages_handler"];
+        put?: never;
+        post: operations["admin_create_page_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/admin/pages/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_get_page_handler"];
+        put: operations["admin_update_page_handler"];
+        post?: never;
+        delete: operations["admin_delete_page_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/admin/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_list_posts_handler"];
+        put?: never;
+        post: operations["admin_create_post_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/admin/posts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_get_post_handler"];
+        put: operations["admin_update_post_handler"];
+        post?: never;
+        delete: operations["admin_delete_post_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/admin/upload-presign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin_upload_presign_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/banners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_banners_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/faqs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_faqs_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/pages/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_page_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_posts_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cms/posts/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_post_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dashboard/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_admin_dashboard_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dashboard/admin/export-excel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["export_excel_dashboard_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dashboard/admin/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_executive_dashboard_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dashboard/calon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_calon_dashboard_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["health_check_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/approve/{sidang_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["approve_sidang_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/daftar-ulang/berkas/{pendaftar_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_berkas_daftar_ulang_admin_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/daftar-ulang/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_daftar_ulang_admin_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/daftar-ulang/verifikasi/{berkas_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["verifikasi_berkas_daftar_ulang_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/draf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_draf_kelulusan_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/ekspor-siakad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ekspor_siakad_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/generate-nim/{pendaftar_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["generate_nim_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/kandidat/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["update_status_kandidat_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_list_kelulusan_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/proses-ranking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["proses_ranking_kelulusan_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/proses-seleksi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin_proses_seleksi_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/publish/{sidang_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["publish_sidang_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/rumus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_rumus_penilaian_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/rumus/{jalur_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["update_rumus_penilaian_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/cek": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_cek_kelulusan_calon_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/daftar-ulang": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_daftar_ulang_info_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/daftar-ulang/berkas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["upload_berkas_daftar_ulang_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/loa/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["download_loa_pdf_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/my-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_my_kelulusan_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/master/fakultas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_fakultas_prodi_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/master/gelombang": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_gelombang_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/master/jalur": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_jalur_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/master/prodi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_prodi_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/master/prodi/slug/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_prodi_by_slug_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/master/prodi/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_prodi_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/admin/ekspor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_ekspor_transaksi_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/admin/konfirmasi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin_konfirmasi_bayar_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/admin/konfirmasi-manual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin_konfirmasi_manual_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/admin/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_list_pembayaran_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/admin/rekonsiliasi/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin_rekonsiliasi_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/buat-tagihan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["buat_tagihan_formulir_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/cek-voucher": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cek_voucher_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/charge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["charge_payment_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/my-tagihan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_my_tagihan_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/simulasi-va-bayar/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["simulasi_va_bayar_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/webhook/midtrans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["midtrans_webhook_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/webhook/mock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["mock_webhook_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/admin/berkas-list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_list_berkas_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/admin/form-builder/berkas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_list_definisi_berkas_handler"];
+        put?: never;
+        post: operations["admin_create_definisi_berkas_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/admin/form-builder/berkas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["admin_update_definisi_berkas_handler"];
+        post?: never;
+        delete: operations["admin_delete_definisi_berkas_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/admin/form-builder/fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_list_fields_handler"];
+        put?: never;
+        post: operations["admin_create_field_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/admin/form-builder/fields/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin_reorder_fields_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/admin/form-builder/fields/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["admin_update_field_handler"];
+        post?: never;
+        delete: operations["admin_delete_field_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/admin/form-builder/langkah": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_list_definisi_langkah_handler"];
+        put?: never;
+        post: operations["admin_create_definisi_langkah_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/admin/form-builder/langkah/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["admin_update_definisi_langkah_handler"];
+        post?: never;
+        delete: operations["admin_delete_definisi_langkah_handler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/admin/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_list_pendaftar_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/admin/offline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin_pendaftaran_offline_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/admin/verifikasi-berkas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin_verifikasi_berkas_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/berkas/konfirmasi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["konfirmasi_upload_berkas_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/berkas/presign-upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["presign_upload_berkas_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/berkas/syarat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_berkas_syarat_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/berkas/{id}/presign-download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["presign_download_berkas_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/berkas/{id}/presigned-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_presigned_url_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/dashboard-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_dashboard_summary_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_fields_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/finalisasi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["finalisasi_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/langkah": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_langkah_progress_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/my": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_my_pendaftaran_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/pilih-prodi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["pilih_prodi_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/submit-akademik": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["submit_akademik_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/submit-biodata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["submit_biodata_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/submit-dinamis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["submit_formulir_dinamis_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/upload-berkas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["upload_berkas_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/{id}/cetak/bukti-pendaftaran": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["cetak_bukti_pendaftaran_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/{id}/cetak/kartu-peserta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["cetak_kartu_peserta_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rpl/admin/assign-asesor/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["assign_asesor_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rpl/admin/laporan/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_laporan_rpl_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rpl/admin/laporan/{id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["export_laporan_csv_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rpl/admin/mata-kuliah": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_all_mata_kuliah_handler"];
+        put?: never;
+        post: operations["create_mata_kuliah_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rpl/admin/mata-kuliah/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update_mata_kuliah_handler"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rpl/admin/permohonan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_permohonan_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rpl/admin/permohonan/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_permohonan_detail_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rpl/asesor/penilaian/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["submit_penilaian_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rpl/mata-kuliah/{prodi_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_mata_kuliah_by_prodi_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rpl/my-permohonan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_my_permohonan_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rpl/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["submit_permohonan_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    HealthCheckResponse: {
-      status: string;
-      service: string;
-      institusi: string;
-      versi: string;
-      database: string;
-      redis: string;
-      /** Format: date-time */
-      timestamp: string;
-    };
-    ApiErrorResponse: {
-      kode: string;
-      pesan: string;
-      detail: string[];
-    };
-    RegisterRequest: {
-      email: string;
-      password: string;
-      nama_lengkap: string;
-      no_hp: string;
-    };
-    LoginRequest: {
-      email: string;
-      password: string;
-    };
-    AuthResponse: {
-      /** Format: uuid */
-      user_id: string;
-      email: string;
-      role: string;
-      nama_lengkap: string;
-      no_hp: string;
-      is_email_verified: boolean;
-    };
-    VerifyEmailRequest: {
-      token: string;
-    };
-    ForgotPasswordRequest: {
-      /** Format: email */
-      email: string;
-    };
-    ResetPasswordRequest: {
-      token: string;
-      new_password: string;
-    };
-    ChangePasswordRequest: {
-      old_password: string;
-      new_password: string;
-    };
-    UpdateUserRoleRequest: {
-      role: string;
-    };
-    UserListItemResponse: {
-      /** Format: uuid */
-      id: string;
-      email: string;
-      role: string;
-      nama_lengkap: string;
-      no_hp: string;
-      is_active: boolean;
-      is_email_verified: boolean;
-      /** Format: date-time */
-      created_at: string;
-    };
-    GenericMessageResponse: {
-      status: string;
-      pesan: string;
-    };
-    ProdiResponse: {
-      /** Format: uuid */
-      id: string;
-      kode_prodi: string;
-      nama_prodi: string;
-      jenjang: string;
-      fakultas: string;
-      kode_fakultas: string;
-      passing_score: number;
-      kuota: number;
-      ukt_nominal: number;
-      is_active: boolean;
-    };
-    JalurResponse: {
-      /** Format: uuid */
-      id: string;
-      kode_jalur: string;
-      nama_jalur: string;
-      deskripsi: string;
-      biaya_formulir: number;
-      is_active: boolean;
-    };
-    GelombangResponse: {
-      /** Format: uuid */
-      id: string;
-      nama_gelombang: string;
-      /** Format: date-time */
-      tgl_mulai: string;
-      /** Format: date-time */
-      tgl_selesai: string;
-      kuota: number;
-      is_active: boolean;
-    };
-    PendaftarDetailResponse: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      user_id: string;
-      nomor_pendaftaran: string;
-      /** Format: uuid */
-      jalur_id: string;
-      nama_jalur: string;
-      /** Format: uuid */
-      gelombang_id: string;
-      nama_gelombang: string;
-      status_pendaftaran: string;
-      nik: string;
-      tempat_lahir: string;
-      /** Format: date */
-      tgl_lahir: string;
-      jenis_kelamin: string;
-      agama: string;
-      alamat_lengkap: string;
-      nama_ortu: string;
-      no_hp_ortu: string;
-      asal_sekolah: string;
-      jurusan_sekolah: string;
-      nilai_rapor_avg: number;
-      /** Format: uuid */
-      prodi_pilihan_1: string;
-      nama_prodi_1: string;
-      /** Format: date-time */
-      created_at: string;
-    };
-    PembayaranDetailResponse: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      pendaftar_id: string;
-      nomor_tagihan: string;
-      jenis_tagihan: string;
-      nominal_asli: number;
-      diskon: number;
-      nominal_akhir: number;
-      status_pembayaran: string;
-      metode_pembayaran: string;
-      nomor_va?: string | null;
-      /** Format: date-time */
-      tgl_kadaluarsa: string;
-      /** Format: date-time */
-      created_at: string;
-    };
-    StepperStep: {
-      key: string;
-      judul: string;
-      deskripsi: string;
-      status: string;
-      nomor_urut: number;
-    };
-    CalonDashboardResponse: {
-      nomor_pendaftaran?: string | null;
-      status_pendaftaran: string;
-      stepper: components["schemas"]["StepperStep"][];
-      tagihan_formulir_lunas: boolean;
-      berkas_terverifikasi: boolean;
-      ujian_selesai: boolean;
-      hasil_kelulusan?: string | null;
-      nim_resmi?: string | null;
-    };
-    ProdiStat: {
-      nama_prodi: string;
-      jenjang: string;
-      total_peminat: number;
-      kuota: number;
-    };
-    FunnelStat: {
-      tahapan: string;
-      jumlah: number;
-    };
-    AdminDashboardResponse: {
-      total_pendaftar: number;
-      total_berkas_diverifikasi: number;
-      total_lulus: number;
-      total_pendapatan_rupiah: number;
-      distribusi_prodi: components["schemas"]["ProdiStat"][];
-      funnel_tahapan: components["schemas"]["FunnelStat"][];
-    };
-    UploadBerkasRequest: {
-      jenis_berkas: string;
-      file_name: string;
-      mime_type: string;
-      file_size_bytes: number;
-    };
-    PresignedUrlResponse: {
-      /** Format: uuid */
-      berkas_id: string;
-      presigned_url: string;
-      expires_in_seconds: number;
-    };
-    BerkasResponse: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      pendaftar_id: string;
-      jenis_berkas: string;
-      file_key: string;
-      file_name: string;
-      mime_type: string;
-      file_size_bytes: number;
-      status_verifikasi: string;
-      catatan?: string | null;
-      /** Format: date-time */
-      uploaded_at: string;
-    };
-    TahunAkademikResponse: {
-      /** Format: uuid */
-      id: string;
-      kode: string;
-      nama: string;
-      /** Format: date */
-      tgl_mulai: string;
-      /** Format: date */
-      tgl_selesai: string;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateTahunAkademikRequest: {
-      kode: string;
-      nama: string;
-      /** Format: date */
-      tgl_mulai: string;
-      /** Format: date */
-      tgl_selesai: string;
-      is_active: boolean;
-    };
-    UpdateTahunAkademikRequest: {
-      kode: string;
-      nama: string;
-      /** Format: date */
-      tgl_mulai: string;
-      /** Format: date */
-      tgl_selesai: string;
-      is_active: boolean;
-    };
-    FakultasResponse: {
-      /** Format: uuid */
-      id: string;
-      kode_fakultas: string;
-      nama_fakultas: string;
-      deskripsi?: string | null;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateFakultasRequest: {
-      kode_fakultas: string;
-      nama_fakultas: string;
-      deskripsi?: string | null;
-      is_active: boolean;
-    };
-    GelombangDetailResponse: {
-      /** Format: uuid */
-      id: string;
-      nama_gelombang: string;
-      /** Format: uuid */
-      tahun_akademik_id?: string | null;
-      tahun_akademik_nama?: string | null;
-      nomor_gelombang: number;
-      status: string;
-      /** Format: date-time */
-      tgl_mulai: string;
-      /** Format: date-time */
-      tgl_selesai: string;
-      kuota: number;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateGelombangRequest: {
-      nama_gelombang: string;
-      /** Format: uuid */
-      tahun_akademik_id?: string | null;
-      nomor_gelombang: number;
-      status: string;
-      /** Format: date-time */
-      tgl_mulai: string;
-      /** Format: date-time */
-      tgl_selesai: string;
-      kuota: number;
-      is_active: boolean;
-    };
-    UpdateGelombangRequest: {
-      nama_gelombang: string;
-      /** Format: uuid */
-      tahun_akademik_id?: string | null;
-      status: string;
-      /** Format: date-time */
-      tgl_mulai: string;
-      /** Format: date-time */
-      tgl_selesai: string;
-      kuota: number;
-      is_active: boolean;
-    };
-    ProdiDetailResponse: {
-      /** Format: uuid */
-      id: string;
-      kode_prodi: string;
-      nama_prodi: string;
-      jenjang: string;
-      fakultas: string;
-      kode_fakultas: string;
-      /** Format: uuid */
-      fakultas_id?: string | null;
-      passing_score: number;
-      kuota: number;
-      ukt_nominal: number;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateProdiKonfigurasiRequest: {
-      kode_prodi: string;
-      nama_prodi: string;
-      jenjang: string;
-      /** Format: uuid */
-      fakultas_id?: string | null;
-      fakultas: string;
-      kode_fakultas: string;
-      passing_score: number;
-      kuota: number;
-      ukt_nominal: number;
-      is_active: boolean;
-    };
-    UpdateProdiKonfigurasiRequest: {
-      nama_prodi: string;
-      jenjang: string;
-      /** Format: uuid */
-      fakultas_id?: string | null;
-      fakultas: string;
-      kode_fakultas: string;
-      passing_score: number;
-      kuota: number;
-      ukt_nominal: number;
-      is_active: boolean;
-    };
-    KuotaProdiGelombangResponse: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      prodi_id: string;
-      nama_prodi: string;
-      /** Format: uuid */
-      gelombang_id: string;
-      nama_gelombang: string;
-      kuota: number;
-      kuota_terisi: number;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    SetKuotaProdiGelombangRequest: {
-      /** Format: uuid */
-      prodi_id: string;
-      /** Format: uuid */
-      gelombang_id: string;
-      kuota: number;
-    };
-    JalurDetailResponse: {
-      /** Format: uuid */
-      id: string;
-      kode_jalur: string;
-      nama_jalur: string;
-      deskripsi: string;
-      biaya_formulir: number;
-      tipe_seleksi: string;
-      syarat?: string | null;
-      kuota_maksimal?: number | null;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateJalurKonfigurasiRequest: {
-      kode_jalur: string;
-      nama_jalur: string;
-      deskripsi: string;
-      biaya_formulir: number;
-      tipe_seleksi: string;
-      syarat?: string | null;
-      kuota_maksimal?: number | null;
-      is_active: boolean;
-    };
-    UpdateJalurKonfigurasiRequest: {
-      nama_jalur: string;
-      deskripsi: string;
-      biaya_formulir: number;
-      tipe_seleksi: string;
-      syarat?: string | null;
-      kuota_maksimal?: number | null;
-      is_active: boolean;
-    };
-    KomponenBiayaResponse: {
-      /** Format: uuid */
-      id: string;
-      kode_komponen: string;
-      nama_komponen: string;
-      deskripsi?: string | null;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateKomponenBiayaRequest: {
-      kode_komponen: string;
-      nama_komponen: string;
-      deskripsi?: string | null;
-      is_active: boolean;
-    };
-    MatriksBiayaResponse: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      prodi_id: string;
-      nama_prodi: string;
-      /** Format: uuid */
-      jalur_id: string;
-      nama_jalur: string;
-      /** Format: uuid */
-      gelombang_id: string;
-      nama_gelombang: string;
-      /** Format: uuid */
-      komponen_id: string;
-      nama_komponen: string;
-      kode_komponen: string;
-      nominal: number;
-      bisa_dicicil: boolean;
-      maksimal_cicilan: number;
-      nominal_cicilan_pertama?: number | null;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateMatriksBiayaRequest: {
-      /** Format: uuid */
-      prodi_id: string;
-      /** Format: uuid */
-      jalur_id: string;
-      /** Format: uuid */
-      gelombang_id: string;
-      /** Format: uuid */
-      komponen_id: string;
-      nominal: number;
-      bisa_dicicil: boolean;
-      maksimal_cicilan: number;
-      nominal_cicilan_pertama?: number | null;
-    };
-    UpdateMatriksBiayaRequest: {
-      nominal: number;
-      bisa_dicicil: boolean;
-      maksimal_cicilan: number;
-      nominal_cicilan_pertama?: number | null;
-    };
-    HitungBiayaRequest: {
-      /** Format: uuid */
-      prodi_id: string;
-      /** Format: uuid */
-      jalur_id: string;
-      /** Format: uuid */
-      gelombang_id: string;
-      kode_voucher?: string | null;
-    };
-    BiayaItemDetail: {
-      /** Format: uuid */
-      komponen_id: string;
-      kode_komponen: string;
-      nama_komponen: string;
-      nominal: number;
-      bisa_dicicil: boolean;
-      maksimal_cicilan: number;
-      nominal_cicilan_pertama?: number | null;
-    };
-    HitungBiayaResponse: {
-      rincian_komponen: components["schemas"]["BiayaItemDetail"][];
-      total_biaya_asli: number;
-      diskon_voucher: number;
-      total_setelah_diskon: number;
-      minimal_bayar_pertama: number;
-      bisa_dicicil: boolean;
-      maksimal_termin: number;
-      voucher_info?: string | null;
-    };
-    VoucherDetailResponse: {
-      /** Format: uuid */
-      id: string;
-      kode_voucher: string;
-      tipe_diskon: string;
-      nilai_diskon: number;
-      kuota: number;
-      kuota_terpakai: number;
-      /** Format: date-time */
-      tgl_kadaluarsa: string;
-      /** Format: uuid */
-      batas_jalur_id?: string | null;
-      /** Format: uuid */
-      batas_prodi_id?: string | null;
-      deskripsi?: string | null;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateVoucherRequest: {
-      kode_voucher: string;
-      tipe_diskon: string;
-      nilai_diskon: number;
-      kuota: number;
-      /** Format: date-time */
-      tgl_kadaluarsa: string;
-      /** Format: uuid */
-      batas_jalur_id?: string | null;
-      /** Format: uuid */
-      batas_prodi_id?: string | null;
-      deskripsi?: string | null;
-      is_active: boolean;
-    };
-    UpdateVoucherRequest: {
-      kuota: number;
-      /** Format: date-time */
-      tgl_kadaluarsa: string;
-      /** Format: uuid */
-      batas_jalur_id?: string | null;
-      /** Format: uuid */
-      batas_prodi_id?: string | null;
-      deskripsi?: string | null;
-      is_active: boolean;
-    };
-    PengaturanResponse: {
-      /** Format: uuid */
-      id: string;
-      kunci: string;
-      nilai: string;
-      deskripsi?: string | null;
-      /** Format: uuid */
-      updated_by?: string | null;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    UpdatePengaturanRequest: {
-      kunci: string;
-      nilai: string;
-    };
-    DefinisiField: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      jalur_id?: string | null;
-      kode_field: string;
-      label: string;
-      tipe_field: string;
-      placeholder?: string | null;
-      wajib: boolean;
-      opsi: unknown;
-      aturan_validasi: unknown;
-      urutan: number;
-      kelompok: string;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    DefinisiBerkas: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      jalur_id?: string | null;
-      kode_berkas: string;
-      nama: string;
-      deskripsi?: string | null;
-      wajib: boolean;
-      tipe_file: string;
-      ukuran_maks_kb: number;
-      urutan: number;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    DefinisiLangkah: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      jalur_id?: string | null;
-      kode_langkah: string;
-      judul_langkah: string;
-      deskripsi?: string | null;
-      tipe_langkah: string;
-      urutan: number;
-      wajib: boolean;
-      syarat_lanjut: unknown;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    SubmitDinamisRequest: {
-      /** Format: uuid */
-      jalur_id?: string | null;
-      /** Format: uuid */
-      gelombang_id?: string | null;
-      /** Format: uuid */
-      prodi_pilihan_1?: string | null;
-      /** Format: uuid */
-      prodi_pilihan_2?: string | null;
-      data: unknown;
-    };
-    PresignUploadRequest: {
-      /** Format: uuid */
-      definisi_berkas_id: string;
-      file_name: string;
-      mime_type: string;
-      file_size_bytes: number;
-    };
-    KonfirmasiUploadRequest: {
-      /** Format: uuid */
-      definisi_berkas_id: string;
-      file_key: string;
-      file_name: string;
-      mime_type: string;
-      file_size_bytes: number;
-    };
-    BerkasCalonItem: {
-      /** Format: uuid */
-      id?: string | null;
-      /** Format: uuid */
-      definisi_berkas_id: string;
-      kode_berkas: string;
-      nama: string;
-      deskripsi?: string | null;
-      wajib: boolean;
-      tipe_file: string;
-      ukuran_maks_kb: number;
-      urutan: number;
-      file_key?: string | null;
-      file_name?: string | null;
-      mime_type?: string | null;
-      file_size_bytes?: number | null;
-      status_verifikasi: string;
-      catatan?: string | null;
-      /** Format: date-time */
-      uploaded_at?: string | null;
-    };
-    BerkasDetailItem: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      pendaftar_id: string;
-      nomor_pendaftaran: string;
-      nama_lengkap: string;
-      email: string;
-      nama_jalur: string;
-      /** Format: uuid */
-      definisi_berkas_id?: string | null;
-      kode_berkas: string;
-      nama_berkas: string;
-      wajib: boolean;
-      file_key: string;
-      file_name: string;
-      mime_type: string;
-      file_size_bytes: number;
-      status_verifikasi: string;
-      catatan?: string | null;
-      /** Format: date-time */
-      uploaded_at: string;
-      /** Format: date-time */
-      verified_at?: string | null;
-    };
-    LangkahProgressItem: {
-      /** Format: uuid */
-      id: string;
-      kode_langkah: string;
-      judul_langkah: string;
-      deskripsi?: string | null;
-      tipe_langkah: string;
-      urutan: number;
-      wajib: boolean;
-      status: string;
-      bisa_diakses: boolean;
-      syarat_keterangan?: string | null;
-    };
-    CreateDefinisiFieldRequest: {
-      /** Format: uuid */
-      jalur_id?: string | null;
-      kode_field: string;
-      label: string;
-      tipe_field: string;
-      placeholder?: string | null;
-      wajib: boolean;
-      opsi?: unknown;
-      aturan_validasi?: unknown;
-      urutan?: number | null;
-      kelompok?: string | null;
-    };
-    UpdateDefinisiFieldRequest: {
-      /** Format: uuid */
-      jalur_id?: string | null;
-      label: string;
-      tipe_field: string;
-      placeholder?: string | null;
-      wajib: boolean;
-      opsi?: unknown;
-      aturan_validasi?: unknown;
-      urutan: number;
-      kelompok: string;
-      is_active: boolean;
-    };
-    ReorderFieldsRequest: {
-      field_ids: string[];
-    };
-    CreateDefinisiBerkasRequest: {
-      /** Format: uuid */
-      jalur_id?: string | null;
-      kode_berkas: string;
-      nama: string;
-      deskripsi?: string | null;
-      wajib: boolean;
-      tipe_file?: string | null;
-      ukuran_maks_kb?: number | null;
-      urutan?: number | null;
-    };
-    UpdateDefinisiBerkasRequest: {
-      /** Format: uuid */
-      jalur_id?: string | null;
-      nama: string;
-      deskripsi?: string | null;
-      wajib: boolean;
-      tipe_file: string;
-      ukuran_maks_kb: number;
-      urutan: number;
-      is_active: boolean;
-    };
-    CreateDefinisiLangkahRequest: {
-      /** Format: uuid */
-      jalur_id?: string | null;
-      kode_langkah: string;
-      judul_langkah: string;
-      deskripsi?: string | null;
-      tipe_langkah: string;
-      urutan?: number | null;
-      wajib: boolean;
-      syarat_lanjut?: unknown;
-    };
-    UpdateDefinisiLangkahRequest: {
-      /** Format: uuid */
-      jalur_id?: string | null;
-      judul_langkah: string;
-      deskripsi?: string | null;
-      tipe_langkah: string;
-      urutan: number;
-      wajib: boolean;
-      syarat_lanjut?: unknown;
-      is_active: boolean;
-    };
-    PresignedUploadResponse: {
-      upload_url: string;
-      file_key: string;
-      expires_in_seconds: number;
-    };
-    PresignedDownloadResponse: {
-      download_url: string;
-      file_key: string;
-      expires_in_seconds: number;
-    };
-    PilihProdiRequest: {
-      /** Format: uuid */
-      jalur_id: string;
-      /** Format: uuid */
-      gelombang_id: string;
-      /** Format: uuid */
-      prodi_pilihan_1: string;
-      /** Format: uuid */
-      prodi_pilihan_2?: string | null;
-    };
-    PendaftaranOfflineRequest: {
-      nama_lengkap: string;
-      /** Format: email */
-      email: string;
-      no_hp: string;
-      nik: string;
-      tempat_lahir: string;
-      /** Format: date */
-      tgl_lahir: string;
-      jenis_kelamin: string;
-      agama: string;
-      alamat_lengkap: string;
-      nama_ortu: string;
-      no_hp_ortu: string;
-      asal_sekolah: string;
-      jurusan_sekolah: string;
-      nilai_rapor_avg?: number | null;
-      /** Format: uuid */
-      jalur_id: string;
-      /** Format: uuid */
-      gelombang_id: string;
-      /** Format: uuid */
-      prodi_pilihan_1: string;
-      /** Format: uuid */
-      prodi_pilihan_2?: string | null;
-      lunas_loket: boolean;
-      catatan_loket?: string | null;
-    };
-    PendaftaranOfflineResponse: {
-      /** Format: uuid */
-      pendaftar_id: string;
-      nomor_pendaftaran: string;
-      /** Format: uuid */
-      user_id: string;
-      /** Format: email */
-      email: string;
-      temporary_password?: string | null;
-      status_pendaftaran: string;
-      is_lunas_loket: boolean;
-      nomor_tagihan?: string | null;
-      cetak_bukti_url: string;
-      cetak_kartu_url: string;
-    };
-    DashboardSummaryResponse: {
-      /** Format: uuid */
-      pendaftar_id?: string | null;
-      nomor_pendaftaran?: string | null;
-      status_pendaftaran: string;
-      jalur_nama?: string | null;
-      gelombang_nama?: string | null;
-      prodi_1_nama?: string | null;
-      prodi_2_nama?: string | null;
-      tagihan_lunas: boolean;
-      nomor_tagihan?: string | null;
-      nominal_tagihan?: number | null;
-      jadwal_ujian?: string | null;
-      lokasi_ujian?: string | null;
-      pengumuman_status?: string | null;
-      nim_resmi?: string | null;
-      bisa_cetak_bukti: boolean;
-      bisa_cetak_kartu: boolean;
-    };
-    ChargePaymentRequest: {
-      /** Format: uuid */
-      tagihan_id: string;
-      metode_pembayaran: string;
-    };
-    TransaksiDetailResponse: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      tagihan_id: string;
-      nomor_transaksi: string;
-      gateway_provider: string;
-      metode_pembayaran: string;
-      nomor_va?: string | null;
-      qr_string?: string | null;
-      qr_url?: string | null;
-      nominal: number;
-      status: string;
-      /** Format: date-time */
-      waktu_dibuat: string;
-      /** Format: date-time */
-      waktu_berlaku_sampai: string;
-      /** Format: date-time */
-      waktu_dibayar?: string | null;
-    };
-    TagihanWithTransaksiResponse: {
-      /** Format: uuid */
-      id: string;
-      nomor_tagihan: string;
-      /** Format: uuid */
-      pendaftar_id: string;
-      jenis_tagihan: string;
-      nominal_asli: number;
-      diskon_voucher: number;
-      nominal_akhir: number;
-      /** Format: uuid */
-      voucher_id?: string | null;
-      status: string;
-      /** Format: date-time */
-      tgl_terbit: string;
-      /** Format: date-time */
-      tgl_jatuh_tempo: string;
-      /** Format: date-time */
-      lunas_at?: string | null;
-      catatan?: string | null;
-      active_transaksi?: components["schemas"]["TransaksiDetailResponse"];
-    };
-    RingkasanKeuanganResponse: {
-      total_dana_masuk: number;
-      total_transaksi_lunas: number;
-      total_transaksi_pending: number;
-      total_transaksi_expired: number;
-    };
-    AdminTransaksiItem: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      tagihan_id: string;
-      nomor_tagihan: string;
-      nomor_transaksi: string;
-      nomor_pendaftaran: string;
-      nama_pendaftar: string;
-      jenis_tagihan: string;
-      nominal_asli: number;
-      diskon_voucher: number;
-      nominal: number;
-      gateway_provider: string;
-      metode_pembayaran: string;
-      nomor_va?: string | null;
-      status: string;
-      /** Format: date-time */
-      waktu_dibuat: string;
-      /** Format: date-time */
-      waktu_dibayar?: string | null;
-    };
-    ListTransaksiAdminResponse: {
-      items: components["schemas"]["AdminTransaksiItem"][];
-      total: number;
-      page: number;
-      limit: number;
-      ringkasan: components["schemas"]["RingkasanKeuanganResponse"];
-    };
-    RekonsiliasiResponse: {
-      /** Format: uuid */
-      transaksi_id: string;
-      nomor_transaksi: string;
-      status_sebelumnya: string;
-      status_terkini: string;
-      berhasil_disinkronkan: boolean;
-      pesan: string;
-    };
-    KonfirmasiBayarRequest: {
-      /** Format: uuid */
-      pembayaran_id: string;
-      status: string;
-      catatan?: string | null;
-    };
-    SoalOpsiDto: {
-      id: string;
-      label: string;
-      teks: string;
-      gambar_url?: string | null;
-    };
-    SoalCbtPesertaResponse: {
-      /** Format: uuid */
-      id: string;
-      nomor_urut: number;
-      kategori: string;
-      tingkat_kesulitan: string;
-      bobot: number;
-      pertanyaan: string;
-      gambar_url?: string | null;
-      opsi_jawaban: components["schemas"]["SoalOpsiDto"][];
-      jawaban_terpilih?: string | null;
-      ragu_ragu: boolean;
-    };
-    SesiCalonInfoResponse: {
-      /** Format: uuid */
-      pendaftar_id: string;
-      nomor_peserta: string;
-      nomor_pendaftaran: string;
-      nama_peserta: string;
-      nama_prodi: string;
-      status_pendaftaran: string;
-      /** Format: uuid */
-      sesi_id?: string | null;
-      nama_sesi?: string | null;
-      /** Format: date-time */
-      jadwal_mulai?: string | null;
-      /** Format: date-time */
-      jadwal_selesai?: string | null;
-      ruang?: string | null;
-      durasi_menit?: number | null;
-      status_presensi: string;
-      status_ujian?: string | null;
-      /** Format: date-time */
-      waktu_mulai?: string | null;
-      /** Format: date-time */
-      batas_waktu?: string | null;
-      sisa_detik?: number | null;
-      total_soal?: number | null;
-      total_dijawab?: number | null;
-      nilai_akhir?: number | null;
-      is_lulus?: boolean | null;
-      passing_grade?: number | null;
-    };
-    MulaiUjianCbtResponse: {
-      /** Format: uuid */
-      peserta_sesi_id: string;
-      nama_sesi: string;
-      durasi_menit: number;
-      /** Format: date-time */
-      waktu_mulai: string;
-      /** Format: date-time */
-      batas_waktu: string;
-      sisa_detik: number;
-      total_soal: number;
-      passing_grade: number;
-      soal: components["schemas"]["SoalCbtPesertaResponse"][];
-      daftar_soal?: components["schemas"]["SoalCbtPesertaResponse"][];
-    };
-    AutosaveJawabanRequest: {
-      /** Format: uuid */
-      soal_id: string;
-      pilihan_jawaban?: string | null;
-      ragu_ragu?: boolean | null;
-    };
-    AutosaveJawabanResponse: {
-      status: string;
-      /** Format: uuid */
-      soal_id: string;
-      pilihan_jawaban?: string | null;
-      ragu_ragu: boolean;
-      sisa_detik: number;
-      total_terjawab: number;
-    };
-    SubmitUjianResponse: {
-      /** Format: uuid */
-      peserta_sesi_id: string;
-      total_soal: number;
-      total_dijawab: number;
-      jumlah_benar: number;
-      jumlah_salah: number;
-      jumlah_kosong: number;
-      nilai_akhir: number;
-      is_lulus: boolean;
-      passing_grade: number;
-      keterangan: string;
-    };
-    PresensiCheckInRequest: {
-      identifier?: string;
-      nomor_peserta_atau_qr?: string;
-      /** Format: uuid */
-      sesi_id?: string | null;
-      catatan?: string | null;
-    };
-    PresensiCheckInResponse: {
-      /** Format: uuid */
-      peserta_sesi_id: string;
-      nomor_peserta: string;
-      nama_peserta: string;
-      status_presensi: string;
-      /** Format: date-time */
-      waktu_presensi: string;
-      metode_presensi: string;
-      nama_sesi: string;
-      can_start_exam: boolean;
-    };
-    LivePesertaStatusItem: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      pendaftar_id: string;
-      nomor_peserta: string;
-      nama_peserta: string;
-      status_presensi: string;
-      status_ujian: string;
-      soal_terjawab: number;
-      total_soal: number;
-      sisa_detik: number;
-      nilai_akhir?: number | null;
-      is_lulus?: boolean | null;
-      /** Format: date-time */
-      waktu_mulai?: string | null;
-      /** Format: date-time */
-      waktu_selesai?: string | null;
-    };
-    LiveMonitorStreamResponse: {
-      /** Format: uuid */
-      sesi_id: string;
-      nama_sesi: string;
-      total_kuota?: number;
-      total_peserta: number;
-      hadir?: number;
-      total_hadir?: number;
-      sedang_mengerjakan?: number;
-      total_sedang_mengerjakan?: number;
-      selesai?: number;
-      total_selesai?: number;
-      peserta: components["schemas"]["LivePesertaStatusItem"][];
-    };
-    ErrorBarisImport: {
-      baris: number;
-      kolom?: string | null;
-      pesan: string;
-    };
-    ImportSoalResultResponse: {
-      total_baris: number;
-      berhasil: number;
-      gagal: number;
-      errors: components["schemas"]["ErrorBarisImport"][];
-    };
-    CreateSoalRequest: {
-      kategori: string;
-      tingkat_kesulitan?: string | null;
-      pertanyaan: string;
-      gambar_url?: string | null;
-      opsi_jawaban: components["schemas"]["SoalOpsiDto"][];
-      kunci_jawaban: string;
-      bobot?: number | null;
-      pembahasan?: string | null;
-    };
-    CreatePaketRequest: {
-      nama_paket: string;
-      deskripsi?: string | null;
-      durasi_menit?: number | null;
-      passing_grade?: number | null;
-      acak_soal?: boolean | null;
-      acak_opsi?: boolean | null;
-      soal_ids: string[];
-    };
-    CreateSesiRequest: {
-      /** Format: uuid */
-      paket_id: string;
-      nama_sesi: string;
-      /** Format: date-time */
-      jadwal_mulai: string;
-      /** Format: date-time */
-      jadwal_selesai: string;
-      ruang: string;
-      kuota?: number | null;
-    };
-    AssignPesertaRequest: {
-      pendaftar_ids: string[];
-    };
-    BankSoal: {
-      /** Format: uuid */
-      id: string;
-      kategori: string;
-      tingkat_kesulitan: string;
-      pertanyaan: string;
-      gambar_url?: string | null;
-      opsi_jawaban: Record<string, never>;
-      kunci_jawaban: string;
-      bobot: number;
-      pembahasan?: string | null;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    PaketUjian: {
-      /** Format: uuid */
-      id: string;
-      nama_paket: string;
-      deskripsi?: string | null;
-      durasi_menit: number;
-      passing_grade: number;
-      total_soal: number;
-      acak_soal: boolean;
-      acak_opsi: boolean;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    SesiUjian: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      paket_id: string;
-      nama_sesi: string;
-      /** Format: date-time */
-      jadwal_mulai: string;
-      /** Format: date-time */
-      jadwal_selesai: string;
-      ruang: string;
-      kuota: number;
-      status: string;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    RumusPenilaianJalur: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      jalur_id: string;
-      bobot_cbt: number;
-      bobot_rapor: number;
-      bobot_prestasi: number;
-      bobot_wawancara: number;
-      default_passing_score: number;
-      keterangan?: string | null;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    SidangKelulusan: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      gelombang_id?: string | null;
-      nama_sidang: string;
-      nomor_sk?: string | null;
-      /** Format: date */
-      tanggal_sidang: string;
-      /** Format: date-time */
-      tgl_pengumuman: string;
-      status_sidang: string;
-      total_peserta: number;
-      total_lulus: number;
-      total_cadangan: number;
-      total_tidak_lulus: number;
-      /** Format: uuid */
-      approved_by?: string | null;
-      /** Format: date-time */
-      approved_at?: string | null;
-      catatan_sidang?: string | null;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    AuditKelulusan: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      pendaftar_id: string;
-      /** Format: uuid */
-      sidang_id?: string | null;
-      status_lama?: string | null;
-      status_baru: string;
-      /** Format: uuid */
-      prodi_lama_id?: string | null;
-      /** Format: uuid */
-      prodi_baru_id?: string | null;
-      /** Format: uuid */
-      actor_id?: string | null;
-      actor_name: string;
-      catatan?: string | null;
-      /** Format: date-time */
-      created_at: string;
-    };
-    BerkasDaftarUlang: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      pendaftar_id: string;
-      jenis_berkas: string;
-      file_key: string;
-      file_name: string;
-      mime_type: string;
-      file_size_bytes: number;
-      status_verifikasi: string;
-      catatan?: string | null;
-      /** Format: date-time */
-      uploaded_at: string;
-      /** Format: uuid */
-      verified_by?: string | null;
-      /** Format: date-time */
-      verified_at?: string | null;
-    };
-    CekKelulusanCalonResponse: {
-      /** Format: uuid */
-      pendaftar_id: string;
-      nomor_pendaftaran: string;
-      nama_lengkap: string;
-      jalur_nama: string;
-      gelombang_nama: string;
-      status_kelulusan: string;
-      prodi_diterima?: string | null;
-      jenjang_diterima?: string | null;
-      fakultas_diterima?: string | null;
-      pilihan_ke?: number | null;
-      skor_akhir: number;
-      nim_resmi?: string | null;
-      nomor_surat_loa?: string | null;
-      /** Format: date */
-      tanggal_sk?: string | null;
-      is_published: boolean;
-      /** Format: date-time */
-      tgl_pengumuman?: string | null;
-      is_pengumuman_buka: boolean;
-      status_daftar_ulang: string;
-      pesan: string;
-    };
-    TagihanDaftarUlangDto: {
-      /** Format: uuid */
-      id: string;
-      nomor_tagihan: string;
-      nominal_asli: number;
-      nominal_akhir: number;
-      diskon: number;
-      status: string;
-      metode_pembayaran: string;
-      payment_url?: string | null;
-      va_number?: string | null;
-    };
-    DaftarUlangInfoResponse: {
-      /** Format: uuid */
-      pendaftar_id: string;
-      nomor_pendaftaran: string;
-      nama_lengkap: string;
-      prodi_diterima: string;
-      jenjang: string;
-      fakultas: string;
-      status_kelulusan: string;
-      status_daftar_ulang: string;
-      nim_resmi?: string | null;
-      nomor_loa?: string | null;
-      tagihan?: components["schemas"]["TagihanDaftarUlangDto"];
-      berkas_list: components["schemas"]["BerkasDaftarUlang"][];
-    };
-    DrafKelulusanItemDto: {
-      /** Format: uuid */
-      pendaftar_id: string;
-      nomor_pendaftaran: string;
-      nama_lengkap: string;
-      /** Format: uuid */
-      jalur_id: string;
-      jalur_nama: string;
-      /** Format: uuid */
-      prodi_pilihan_1_id: string;
-      prodi_pilihan_1_nama: string;
-      /** Format: uuid */
-      prodi_pilihan_2_id?: string | null;
-      prodi_pilihan_2_nama?: string | null;
-      skor_cbt: number;
-      nilai_rapor: number;
-      nilai_prestasi: number;
-      skor_akhir: number;
-      ranking: number;
-      status_kelulusan: string;
-      /** Format: uuid */
-      prodi_diterima_id?: string | null;
-      prodi_diterima_nama?: string | null;
-      pilihan_ke?: number | null;
-      catatan?: string | null;
-    };
-    DrafKelulusanResponse: {
-      sidang: components["schemas"]["SidangKelulusan"];
-      items: components["schemas"]["DrafKelulusanItemDto"][];
-      audit_logs: components["schemas"]["AuditKelulusan"][];
-    };
-    GenerateNimResponse: {
-      /** Format: uuid */
-      pendaftar_id: string;
-      nomor_pendaftaran: string;
-      nama_lengkap: string;
-      prodi_nama: string;
-      nim_resmi: string;
-      status_daftar_ulang: string;
-      pesan: string;
-    };
-    EksporSiakadItemDto: {
-      no: number;
-      nim: string;
-      nomor_pendaftaran: string;
-      nama_lengkap: string;
-      nik: string;
-      tempat_lahir: string;
-      tgl_lahir: string;
-      jenis_kelamin: string;
-      agama: string;
-      alamat: string;
-      no_hp: string;
-      email: string;
-      nama_ibu_kandung: string;
-      nama_ayah: string;
-      kode_prodi: string;
-      nama_prodi: string;
-      jenjang: string;
-      jalur_masuk: string;
-      tahun_masuk: string;
-      skor_akhir: number;
-      tanggal_daftar_ulang?: string | null;
-    };
-    UpdateRumusRequest: {
-      bobot_cbt: number;
-      bobot_rapor: number;
-      bobot_prestasi: number;
-      bobot_wawancara: number;
-      default_passing_score: number;
-      keterangan?: string | null;
-    };
-    ProsesRankingRequest: {
-      /** Format: uuid */
-      gelombang_id?: string | null;
-      nama_sidang: string;
-      nomor_sk?: string | null;
-      /** Format: date-time */
-      tgl_pengumuman: string;
-    };
-    ApprovalSidangRequest: {
-      catatan?: string | null;
-    };
-    UpdateStatusKandidatRequest: {
-      /** Format: uuid */
-      pendaftar_id: string;
-      status_baru: string;
-      /** Format: uuid */
-      prodi_diterima_id?: string | null;
-      catatan: string;
-    };
-    UploadBerkasDaftarUlangRequest: {
-      jenis_berkas: string;
-      file_name: string;
-      mime_type: string;
-      file_size_bytes: number;
-      file_key: string;
-    };
-    VerifikasiBerkasDaftarUlangRequest: {
-      /** @enum {string} */
-      status: "VALID" | "INVALID";
-      catatan?: string | null;
-    };
-    HasilKelulusanResponse: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      pendaftar_id: string;
-      nomor_pendaftaran: string;
-      nama_lengkap: string;
-      status_kelulusan: string;
-      /** Format: uuid */
-      prodi_diterima_id?: string | null;
-      nama_prodi_diterima?: string | null;
-      jenjang_diterima?: string | null;
-      fakultas_diterima?: string | null;
-      pilihan_ke?: number | null;
-      ranking?: number | null;
-      skor_akhir: number;
-      nim_resmi?: string | null;
-      nomor_surat_loa?: string | null;
-      /** Format: date */
-      tanggal_sk?: string | null;
-      is_published: boolean;
-      status_daftar_ulang: string;
-    };
-    MahasiswaDaftarUlangDto: {
-      /** Format: uuid */
-      pendaftar_id: string;
-      nomor_pendaftaran: string;
-      nama_lengkap: string;
-      prodi_diterima: string;
-      jenjang: string;
-      status_kelulusan: string;
-      status_daftar_ulang: string;
-      nim_resmi?: string | null;
-      nomor_loa?: string | null;
-      status_ukt: string;
-      total_berkas_valid: number;
-      total_berkas_pending: number;
-    };
-    MataKuliah: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      prodi_id: string;
-      kode_mk: string;
-      nama_mk: string;
-      sks: number;
-      semester: number;
-      silabus_ringkas?: string | null;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    RiwayatPendidikanItem: {
-      jenjang: string;
-      nama_institusi: string;
-      program_studi: string;
-      tahun_lulus: number;
-      ipk_nilai?: number | null;
-      nomor_ijazah?: string | null;
-    };
-    PengalamanKerjaItem: {
-      nama_perusahaan: string;
-      jabatan: string;
-      deskripsi_pekerjaan: string;
-      tanggal_mulai: string;
-      tanggal_selesai?: string | null;
-      masih_bekerja: boolean;
-      bukti_dokumen_url?: string | null;
-    };
-    BerkasRplItem: {
-      jenis_dokumen: string;
-      nama_file: string;
-      url: string;
-      ukuran_bytes: number;
-      keterangan?: string | null;
-    };
-    RplMataKuliahDiajukanDetail: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      permohonan_id: string;
-      /** Format: uuid */
-      mata_kuliah_id: string;
-      kode_mk: string;
-      nama_mk: string;
-      sks: number;
-      semester: number;
-      silabus_ringkas?: string | null;
-      keterangan_pemohon?: string | null;
-      status_kelayakan: string;
-      nilai_transfer?: string | null;
-      bobot_nilai?: number | null;
-      catatan_asesor?: string | null;
-      /** Format: date-time */
-      assessed_at?: string | null;
-      assessed_by_nama?: string | null;
-    };
-    MatakuliahDiajukanInput: {
-      /** Format: uuid */
-      mata_kuliah_id: string;
-      keterangan_pemohon: string;
-    };
-    SubmitRplPermohonanRequest: {
-      tipe_rpl: string;
-      riwayat_pendidikan: components["schemas"]["RiwayatPendidikanItem"][];
-      pengalaman_kerja: components["schemas"]["PengalamanKerjaItem"][];
-      berkas_pendukung: components["schemas"]["BerkasRplItem"][];
-      mata_kuliah_list: components["schemas"]["MatakuliahDiajukanInput"][];
-      is_draft: boolean;
-    };
-    RplPermohonanDetailResponse: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      pendaftar_id: string;
-      nomor_pendaftaran: string;
-      nama_lengkap: string;
-      /** Format: uuid */
-      prodi_id: string;
-      prodi_nama: string;
-      jenjang: string;
-      tipe_rpl: string;
-      status: string;
-      riwayat_pendidikan: components["schemas"]["RiwayatPendidikanItem"][];
-      pengalaman_kerja: components["schemas"]["PengalamanKerjaItem"][];
-      berkas_pendukung: components["schemas"]["BerkasRplItem"][];
-      mata_kuliah_list: components["schemas"]["RplMataKuliahDiajukanDetail"][];
-      total_sks_diajukan: number;
-      total_sks_diakui: number;
-      ipk_konversi: number;
-      persentase_rekognisi: number;
-      /** Format: uuid */
-      asesor_id?: string | null;
-      asesor_nama?: string | null;
-      catatan_asesor?: string | null;
-      catatan_admin?: string | null;
-      /** Format: date-time */
-      submitted_at?: string | null;
-      /** Format: date-time */
-      assessed_at?: string | null;
-    };
-    AssignAsesorRequest: {
-      /** Format: uuid */
-      asesor_id: string;
-      catatan_admin?: string | null;
-    };
-    PenilaianMataKuliahInput: {
-      /** Format: uuid */
-      mata_kuliah_id: string;
-      status_kelayakan: string;
-      nilai_transfer?: string | null;
-      catatan_asesor?: string | null;
-    };
-    SubmitPenilaianRplRequest: {
-      items: components["schemas"]["PenilaianMataKuliahInput"][];
-      catatan_asesor?: string | null;
-      finalisasi: boolean;
-    };
-    RplItemRekapDto: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      pendaftar_id: string;
-      nomor_pendaftaran: string;
-      nama_lengkap: string;
-      prodi_nama: string;
-      jenjang: string;
-      tipe_rpl: string;
-      status: string;
-      total_sks_diajukan: number;
-      total_sks_diakui: number;
-      ipk_konversi: number;
-      persentase_rekognisi: number;
-      /** Format: uuid */
-      asesor_id?: string | null;
-      asesor_nama?: string | null;
-      /** Format: date-time */
-      submitted_at?: string | null;
-      /** Format: date-time */
-      assessed_at?: string | null;
-    };
-    LaporanRplItemCourse: {
-      no: number;
-      kode_mk: string;
-      nama_mk: string;
-      sks: number;
-      semester: number;
-      status_kelayakan: string;
-      nilai_transfer: string;
-      bobot_nilai: number;
-      catatan_asesor: string;
-    };
-    LaporanRplResponse: {
-      nomor_berita_acara: string;
-      tanggal_berita_acara: string;
-      /** Format: uuid */
-      permohonan_id: string;
-      nomor_pendaftaran: string;
-      nama_lengkap: string;
-      nik: string;
-      prodi_nama: string;
-      jenjang: string;
-      fakultas: string;
-      tipe_rpl: string;
-      total_sks_diajukan: number;
-      total_sks_diakui: number;
-      ipk_konversi: number;
-      persentase_rekognisi: number;
-      asesor_nama: string;
-      catatan_rekomendasi: string;
-      daftar_mata_kuliah: components["schemas"]["LaporanRplItemCourse"][];
-    };
-    CreateMataKuliahRequest: {
-      /** Format: uuid */
-      prodi_id: string;
-      kode_mk: string;
-      nama_mk: string;
-      sks: number;
-      semester: number;
-      silabus_ringkas?: string | null;
-    };
-    UpdateMataKuliahRequest: {
-      nama_mk: string;
-      sks: number;
-      semester: number;
-      silabus_ringkas?: string | null;
-      is_active: boolean;
-    };
-    CmsPostResponse: {
-      /** Format: uuid */
-      id: string;
-      slug: string;
-      judul: string;
-      kategori: string;
-      ringkasan: string;
-      konten: string;
-      gambar_url?: string | null;
-      tags: string[];
-      author_nama: string;
-      is_published: boolean;
-      /** Format: date-time */
-      published_at: string;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateCmsPostRequest: {
-      judul: string;
-      kategori: string;
-      ringkasan: string;
-      konten: string;
-      gambar_url?: string | null;
-      tags?: string[] | null;
-      is_published?: boolean | null;
-    };
-    UpdateCmsPostRequest: {
-      judul: string;
-      kategori: string;
-      ringkasan: string;
-      konten: string;
-      gambar_url?: string | null;
-      tags?: string[] | null;
-      is_published: boolean;
-    };
-    CmsBannerResponse: {
-      /** Format: uuid */
-      id: string;
-      judul: string;
-      subjudul?: string | null;
-      gambar_url: string;
-      link_url?: string | null;
-      urutan: number;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateCmsBannerRequest: {
-      judul: string;
-      subjudul?: string | null;
-      gambar_url: string;
-      link_url?: string | null;
-      urutan?: number | null;
-      is_active?: boolean | null;
-    };
-    UpdateCmsBannerRequest: {
-      judul: string;
-      subjudul?: string | null;
-      gambar_url: string;
-      link_url?: string | null;
-      urutan: number;
-      is_active: boolean;
-    };
-    CmsFaqResponse: {
-      /** Format: uuid */
-      id: string;
-      kategori: string;
-      pertanyaan: string;
-      jawaban: string;
-      urutan: number;
-      is_active: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateCmsFaqRequest: {
-      kategori: string;
-      pertanyaan: string;
-      jawaban: string;
-      urutan?: number | null;
-      is_active?: boolean | null;
-    };
-    UpdateCmsFaqRequest: {
-      kategori: string;
-      pertanyaan: string;
-      jawaban: string;
-      urutan: number;
-      is_active: boolean;
-    };
-    CmsPageResponse: {
-      /** Format: uuid */
-      id: string;
-      slug: string;
-      judul: string;
-      konten: string;
-      meta_title?: string | null;
-      meta_description?: string | null;
-      is_published: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateCmsPageRequest: {
-      slug: string;
-      judul: string;
-      konten: string;
-      meta_title?: string | null;
-      meta_description?: string | null;
-      is_published?: boolean | null;
-    };
-    UpdateCmsPageRequest: {
-      judul: string;
-      konten: string;
-      meta_title?: string | null;
-      meta_description?: string | null;
-      is_published: boolean;
-    };
-    PresignMediaUploadRequest: {
-      file_name: string;
-    };
-    UploadMediaResponse: {
-      url: string;
-      file_key: string;
-      upload_url: string;
-      file_name: string;
-    };
-    TrenHarianStat: {
-      tanggal: string;
-      pendaftar: number;
-      terverifikasi: number;
-      bayar: number;
-    };
-    DistribusiProdiStat: {
-      /** Format: uuid */
-      prodi_id: string;
-      kode_prodi: string;
-      nama_prodi: string;
-      jenjang: string;
-      kuota: number;
-      total_peminat: number;
-      total_lulus: number;
-      total_daftar_ulang: number;
-    };
-    DistribusiJalurStat: {
-      /** Format: uuid */
-      jalur_id: string;
-      nama_jalur: string;
-      total_pendaftar: number;
-      total_lulus: number;
-    };
-    StatusPendaftaranStat: {
-      status: string;
-      label: string;
-      jumlah: number;
-      persentase: number;
-    };
-    ExecutiveDashboardResponse: {
-      total_pendaftar: number;
-      total_berkas_diverifikasi: number;
-      total_peserta_ujian: number;
-      total_lulus: number;
-      total_registrasi_nim: number;
-      total_pendapatan_rupiah: number;
-      total_piutang_rupiah: number;
-      tren_harian: components["schemas"]["TrenHarianStat"][];
-      distribusi_prodi: components["schemas"]["DistribusiProdiStat"][];
-      distribusi_jalur: components["schemas"]["DistribusiJalurStat"][];
-      status_pendaftaran: components["schemas"]["StatusPendaftaranStat"][];
-      funnel_tahapan: components["schemas"]["FunnelStat"][];
-    };
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    schemas: {
+        AdminDashboardResponse: {
+            distribusi_prodi: components["schemas"]["ProdiStat"][];
+            funnel_tahapan: components["schemas"]["FunnelStat"][];
+            /** Format: int64 */
+            total_berkas_diverifikasi: number;
+            /** Format: int64 */
+            total_lulus: number;
+            /** Format: int64 */
+            total_pendaftar: number;
+            /** Format: int64 */
+            total_pendapatan_rupiah: number;
+        };
+        AdminTransaksiItem: {
+            /** Format: int64 */
+            diskon_voucher: number;
+            gateway_provider: string;
+            /** Format: uuid */
+            id: string;
+            jenis_tagihan: string;
+            metode_pembayaran: string;
+            nama_pendaftar: string;
+            /** Format: int64 */
+            nominal: number;
+            /** Format: int64 */
+            nominal_asli: number;
+            nomor_pendaftaran: string;
+            nomor_tagihan: string;
+            nomor_transaksi: string;
+            nomor_va?: string | null;
+            status: string;
+            /** Format: uuid */
+            tagihan_id: string;
+            /** Format: date-time */
+            waktu_dibayar?: string | null;
+            /** Format: date-time */
+            waktu_dibuat: string;
+        };
+        ApiErrorResponse: {
+            detail: string[];
+            kode: string;
+            pesan: string;
+        };
+        ApprovalSidangRequest: {
+            catatan?: string | null;
+        };
+        AssignAsesorRequest: {
+            /** Format: uuid */
+            asesor_id: string;
+            catatan_admin?: string | null;
+        };
+        AssignPesertaRequest: {
+            pendaftar_ids: string[];
+        };
+        AuditKelulusan: {
+            /** Format: uuid */
+            actor_id?: string | null;
+            actor_name: string;
+            catatan?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            /** Format: uuid */
+            prodi_baru_id?: string | null;
+            /** Format: uuid */
+            prodi_lama_id?: string | null;
+            /** Format: uuid */
+            sidang_id?: string | null;
+            status_baru: string;
+            status_lama?: string | null;
+        };
+        AuthResponse: {
+            email: string;
+            is_email_verified: boolean;
+            nama_lengkap: string;
+            no_hp: string;
+            role: string;
+            /** Format: uuid */
+            user_id: string;
+        };
+        AutosaveJawabanRequest: {
+            pilihan_jawaban?: string | null;
+            ragu_ragu: boolean;
+            /** Format: uuid */
+            soal_id: string;
+        };
+        AutosaveJawabanResponse: {
+            is_expired: boolean;
+            /** Format: int64 */
+            sisa_detik: number;
+            /** Format: uuid */
+            soal_id: string;
+            status: string;
+        };
+        BankSoal: {
+            /** Format: double */
+            bobot: number;
+            /** Format: date-time */
+            created_at: string;
+            gambar_url?: string | null;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            kategori: string;
+            kunci_jawaban: string;
+            opsi_jawaban: unknown;
+            pembahasan?: string | null;
+            pertanyaan: string;
+            tingkat_kesulitan: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        BerkasCalonItem: {
+            catatan?: string | null;
+            /** Format: uuid */
+            definisi_berkas_id: string;
+            deskripsi?: string | null;
+            file_key?: string | null;
+            file_name?: string | null;
+            /** Format: int64 */
+            file_size_bytes?: number | null;
+            /** Format: uuid */
+            id?: string | null;
+            kode_berkas: string;
+            mime_type?: string | null;
+            nama: string;
+            status_verifikasi: string;
+            tipe_file: string;
+            /** Format: int32 */
+            ukuran_maks_kb: number;
+            /** Format: date-time */
+            uploaded_at?: string | null;
+            /** Format: int32 */
+            urutan: number;
+            wajib: boolean;
+        };
+        BerkasDaftarUlang: {
+            catatan?: string | null;
+            file_key: string;
+            file_name: string;
+            /** Format: int64 */
+            file_size_bytes: number;
+            /** Format: uuid */
+            id: string;
+            jenis_berkas: string;
+            mime_type: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            status_verifikasi: string;
+            /** Format: date-time */
+            uploaded_at: string;
+            /** Format: date-time */
+            verified_at?: string | null;
+            /** Format: uuid */
+            verified_by?: string | null;
+        };
+        BerkasDetailItem: {
+            catatan?: string | null;
+            /** Format: uuid */
+            definisi_berkas_id?: string | null;
+            email: string;
+            file_key: string;
+            file_name: string;
+            /** Format: int64 */
+            file_size_bytes: number;
+            /** Format: uuid */
+            id: string;
+            kode_berkas: string;
+            mime_type: string;
+            nama_berkas: string;
+            nama_jalur: string;
+            nama_lengkap: string;
+            nomor_pendaftaran: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            status_verifikasi: string;
+            /** Format: date-time */
+            uploaded_at: string;
+            /** Format: date-time */
+            verified_at?: string | null;
+            wajib: boolean;
+        };
+        BerkasResponse: {
+            catatan?: string | null;
+            file_key: string;
+            file_name: string;
+            /** Format: int64 */
+            file_size_bytes: number;
+            /** Format: uuid */
+            id: string;
+            jenis_berkas: string;
+            mime_type: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            status_verifikasi: string;
+            /** Format: date-time */
+            uploaded_at: string;
+        };
+        BerkasRplItem: {
+            file_key: string;
+            file_name: string;
+            /** Format: int64 */
+            file_size_bytes: number;
+            jenis_berkas: string;
+            mime_type: string;
+        };
+        BiayaItemDetail: {
+            bisa_dicicil: boolean;
+            /** Format: int64 */
+            cicilan_pertama?: number | null;
+            kode_komponen: string;
+            /** Format: uuid */
+            komponen_id: string;
+            /** Format: int32 */
+            maksimal_cicilan: number;
+            nama_komponen: string;
+            /** Format: int64 */
+            nominal: number;
+        };
+        CalonDashboardResponse: {
+            berkas_terverifikasi: boolean;
+            hasil_kelulusan?: string | null;
+            nim_resmi?: string | null;
+            nomor_pendaftaran?: string | null;
+            status_pendaftaran: string;
+            stepper: components["schemas"]["StepperStep"][];
+            tagihan_formulir_lunas: boolean;
+            ujian_selesai: boolean;
+        };
+        CekKelulusanCalonResponse: {
+            fakultas_diterima?: string | null;
+            gelombang_nama: string;
+            is_pengumuman_buka: boolean;
+            is_published: boolean;
+            jalur_nama: string;
+            jenjang_diterima?: string | null;
+            nama_lengkap: string;
+            nim_resmi?: string | null;
+            nomor_pendaftaran: string;
+            nomor_surat_loa?: string | null;
+            /** Format: uuid */
+            pendaftar_id: string;
+            pesan: string;
+            /** Format: int32 */
+            pilihan_ke?: number | null;
+            prodi_diterima?: string | null;
+            /** Format: double */
+            skor_akhir: number;
+            status_daftar_ulang: string;
+            status_kelulusan: string;
+            /** Format: date */
+            tanggal_sk?: string | null;
+            /** Format: date-time */
+            tgl_pengumuman?: string | null;
+        };
+        CekVoucherRequest: {
+            kode_voucher: string;
+            /** Format: int64 */
+            nominal_asli: number;
+        };
+        CekVoucherResponse: {
+            /** Format: int64 */
+            jumlah_potongan: number;
+            kode_voucher: string;
+            /** Format: int64 */
+            nilai_diskon: number;
+            /** Format: int64 */
+            nominal_setelah_diskon: number;
+            pesan_validasi: string;
+            tipe_diskon: string;
+            /** Format: uuid */
+            voucher_id: string;
+        };
+        ChangePasswordRequest: {
+            new_password: string;
+            old_password: string;
+        };
+        ChargePaymentRequest: {
+            metode_pembayaran: string;
+            /** Format: uuid */
+            tagihan_id: string;
+        };
+        CmsBannerResponse: {
+            /** Format: date-time */
+            created_at: string;
+            gambar_url: string;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            judul: string;
+            link_url?: string | null;
+            subjudul?: string | null;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: int32 */
+            urutan: number;
+        };
+        CmsFaqResponse: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            jawaban: string;
+            kategori: string;
+            pertanyaan: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: int32 */
+            urutan: number;
+        };
+        CmsPageResponse: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            is_published: boolean;
+            judul: string;
+            konten: string;
+            meta_description?: string | null;
+            meta_title?: string | null;
+            slug: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        CmsPostResponse: {
+            author_nama: string;
+            /** Format: date-time */
+            created_at: string;
+            gambar_url?: string | null;
+            /** Format: uuid */
+            id: string;
+            is_published: boolean;
+            judul: string;
+            kategori: string;
+            konten: string;
+            /** Format: date-time */
+            published_at: string;
+            ringkasan: string;
+            slug: string;
+            tags: string[];
+            /** Format: date-time */
+            updated_at: string;
+        };
+        CreateCmsBannerRequest: {
+            gambar_url: string;
+            is_active?: boolean | null;
+            judul: string;
+            link_url?: string | null;
+            subjudul?: string | null;
+            /** Format: int32 */
+            urutan?: number | null;
+        };
+        CreateCmsFaqRequest: {
+            is_active?: boolean | null;
+            jawaban: string;
+            kategori: string;
+            pertanyaan: string;
+            /** Format: int32 */
+            urutan?: number | null;
+        };
+        CreateCmsPageRequest: {
+            is_published?: boolean | null;
+            judul: string;
+            konten: string;
+            meta_description?: string | null;
+            meta_title?: string | null;
+            slug: string;
+        };
+        CreateCmsPostRequest: {
+            gambar_url?: string | null;
+            is_published?: boolean | null;
+            judul: string;
+            kategori: string;
+            konten: string;
+            ringkasan: string;
+            tags?: string[] | null;
+        };
+        CreateDefinisiBerkasRequest: {
+            deskripsi?: string | null;
+            /** Format: uuid */
+            jalur_id?: string | null;
+            kode_berkas: string;
+            nama: string;
+            tipe_file?: string | null;
+            /** Format: int32 */
+            ukuran_maks_kb?: number | null;
+            /** Format: int32 */
+            urutan?: number | null;
+            wajib: boolean;
+        };
+        CreateDefinisiFieldRequest: {
+            aturan_validasi?: unknown;
+            /** Format: uuid */
+            jalur_id?: string | null;
+            kelompok?: string | null;
+            kode_field: string;
+            label: string;
+            opsi?: unknown;
+            placeholder?: string | null;
+            tipe_field: string;
+            /** Format: int32 */
+            urutan?: number | null;
+            wajib: boolean;
+        };
+        CreateDefinisiLangkahRequest: {
+            deskripsi?: string | null;
+            /** Format: uuid */
+            jalur_id?: string | null;
+            judul_langkah: string;
+            kode_langkah: string;
+            syarat_lanjut?: unknown;
+            tipe_langkah: string;
+            /** Format: int32 */
+            urutan?: number | null;
+            wajib: boolean;
+        };
+        CreateFakultasRequest: {
+            deskripsi?: string | null;
+            is_active: boolean;
+            kode_fakultas: string;
+            nama_fakultas: string;
+        };
+        CreateGelombangRequest: {
+            is_active: boolean;
+            /** Format: int32 */
+            kuota: number;
+            nama_gelombang: string;
+            /** Format: int32 */
+            nomor_gelombang: number;
+            status: string;
+            /** Format: uuid */
+            tahun_akademik_id?: string | null;
+            /** Format: date-time */
+            tgl_mulai: string;
+            /** Format: date-time */
+            tgl_selesai: string;
+        };
+        CreateJalurKonfigurasiRequest: {
+            /** Format: int64 */
+            biaya_formulir: number;
+            deskripsi: string;
+            is_active: boolean;
+            kode_jalur: string;
+            /** Format: int32 */
+            kuota_maksimal?: number | null;
+            nama_jalur: string;
+            syarat?: string | null;
+            tipe_seleksi: string;
+        };
+        CreateKomponenBiayaRequest: {
+            deskripsi?: string | null;
+            is_active: boolean;
+            kode_komponen: string;
+            nama_komponen: string;
+        };
+        CreateMataKuliahRequest: {
+            kode_mk: string;
+            nama_mk: string;
+            /** Format: uuid */
+            prodi_id: string;
+            /** Format: int32 */
+            semester: number;
+            silabus_ringkas?: string | null;
+            /** Format: int32 */
+            sks: number;
+        };
+        CreateMatriksBiayaRequest: {
+            bisa_dicicil: boolean;
+            /** Format: uuid */
+            gelombang_id: string;
+            /** Format: uuid */
+            jalur_id: string;
+            /** Format: uuid */
+            komponen_id: string;
+            /** Format: int32 */
+            maksimal_cicilan: number;
+            /** Format: int64 */
+            nominal: number;
+            /** Format: int64 */
+            nominal_cicilan_pertama?: number | null;
+            /** Format: uuid */
+            prodi_id: string;
+        };
+        CreatePaketRequest: {
+            acak_opsi: boolean;
+            acak_soal: boolean;
+            deskripsi?: string | null;
+            /** Format: int32 */
+            durasi_menit: number;
+            nama_paket: string;
+            /** Format: double */
+            passing_grade: number;
+            soal_ids: string[];
+        };
+        CreateProdiKonfigurasiRequest: {
+            fakultas: string;
+            /** Format: uuid */
+            fakultas_id?: string | null;
+            is_active: boolean;
+            jenjang: string;
+            kode_fakultas: string;
+            kode_prodi: string;
+            /** Format: int32 */
+            kuota: number;
+            nama_prodi: string;
+            /** Format: double */
+            passing_score: number;
+            /** Format: int64 */
+            ukt_nominal: number;
+        };
+        CreateProdiRequest: {
+            fakultas: string;
+            jenjang: string;
+            kode_fakultas: string;
+            kode_prodi: string;
+            /** Format: int32 */
+            kuota: number;
+            nama_prodi: string;
+            /** Format: double */
+            passing_score: number;
+            /** Format: int64 */
+            ukt_nominal: number;
+        };
+        CreateSesiRequest: {
+            /** Format: date-time */
+            jadwal_mulai: string;
+            /** Format: date-time */
+            jadwal_selesai: string;
+            /** Format: int32 */
+            kuota: number;
+            nama_sesi: string;
+            /** Format: uuid */
+            paket_id: string;
+            ruang: string;
+        };
+        CreateSoalRequest: {
+            /** Format: double */
+            bobot?: number | null;
+            gambar_url?: string | null;
+            kategori: string;
+            kunci_jawaban: string;
+            opsi_jawaban: components["schemas"]["SoalOpsiDto"][];
+            pembahasan?: string | null;
+            pertanyaan: string;
+            tingkat_kesulitan: string;
+        };
+        CreateTahunAkademikRequest: {
+            is_active: boolean;
+            kode: string;
+            nama: string;
+            /** Format: date */
+            tgl_mulai: string;
+            /** Format: date */
+            tgl_selesai: string;
+        };
+        CreateVoucherRequest: {
+            /** Format: uuid */
+            batas_jalur_id?: string | null;
+            /** Format: uuid */
+            batas_prodi_id?: string | null;
+            deskripsi?: string | null;
+            is_active: boolean;
+            kode_voucher: string;
+            /** Format: int32 */
+            kuota: number;
+            /** Format: int64 */
+            nilai_diskon: number;
+            /** Format: date-time */
+            tgl_kadaluarsa: string;
+            tipe_diskon: string;
+        };
+        DaftarUlangInfoResponse: {
+            berkas_list: components["schemas"]["BerkasDaftarUlang"][];
+            fakultas: string;
+            jenjang: string;
+            nama_lengkap: string;
+            nim_resmi?: string | null;
+            nomor_loa?: string | null;
+            nomor_pendaftaran: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            prodi_diterima: string;
+            status_daftar_ulang: string;
+            status_kelulusan: string;
+            tagihan?: components["schemas"]["TagihanDaftarUlangDto"] | null;
+        };
+        DashboardFilterQuery: {
+            end_date?: string | null;
+            /** Format: uuid */
+            gelombang_id?: string | null;
+            /** Format: uuid */
+            jalur_id?: string | null;
+            start_date?: string | null;
+        };
+        DashboardSummaryResponse: {
+            bisa_cetak_bukti: boolean;
+            bisa_cetak_kartu: boolean;
+            gelombang_nama?: string | null;
+            jadwal_ujian?: string | null;
+            jalur_nama?: string | null;
+            lokasi_ujian?: string | null;
+            nim_resmi?: string | null;
+            /** Format: int64 */
+            nominal_tagihan?: number | null;
+            nomor_pendaftaran?: string | null;
+            nomor_tagihan?: string | null;
+            /** Format: uuid */
+            pendaftar_id?: string | null;
+            pengumuman_status?: string | null;
+            prodi_1_nama?: string | null;
+            prodi_2_nama?: string | null;
+            status_pendaftaran: string;
+            tagihan_lunas: boolean;
+        };
+        DefinisiBerkas: {
+            /** Format: date-time */
+            created_at: string;
+            deskripsi?: string | null;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            /** Format: uuid */
+            jalur_id?: string | null;
+            kode_berkas: string;
+            nama: string;
+            tipe_file: string;
+            /** Format: int32 */
+            ukuran_maks_kb: number;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: int32 */
+            urutan: number;
+            wajib: boolean;
+        };
+        DefinisiField: {
+            aturan_validasi: unknown;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            /** Format: uuid */
+            jalur_id?: string | null;
+            kelompok: string;
+            kode_field: string;
+            label: string;
+            opsi: unknown;
+            placeholder?: string | null;
+            tipe_field: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: int32 */
+            urutan: number;
+            wajib: boolean;
+        };
+        DefinisiLangkah: {
+            /** Format: date-time */
+            created_at: string;
+            deskripsi?: string | null;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            /** Format: uuid */
+            jalur_id?: string | null;
+            judul_langkah: string;
+            kode_langkah: string;
+            syarat_lanjut: unknown;
+            tipe_langkah: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: int32 */
+            urutan: number;
+            wajib: boolean;
+        };
+        DistribusiJalurStat: {
+            /** Format: uuid */
+            jalur_id: string;
+            nama_jalur: string;
+            /** Format: int64 */
+            total_lulus: number;
+            /** Format: int64 */
+            total_pendaftar: number;
+        };
+        DistribusiProdiStat: {
+            jenjang: string;
+            kode_prodi: string;
+            /** Format: int32 */
+            kuota: number;
+            nama_prodi: string;
+            /** Format: uuid */
+            prodi_id: string;
+            /** Format: int64 */
+            total_daftar_ulang: number;
+            /** Format: int64 */
+            total_lulus: number;
+            /** Format: int64 */
+            total_peminat: number;
+        };
+        DrafKelulusanItemDto: {
+            catatan?: string | null;
+            /** Format: uuid */
+            jalur_id: string;
+            jalur_nama: string;
+            nama_lengkap: string;
+            /** Format: double */
+            nilai_prestasi: number;
+            /** Format: double */
+            nilai_rapor: number;
+            nomor_pendaftaran: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            /** Format: int32 */
+            pilihan_ke?: number | null;
+            /** Format: uuid */
+            prodi_diterima_id?: string | null;
+            prodi_diterima_nama?: string | null;
+            /** Format: uuid */
+            prodi_pilihan_1_id: string;
+            prodi_pilihan_1_nama: string;
+            /** Format: uuid */
+            prodi_pilihan_2_id?: string | null;
+            prodi_pilihan_2_nama?: string | null;
+            /** Format: int32 */
+            ranking: number;
+            /** Format: double */
+            skor_akhir: number;
+            /** Format: double */
+            skor_cbt: number;
+            status_kelulusan: string;
+        };
+        DrafKelulusanResponse: {
+            audit_logs: components["schemas"]["AuditKelulusan"][];
+            items: components["schemas"]["DrafKelulusanItemDto"][];
+            sidang: components["schemas"]["SidangKelulusan"];
+        };
+        EksporSiakadItemDto: {
+            agama: string;
+            alamat: string;
+            email: string;
+            jalur_masuk: string;
+            jenis_kelamin: string;
+            jenjang: string;
+            kode_prodi: string;
+            nama_ayah: string;
+            nama_ibu_kandung: string;
+            nama_lengkap: string;
+            nama_prodi: string;
+            nik: string;
+            nim: string;
+            /** Format: int32 */
+            no: number;
+            no_hp: string;
+            nomor_pendaftaran: string;
+            /** Format: double */
+            skor_akhir: number;
+            tahun_masuk: string;
+            tanggal_daftar_ulang?: string | null;
+            tempat_lahir: string;
+            tgl_lahir: string;
+        };
+        ErrorBarisImport: {
+            baris: number;
+            pesan: string;
+        };
+        ExecutiveDashboardResponse: {
+            distribusi_jalur: components["schemas"]["DistribusiJalurStat"][];
+            distribusi_prodi: components["schemas"]["DistribusiProdiStat"][];
+            funnel_tahapan: components["schemas"]["FunnelStat"][];
+            status_pendaftaran: components["schemas"]["StatusPendaftaranStat"][];
+            /** Format: int64 */
+            total_berkas_diverifikasi: number;
+            /** Format: int64 */
+            total_lulus: number;
+            /** Format: int64 */
+            total_pendaftar: number;
+            /** Format: int64 */
+            total_pendapatan_rupiah: number;
+            /** Format: int64 */
+            total_peserta_ujian: number;
+            /** Format: int64 */
+            total_piutang_rupiah: number;
+            /** Format: int64 */
+            total_registrasi_nim: number;
+            tren_harian: components["schemas"]["TrenHarianStat"][];
+        };
+        FakultasResponse: {
+            /** Format: date-time */
+            created_at: string;
+            deskripsi?: string | null;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            kode_fakultas: string;
+            nama_fakultas: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        FakultasWithProdiResponse: {
+            deskripsi_singkat?: string | null;
+            /** Format: uuid */
+            id: string;
+            kode_fakultas: string;
+            nama_fakultas: string;
+            /** Format: int64 */
+            prodi_count: number;
+            prodi_list: components["schemas"]["ProdiResponse"][];
+            slug: string;
+            /** Format: int32 */
+            urutan_tampil: number;
+        };
+        FilterTransaksiKeuanganRequest: {
+            end_date?: string | null;
+            /** Format: int64 */
+            limit?: number | null;
+            metode?: string | null;
+            /** Format: int64 */
+            page?: number | null;
+            q?: string | null;
+            start_date?: string | null;
+            status?: string | null;
+        };
+        ForgotPasswordRequest: {
+            email: string;
+        };
+        FunnelStat: {
+            /** Format: int64 */
+            jumlah: number;
+            tahapan: string;
+        };
+        GelombangDetailResponse: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            /** Format: int32 */
+            kuota: number;
+            nama_gelombang: string;
+            /** Format: int32 */
+            nomor_gelombang: number;
+            status: string;
+            /** Format: uuid */
+            tahun_akademik_id?: string | null;
+            tahun_akademik_nama?: string | null;
+            /** Format: date-time */
+            tgl_mulai: string;
+            /** Format: date-time */
+            tgl_selesai: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        GelombangResponse: {
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            /** Format: int32 */
+            kuota: number;
+            nama_gelombang: string;
+            /** Format: date-time */
+            tgl_mulai: string;
+            /** Format: date-time */
+            tgl_selesai: string;
+        };
+        GenerateNimResponse: {
+            nama_lengkap: string;
+            nim_resmi: string;
+            nomor_pendaftaran: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            pesan: string;
+            prodi_nama: string;
+            status_daftar_ulang: string;
+        };
+        GenericMessageResponse: {
+            pesan: string;
+            status: string;
+        };
+        HasilKelulusanResponse: {
+            fakultas_diterima?: string | null;
+            /** Format: uuid */
+            id: string;
+            is_published: boolean;
+            jenjang_diterima?: string | null;
+            nama_lengkap: string;
+            nama_prodi_diterima?: string | null;
+            nim_resmi?: string | null;
+            nomor_pendaftaran: string;
+            nomor_surat_loa?: string | null;
+            /** Format: uuid */
+            pendaftar_id: string;
+            /** Format: int32 */
+            pilihan_ke?: number | null;
+            /** Format: uuid */
+            prodi_diterima_id?: string | null;
+            /** Format: int32 */
+            ranking?: number | null;
+            /** Format: double */
+            skor_akhir: number;
+            status_daftar_ulang: string;
+            status_kelulusan: string;
+            /** Format: date */
+            tanggal_sk?: string | null;
+        };
+        HasilUjian: {
+            /** Format: uuid */
+            id: string;
+            is_lulus: boolean;
+            /** Format: int32 */
+            jumlah_benar: number;
+            /** Format: int32 */
+            jumlah_kosong: number;
+            /** Format: int32 */
+            jumlah_salah: number;
+            kategori_nilai?: unknown;
+            /** Format: double */
+            nilai_akhir: number;
+            /** Format: uuid */
+            pendaftar_id: string;
+            /** Format: uuid */
+            peserta_sesi_id: string;
+            /** Format: int32 */
+            total_dijawab: number;
+            /** Format: int32 */
+            total_soal: number;
+            /** Format: date-time */
+            waktu_submit: string;
+        };
+        HasilUjianResponse: {
+            is_lulus: boolean;
+            jumlah_benar: number;
+            /** Format: double */
+            passing_grade: number;
+            /** Format: uuid */
+            peserta_ujian_id: string;
+            /** Format: double */
+            total_skor: number;
+            total_soal: number;
+            /** Format: date-time */
+            waktu_selesai: string;
+        };
+        HealthCheckResponse: {
+            database: string;
+            institusi: string;
+            redis: string;
+            service: string;
+            status: string;
+            /** Format: date-time */
+            timestamp: string;
+            versi: string;
+        };
+        HitungBiayaRequest: {
+            /** Format: uuid */
+            gelombang_id: string;
+            /** Format: uuid */
+            jalur_id: string;
+            /** Format: uuid */
+            prodi_id: string;
+            voucher_kode?: string | null;
+        };
+        HitungBiayaResponse: {
+            bisa_dicicil: boolean;
+            /** Format: int64 */
+            diskon_voucher: number;
+            /** Format: int64 */
+            estimasi_cicilan_berikutnya: number;
+            /** Format: int64 */
+            estimasi_cicilan_pertama: number;
+            /** Format: int32 */
+            maksimal_cicilan_maks: number;
+            rincian_komponen: components["schemas"]["BiayaItemDetail"][];
+            /** Format: int64 */
+            total_akhir: number;
+            /** Format: int64 */
+            total_nominal_asli: number;
+            voucher_pesan?: string | null;
+            voucher_valid: boolean;
+        };
+        ImportSoalResultResponse: {
+            error_baris: components["schemas"]["ErrorBarisImport"][];
+            total_baris: number;
+            total_gagal: number;
+            total_sukses: number;
+        };
+        JalurDetailResponse: {
+            /** Format: int64 */
+            biaya_formulir: number;
+            /** Format: date-time */
+            created_at: string;
+            deskripsi: string;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            kode_jalur: string;
+            /** Format: int32 */
+            kuota_maksimal?: number | null;
+            nama_jalur: string;
+            syarat?: string | null;
+            tipe_seleksi: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        JalurResponse: {
+            /** Format: int64 */
+            biaya_formulir: number;
+            deskripsi: string;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            kode_jalur: string;
+            nama_jalur: string;
+        };
+        JawabanPeserta: {
+            /** Format: uuid */
+            id: string;
+            is_benar?: boolean | null;
+            /** Format: uuid */
+            peserta_sesi_id: string;
+            pilihan_jawaban?: string | null;
+            ragu_ragu: boolean;
+            /** Format: double */
+            skor_diperoleh?: number | null;
+            /** Format: uuid */
+            soal_id: string;
+            /** Format: date-time */
+            waktu_dijawab: string;
+        };
+        KomponenBiayaResponse: {
+            /** Format: date-time */
+            created_at: string;
+            deskripsi?: string | null;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            kode_komponen: string;
+            nama_komponen: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        KonfirmasiBayarRequest: {
+            catatan?: string | null;
+            /** Format: uuid */
+            pembayaran_id: string;
+            status: string;
+        };
+        KonfirmasiUploadRequest: {
+            /** Format: uuid */
+            definisi_berkas_id: string;
+            file_key: string;
+            file_name: string;
+            /** Format: int64 */
+            file_size_bytes: number;
+            mime_type: string;
+        };
+        KuotaProdiGelombangResponse: {
+            /** Format: uuid */
+            gelombang_id: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: int32 */
+            kuota: number;
+            /** Format: int32 */
+            kuota_terisi: number;
+            nama_gelombang: string;
+            nama_prodi: string;
+            /** Format: uuid */
+            prodi_id: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        LangkahProgressItem: {
+            bisa_diakses: boolean;
+            deskripsi?: string | null;
+            /** Format: uuid */
+            id: string;
+            judul_langkah: string;
+            kode_langkah: string;
+            status: string;
+            syarat_keterangan?: string | null;
+            tipe_langkah: string;
+            /** Format: int32 */
+            urutan: number;
+            wajib: boolean;
+        };
+        LaporanRplItemCourse: {
+            /** Format: double */
+            bobot_nilai: number;
+            catatan_asesor: string;
+            kode_mk: string;
+            nama_mk: string;
+            nilai_transfer: string;
+            /** Format: int32 */
+            no: number;
+            /** Format: int32 */
+            semester: number;
+            /** Format: int32 */
+            sks: number;
+            status_kelayakan: string;
+        };
+        LaporanRplResponse: {
+            asesor_nama: string;
+            catatan_rekomendasi: string;
+            daftar_mata_kuliah: components["schemas"]["LaporanRplItemCourse"][];
+            fakultas: string;
+            /** Format: double */
+            ipk_konversi: number;
+            jenjang: string;
+            nama_lengkap: string;
+            nik: string;
+            nomor_berita_acara: string;
+            nomor_pendaftaran: string;
+            /** Format: uuid */
+            permohonan_id: string;
+            /** Format: double */
+            persentase_rekognisi: number;
+            prodi_nama: string;
+            tanggal_berita_acara: string;
+            tipe_rpl: string;
+            /** Format: int32 */
+            total_sks_diajukan: number;
+            /** Format: int32 */
+            total_sks_diakui: number;
+        };
+        ListTransaksiAdminResponse: {
+            items: components["schemas"]["AdminTransaksiItem"][];
+            /** Format: int64 */
+            limit: number;
+            /** Format: int64 */
+            page: number;
+            ringkasan: components["schemas"]["RingkasanKeuanganResponse"];
+            /** Format: int64 */
+            total: number;
+        };
+        LiveMonitorStreamResponse: {
+            nama_sesi: string;
+            peserta: components["schemas"]["LivePesertaStatusItem"][];
+            /** Format: uuid */
+            sesi_id: string;
+            total_hadir: number;
+            /** Format: int32 */
+            total_kuota: number;
+            total_peserta: number;
+            total_sedang_mengerjakan: number;
+            total_selesai: number;
+        };
+        LivePesertaStatusItem: {
+            /** Format: uuid */
+            id: string;
+            is_lulus?: boolean | null;
+            nama_peserta: string;
+            /** Format: double */
+            nilai_akhir?: number | null;
+            nomor_peserta: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            /** Format: int64 */
+            sisa_detik: number;
+            /** Format: int64 */
+            soal_terjawab: number;
+            status_presensi: string;
+            status_ujian: string;
+            /** Format: int64 */
+            total_soal: number;
+            /** Format: date-time */
+            waktu_mulai?: string | null;
+            /** Format: date-time */
+            waktu_selesai?: string | null;
+        };
+        LoginRequest: {
+            email: string;
+            password: string;
+        };
+        MahasiswaDaftarUlangDto: {
+            jenjang: string;
+            nama_lengkap: string;
+            nim_resmi?: string | null;
+            nomor_loa?: string | null;
+            nomor_pendaftaran: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            prodi_diterima: string;
+            status_daftar_ulang: string;
+            status_kelulusan: string;
+            status_ukt: string;
+            /** Format: int64 */
+            total_berkas_pending: number;
+            /** Format: int64 */
+            total_berkas_valid: number;
+        };
+        MataKuliah: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            kode_mk: string;
+            nama_mk: string;
+            /** Format: uuid */
+            prodi_id: string;
+            /** Format: int32 */
+            semester: number;
+            silabus_ringkas?: string | null;
+            /** Format: int32 */
+            sks: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        MatakuliahDiajukanInput: {
+            keterangan_pemohon: string;
+            /** Format: uuid */
+            mata_kuliah_id: string;
+        };
+        MatriksBiayaResponse: {
+            bisa_dicicil: boolean;
+            /** Format: uuid */
+            gelombang_id: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            jalur_id: string;
+            kode_komponen: string;
+            /** Format: uuid */
+            komponen_id: string;
+            /** Format: int32 */
+            maksimal_cicilan: number;
+            nama_gelombang: string;
+            nama_jalur: string;
+            nama_komponen: string;
+            nama_prodi: string;
+            /** Format: int64 */
+            nominal: number;
+            /** Format: int64 */
+            nominal_cicilan_pertama?: number | null;
+            /** Format: uuid */
+            prodi_id: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        MidtransWebhookPayload: {
+            fraud_status?: string | null;
+            gross_amount: string;
+            order_id: string;
+            payment_type?: string | null;
+            settlement_time?: string | null;
+            signature_key?: string | null;
+            status_code: string;
+            transaction_status: string;
+            transaction_time?: string | null;
+        };
+        MockWebhookPayload: {
+            order_id: string;
+            signature?: string | null;
+            status: string;
+        };
+        MulaiUjianCbtResponse: {
+            /** Format: date-time */
+            batas_waktu: string;
+            daftar_soal: components["schemas"]["SoalCbtPesertaResponse"][];
+            /** Format: int32 */
+            durasi_menit: number;
+            judul_paket: string;
+            /** Format: double */
+            passing_grade: number;
+            /** Format: uuid */
+            peserta_sesi_id: string;
+            /** Format: uuid */
+            sesi_id: string;
+            /** Format: int64 */
+            sisa_detik: number;
+            total_soal: number;
+            /** Format: date-time */
+            waktu_mulai: string;
+        };
+        MulaiUjianResponse: {
+            /** Format: date-time */
+            batas_waktu_selesai: string;
+            daftar_soal: components["schemas"]["SoalPublicResponse"][];
+            /** Format: int32 */
+            durasi_menit: number;
+            judul: string;
+            /** Format: uuid */
+            peserta_ujian_id: string;
+            /** Format: uuid */
+            ujian_id: string;
+            /** Format: date-time */
+            waktu_mulai: string;
+        };
+        PaketUjian: {
+            acak_opsi: boolean;
+            acak_soal: boolean;
+            /** Format: date-time */
+            created_at: string;
+            deskripsi?: string | null;
+            /** Format: int32 */
+            durasi_menit: number;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            nama_paket: string;
+            /** Format: double */
+            passing_grade: number;
+            /** Format: int32 */
+            total_soal: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        PembayaranDetailResponse: {
+            bukti_bayar_key?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: int64 */
+            diskon: number;
+            /** Format: uuid */
+            id: string;
+            jenis_tagihan: string;
+            metode_pembayaran: string;
+            /** Format: int64 */
+            nominal_akhir: number;
+            /** Format: int64 */
+            nominal_asli: number;
+            nomor_tagihan: string;
+            nomor_va?: string | null;
+            /** Format: uuid */
+            pendaftar_id: string;
+            qr_string?: string | null;
+            qr_url?: string | null;
+            status_pembayaran: string;
+            /** Format: date-time */
+            tgl_bayar?: string | null;
+            /** Format: date-time */
+            tgl_kadaluarsa: string;
+            /** Format: uuid */
+            voucher_id?: string | null;
+        };
+        PendaftarDetailResponse: {
+            agama: string;
+            alamat_lengkap: string;
+            asal_sekolah: string;
+            berkas: components["schemas"]["BerkasResponse"][];
+            catatan_verifikator?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            data_formulir: unknown;
+            email: string;
+            /** Format: uuid */
+            gelombang_id: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            jalur_id: string;
+            jenis_kelamin: string;
+            jurusan_sekolah: string;
+            nama_gelombang: string;
+            nama_jalur: string;
+            nama_lengkap: string;
+            nama_ortu: string;
+            nama_prodi_1: string;
+            nama_prodi_2?: string | null;
+            nik: string;
+            /** Format: double */
+            nilai_rapor_avg: number;
+            no_hp: string;
+            no_hp_ortu: string;
+            nomor_pendaftaran: string;
+            /** Format: uuid */
+            prodi_pilihan_1: string;
+            /** Format: uuid */
+            prodi_pilihan_2?: string | null;
+            status_pendaftaran: string;
+            tempat_lahir: string;
+            /** Format: date */
+            tgl_lahir: string;
+            /** Format: uuid */
+            user_id: string;
+        };
+        PendaftaranOfflineRequest: {
+            agama: string;
+            alamat_lengkap: string;
+            asal_sekolah: string;
+            catatan_loket?: string | null;
+            email: string;
+            /** Format: uuid */
+            gelombang_id: string;
+            /** Format: uuid */
+            jalur_id: string;
+            jenis_kelamin: string;
+            jurusan_sekolah: string;
+            lunas_loket: boolean;
+            nama_lengkap: string;
+            nama_ortu: string;
+            nik: string;
+            /** Format: double */
+            nilai_rapor_avg?: number | null;
+            no_hp: string;
+            no_hp_ortu: string;
+            /** Format: uuid */
+            prodi_pilihan_1: string;
+            /** Format: uuid */
+            prodi_pilihan_2?: string | null;
+            tempat_lahir: string;
+            /** Format: date */
+            tgl_lahir: string;
+        };
+        PendaftaranOfflineResponse: {
+            cetak_bukti_url: string;
+            cetak_kartu_url: string;
+            email: string;
+            is_lunas_loket: boolean;
+            nomor_pendaftaran: string;
+            nomor_tagihan?: string | null;
+            /** Format: uuid */
+            pendaftar_id: string;
+            status_pendaftaran: string;
+            temporary_password?: string | null;
+            /** Format: uuid */
+            user_id: string;
+        };
+        PengalamanKerjaItem: {
+            deskripsi_tugas: string;
+            instansi: string;
+            posisi: string;
+            tahun_mulai: string;
+            tahun_selesai: string;
+        };
+        PengaturanResponse: {
+            deskripsi?: string | null;
+            /** Format: uuid */
+            id: string;
+            kunci: string;
+            nilai: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        PenilaianMataKuliahInput: {
+            catatan_asesor?: string | null;
+            /** Format: uuid */
+            mata_kuliah_id: string;
+            nilai_transfer?: string | null;
+            status_kelayakan: string;
+        };
+        PesertaSesi: {
+            /** Format: date-time */
+            batas_waktu?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            ip_address?: string | null;
+            metode_presensi?: string | null;
+            nomor_peserta: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            /** Format: uuid */
+            pengawas_id?: string | null;
+            /** Format: int64 */
+            seed_acak: number;
+            /** Format: uuid */
+            sesi_id: string;
+            status_presensi: string;
+            status_ujian: string;
+            /** Format: date-time */
+            updated_at: string;
+            urutan_soal_ids?: unknown;
+            user_agent?: string | null;
+            /** Format: date-time */
+            waktu_mulai?: string | null;
+            /** Format: date-time */
+            waktu_presensi?: string | null;
+            /** Format: date-time */
+            waktu_selesai?: string | null;
+        };
+        PilihMetodeRequest: {
+            kode_voucher?: string | null;
+            metode_pembayaran: string;
+        };
+        PilihProdiRequest: {
+            /** Format: uuid */
+            gelombang_id: string;
+            /** Format: uuid */
+            jalur_id: string;
+            /** Format: uuid */
+            prodi_pilihan_1: string;
+            /** Format: uuid */
+            prodi_pilihan_2?: string | null;
+        };
+        PresensiCheckInRequest: {
+            nomor_peserta_atau_qr: string;
+            /** Format: uuid */
+            sesi_id?: string | null;
+        };
+        PresensiCheckInResponse: {
+            nama_peserta: string;
+            nama_sesi: string;
+            nomor_peserta: string;
+            pesan: string;
+            /** Format: uuid */
+            peserta_id: string;
+            status_presensi: string;
+            /** Format: date-time */
+            waktu_presensi: string;
+        };
+        PresignMediaUploadRequest: {
+            file_name: string;
+        };
+        PresignUploadRequest: {
+            /** Format: uuid */
+            definisi_berkas_id: string;
+            file_name: string;
+            /** Format: int64 */
+            file_size_bytes: number;
+            mime_type: string;
+        };
+        PresignedDownloadResponse: {
+            download_url: string;
+            /** Format: int64 */
+            expires_in_seconds: number;
+            file_key: string;
+        };
+        PresignedUploadResponse: {
+            /** Format: int64 */
+            expires_in_seconds: number;
+            file_key: string;
+            upload_url: string;
+        };
+        PresignedUrlResponse: {
+            /** Format: uuid */
+            berkas_id: string;
+            /** Format: int64 */
+            expires_in_seconds: number;
+            presigned_url: string;
+        };
+        ProdiDetailResponse: {
+            /** Format: date-time */
+            created_at: string;
+            fakultas: string;
+            /** Format: uuid */
+            fakultas_id?: string | null;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            jenjang: string;
+            kode_fakultas: string;
+            kode_prodi: string;
+            /** Format: int32 */
+            kuota: number;
+            nama_prodi: string;
+            /** Format: double */
+            passing_score: number;
+            /** Format: int64 */
+            ukt_nominal: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ProdiResponse: {
+            akreditasi?: string | null;
+            /** Format: int64 */
+            biaya_ukt_maks?: number | null;
+            /** Format: int64 */
+            biaya_ukt_min?: number | null;
+            /** Format: int32 */
+            daya_tampung?: number | null;
+            deskripsi_singkat?: string | null;
+            fakultas: string;
+            /** Format: uuid */
+            fakultas_id?: string | null;
+            fasilitas: string[];
+            gelar?: string | null;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            jenjang: string;
+            kode_fakultas: string;
+            kode_prodi: string;
+            kode_singkat?: string | null;
+            kompetensi_lulusan: string[];
+            /** Format: int32 */
+            kuota: number;
+            /** Format: int32 */
+            lama_studi_semester?: number | null;
+            nama_prodi: string;
+            /** Format: double */
+            passing_grade?: number | null;
+            /** Format: double */
+            passing_score: number;
+            prospek_karier: string[];
+            slug: string;
+            tentang_prodi?: string | null;
+            /** Format: int64 */
+            ukt_nominal: number;
+            /** Format: int32 */
+            urutan_tampil: number;
+        };
+        ProdiStat: {
+            jenjang: string;
+            /** Format: int32 */
+            kuota: number;
+            nama_prodi: string;
+            /** Format: int64 */
+            total_peminat: number;
+        };
+        ProsesRankingRequest: {
+            /** Format: uuid */
+            gelombang_id?: string | null;
+            nama_sidang: string;
+            nomor_sk?: string | null;
+            /** Format: date-time */
+            tgl_pengumuman: string;
+        };
+        RegisterRequest: {
+            email: string;
+            nama_lengkap: string;
+            no_hp: string;
+            password: string;
+        };
+        RekonsiliasiResponse: {
+            berhasil_disinkronkan: boolean;
+            nomor_transaksi: string;
+            pesan: string;
+            status_sebelumnya: string;
+            status_terkini: string;
+            /** Format: uuid */
+            transaksi_id: string;
+        };
+        ReorderFieldsRequest: {
+            field_ids: string[];
+        };
+        ResetPasswordRequest: {
+            new_password: string;
+            token: string;
+        };
+        RingkasanKeuanganResponse: {
+            /** Format: int64 */
+            total_dana_masuk: number;
+            /** Format: int64 */
+            total_transaksi_expired: number;
+            /** Format: int64 */
+            total_transaksi_lunas: number;
+            /** Format: int64 */
+            total_transaksi_pending: number;
+        };
+        RiwayatPendidikanItem: {
+            /** Format: double */
+            ipk: number;
+            jenjang: string;
+            jurusan: string;
+            nama_institusi: string;
+            tahun_lulus: string;
+        };
+        RplItemRekapDto: {
+            /** Format: uuid */
+            asesor_id?: string | null;
+            asesor_nama?: string | null;
+            /** Format: date-time */
+            assessed_at?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: double */
+            ipk_konversi: number;
+            jenjang: string;
+            nama_lengkap: string;
+            nomor_pendaftaran: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            /** Format: double */
+            persentase_rekognisi: number;
+            prodi_nama: string;
+            status: string;
+            /** Format: date-time */
+            submitted_at?: string | null;
+            tipe_rpl: string;
+            /** Format: int32 */
+            total_sks_diajukan: number;
+            /** Format: int32 */
+            total_sks_diakui: number;
+        };
+        RplMataKuliahDiajukanDetail: {
+            /** Format: date-time */
+            assessed_at?: string | null;
+            assessed_by_nama?: string | null;
+            /** Format: double */
+            bobot_nilai?: number | null;
+            catatan_asesor?: string | null;
+            /** Format: uuid */
+            id: string;
+            keterangan_pemohon?: string | null;
+            kode_mk: string;
+            /** Format: uuid */
+            mata_kuliah_id: string;
+            nama_mk: string;
+            nilai_transfer?: string | null;
+            /** Format: uuid */
+            permohonan_id: string;
+            /** Format: int32 */
+            semester: number;
+            silabus_ringkas?: string | null;
+            /** Format: int32 */
+            sks: number;
+            status_kelayakan: string;
+        };
+        RplPermohonanDetailResponse: {
+            /** Format: uuid */
+            asesor_id?: string | null;
+            asesor_nama?: string | null;
+            /** Format: date-time */
+            assessed_at?: string | null;
+            berkas_pendukung: components["schemas"]["BerkasRplItem"][];
+            catatan_admin?: string | null;
+            catatan_asesor?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: double */
+            ipk_konversi: number;
+            jenjang: string;
+            mata_kuliah_list: components["schemas"]["RplMataKuliahDiajukanDetail"][];
+            nama_lengkap: string;
+            nomor_pendaftaran: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            pengalaman_kerja: components["schemas"]["PengalamanKerjaItem"][];
+            /** Format: double */
+            persentase_rekognisi: number;
+            /** Format: uuid */
+            prodi_id: string;
+            prodi_nama: string;
+            riwayat_pendidikan: components["schemas"]["RiwayatPendidikanItem"][];
+            status: string;
+            /** Format: date-time */
+            submitted_at?: string | null;
+            tipe_rpl: string;
+            /** Format: int32 */
+            total_sks_diajukan: number;
+            /** Format: int32 */
+            total_sks_diakui: number;
+        };
+        RumusPenilaianJalur: {
+            /** Format: double */
+            bobot_cbt: number;
+            /** Format: double */
+            bobot_prestasi: number;
+            /** Format: double */
+            bobot_rapor: number;
+            /** Format: double */
+            bobot_wawancara: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: double */
+            default_passing_score: number;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            jalur_id: string;
+            keterangan?: string | null;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        SesiCalonInfoResponse: {
+            /** Format: date-time */
+            batas_waktu?: string | null;
+            can_start: boolean;
+            /** Format: int32 */
+            durasi_menit: number;
+            /** Format: date-time */
+            jadwal_mulai?: string | null;
+            /** Format: date-time */
+            jadwal_selesai?: string | null;
+            nama_sesi?: string | null;
+            nomor_peserta: string;
+            /** Format: double */
+            passing_grade: number;
+            pesan?: string | null;
+            ruang?: string | null;
+            /** Format: uuid */
+            sesi_id?: string | null;
+            /** Format: int64 */
+            sisa_detik: number;
+            status_presensi: string;
+            status_ujian: string;
+            /** Format: int32 */
+            total_soal: number;
+            /** Format: date-time */
+            waktu_mulai?: string | null;
+        };
+        SesiUjian: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            jadwal_mulai: string;
+            /** Format: date-time */
+            jadwal_selesai: string;
+            /** Format: int32 */
+            kuota: number;
+            nama_sesi: string;
+            /** Format: uuid */
+            paket_id: string;
+            ruang: string;
+            status: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        SetKuotaProdiGelombangRequest: {
+            /** Format: uuid */
+            gelombang_id: string;
+            /** Format: int32 */
+            kuota: number;
+            /** Format: uuid */
+            prodi_id: string;
+        };
+        SidangKelulusan: {
+            /** Format: date-time */
+            approved_at?: string | null;
+            /** Format: uuid */
+            approved_by?: string | null;
+            catatan_sidang?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            gelombang_id?: string | null;
+            /** Format: uuid */
+            id: string;
+            nama_sidang: string;
+            nomor_sk?: string | null;
+            status_sidang: string;
+            /** Format: date */
+            tanggal_sidang: string;
+            /** Format: date-time */
+            tgl_pengumuman: string;
+            /** Format: int32 */
+            total_cadangan: number;
+            /** Format: int32 */
+            total_lulus: number;
+            /** Format: int32 */
+            total_peserta: number;
+            /** Format: int32 */
+            total_tidak_lulus: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        SoalCbtPesertaResponse: {
+            /** Format: double */
+            bobot: number;
+            gambar_url?: string | null;
+            /** Format: uuid */
+            id: string;
+            jawaban_terpilih?: string | null;
+            kategori: string;
+            /** Format: int32 */
+            nomor_urut: number;
+            opsi_jawaban: components["schemas"]["SoalOpsiDto"][];
+            pertanyaan: string;
+            ragu_ragu: boolean;
+        };
+        SoalOpsiDto: {
+            gambar_url?: string | null;
+            id?: string;
+            label: string;
+            teks: string;
+        };
+        SoalPublicResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: int32 */
+            nomor_urut: number;
+            pertanyaan: string;
+            pilihan_a: string;
+            pilihan_b: string;
+            pilihan_c: string;
+            pilihan_d: string;
+        };
+        StatusPendaftaranStat: {
+            /** Format: int64 */
+            jumlah: number;
+            label: string;
+            /** Format: double */
+            persentase: number;
+            status: string;
+        };
+        StepperStep: {
+            deskripsi: string;
+            judul: string;
+            key: string;
+            /** Format: int32 */
+            nomor_urut: number;
+            status: string;
+        };
+        SubmitAkademikRequest: {
+            asal_sekolah: string;
+            jurusan_sekolah: string;
+            /** Format: double */
+            nilai_rapor_avg: number;
+            /** Format: uuid */
+            prodi_pilihan_1: string;
+            /** Format: uuid */
+            prodi_pilihan_2?: string | null;
+        };
+        SubmitBiodataRequest: {
+            agama: string;
+            alamat_lengkap: string;
+            /** Format: uuid */
+            gelombang_id: string;
+            /** Format: uuid */
+            jalur_id: string;
+            jenis_kelamin: string;
+            nama_ortu: string;
+            nik: string;
+            no_hp_ortu: string;
+            tempat_lahir: string;
+            /** Format: date */
+            tgl_lahir: string;
+        };
+        SubmitDinamisRequest: {
+            data: unknown;
+            /** Format: uuid */
+            gelombang_id?: string | null;
+            /** Format: uuid */
+            jalur_id?: string | null;
+            /** Format: uuid */
+            prodi_pilihan_1?: string | null;
+            /** Format: uuid */
+            prodi_pilihan_2?: string | null;
+        };
+        SubmitPenilaianRplRequest: {
+            catatan_asesor?: string | null;
+            finalisasi: boolean;
+            items: components["schemas"]["PenilaianMataKuliahInput"][];
+        };
+        SubmitRplPermohonanRequest: {
+            berkas_pendukung: components["schemas"]["BerkasRplItem"][];
+            is_draft: boolean;
+            mata_kuliah_list: components["schemas"]["MatakuliahDiajukanInput"][];
+            pengalaman_kerja: components["schemas"]["PengalamanKerjaItem"][];
+            riwayat_pendidikan: components["schemas"]["RiwayatPendidikanItem"][];
+            tipe_rpl: string;
+        };
+        SubmitUjianRequest: {
+            jawaban: {
+                [key: string]: string;
+            };
+            /** Format: uuid */
+            peserta_ujian_id: string;
+        };
+        SubmitUjianResponse: {
+            is_lulus: boolean;
+            /** Format: int32 */
+            jumlah_benar: number;
+            /** Format: int32 */
+            jumlah_kosong: number;
+            /** Format: int32 */
+            jumlah_salah: number;
+            kategori_nilai: unknown;
+            /** Format: double */
+            nilai_akhir: number;
+            /** Format: double */
+            passing_grade: number;
+            /** Format: uuid */
+            peserta_sesi_id: string;
+            /** Format: int32 */
+            total_dijawab: number;
+            /** Format: int32 */
+            total_soal: number;
+            /** Format: date-time */
+            waktu_submit: string;
+        };
+        TagihanDaftarUlangDto: {
+            /** Format: int64 */
+            diskon: number;
+            /** Format: uuid */
+            id: string;
+            metode_pembayaran: string;
+            /** Format: int64 */
+            nominal_akhir: number;
+            /** Format: int64 */
+            nominal_asli: number;
+            nomor_tagihan: string;
+            payment_url?: string | null;
+            status: string;
+            va_number?: string | null;
+        };
+        TagihanWithTransaksiResponse: {
+            active_transaksi?: components["schemas"]["TransaksiDetailResponse"] | null;
+            catatan?: string | null;
+            /** Format: int64 */
+            diskon_voucher: number;
+            /** Format: uuid */
+            id: string;
+            jenis_tagihan: string;
+            /** Format: date-time */
+            lunas_at?: string | null;
+            /** Format: int64 */
+            nominal_akhir: number;
+            /** Format: int64 */
+            nominal_asli: number;
+            nomor_tagihan: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            status: string;
+            /** Format: date-time */
+            tgl_jatuh_tempo: string;
+            /** Format: date-time */
+            tgl_terbit: string;
+            /** Format: uuid */
+            voucher_id?: string | null;
+        };
+        TahunAkademikResponse: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            kode: string;
+            nama: string;
+            /** Format: date */
+            tgl_mulai: string;
+            /** Format: date */
+            tgl_selesai: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        TransaksiDetailResponse: {
+            gateway_provider: string;
+            /** Format: uuid */
+            id: string;
+            metode_pembayaran: string;
+            /** Format: int64 */
+            nominal: number;
+            nomor_transaksi: string;
+            nomor_va?: string | null;
+            qr_string?: string | null;
+            qr_url?: string | null;
+            status: string;
+            /** Format: uuid */
+            tagihan_id: string;
+            /** Format: date-time */
+            waktu_berlaku_sampai: string;
+            /** Format: date-time */
+            waktu_dibayar?: string | null;
+            /** Format: date-time */
+            waktu_dibuat: string;
+        };
+        TrenHarianStat: {
+            /** Format: int64 */
+            bayar: number;
+            /** Format: int64 */
+            pendaftar: number;
+            tanggal: string;
+            /** Format: int64 */
+            terverifikasi: number;
+        };
+        UpdateCmsBannerRequest: {
+            gambar_url: string;
+            is_active: boolean;
+            judul: string;
+            link_url?: string | null;
+            subjudul?: string | null;
+            /** Format: int32 */
+            urutan: number;
+        };
+        UpdateCmsFaqRequest: {
+            is_active: boolean;
+            jawaban: string;
+            kategori: string;
+            pertanyaan: string;
+            /** Format: int32 */
+            urutan: number;
+        };
+        UpdateCmsPageRequest: {
+            is_published: boolean;
+            judul: string;
+            konten: string;
+            meta_description?: string | null;
+            meta_title?: string | null;
+        };
+        UpdateCmsPostRequest: {
+            gambar_url?: string | null;
+            is_published: boolean;
+            judul: string;
+            kategori: string;
+            konten: string;
+            ringkasan: string;
+            tags?: string[] | null;
+        };
+        UpdateDefinisiBerkasRequest: {
+            deskripsi?: string | null;
+            is_active: boolean;
+            /** Format: uuid */
+            jalur_id?: string | null;
+            nama: string;
+            tipe_file: string;
+            /** Format: int32 */
+            ukuran_maks_kb: number;
+            /** Format: int32 */
+            urutan: number;
+            wajib: boolean;
+        };
+        UpdateDefinisiFieldRequest: {
+            aturan_validasi?: unknown;
+            is_active: boolean;
+            /** Format: uuid */
+            jalur_id?: string | null;
+            kelompok: string;
+            label: string;
+            opsi?: unknown;
+            placeholder?: string | null;
+            tipe_field: string;
+            /** Format: int32 */
+            urutan: number;
+            wajib: boolean;
+        };
+        UpdateDefinisiLangkahRequest: {
+            deskripsi?: string | null;
+            is_active: boolean;
+            /** Format: uuid */
+            jalur_id?: string | null;
+            judul_langkah: string;
+            syarat_lanjut?: unknown;
+            tipe_langkah: string;
+            /** Format: int32 */
+            urutan: number;
+            wajib: boolean;
+        };
+        UpdateGelombangRequest: {
+            is_active: boolean;
+            /** Format: int32 */
+            kuota: number;
+            nama_gelombang: string;
+            /** Format: int32 */
+            nomor_gelombang: number;
+            status: string;
+            /** Format: uuid */
+            tahun_akademik_id?: string | null;
+            /** Format: date-time */
+            tgl_mulai: string;
+            /** Format: date-time */
+            tgl_selesai: string;
+        };
+        UpdateJalurKonfigurasiRequest: {
+            /** Format: int64 */
+            biaya_formulir: number;
+            deskripsi: string;
+            is_active: boolean;
+            kode_jalur: string;
+            /** Format: int32 */
+            kuota_maksimal?: number | null;
+            nama_jalur: string;
+            syarat?: string | null;
+            tipe_seleksi: string;
+        };
+        UpdateMataKuliahRequest: {
+            is_active: boolean;
+            nama_mk: string;
+            /** Format: int32 */
+            semester: number;
+            silabus_ringkas?: string | null;
+            /** Format: int32 */
+            sks: number;
+        };
+        UpdateMatriksBiayaRequest: {
+            bisa_dicicil: boolean;
+            /** Format: int32 */
+            maksimal_cicilan: number;
+            /** Format: int64 */
+            nominal: number;
+            /** Format: int64 */
+            nominal_cicilan_pertama?: number | null;
+        };
+        UpdatePengaturanRequest: {
+            deskripsi?: string | null;
+            kunci: string;
+            nilai: string;
+        };
+        UpdateProdiKonfigurasiRequest: {
+            fakultas: string;
+            /** Format: uuid */
+            fakultas_id?: string | null;
+            is_active: boolean;
+            jenjang: string;
+            kode_fakultas: string;
+            kode_prodi: string;
+            /** Format: int32 */
+            kuota: number;
+            nama_prodi: string;
+            /** Format: double */
+            passing_score: number;
+            /** Format: int64 */
+            ukt_nominal: number;
+        };
+        UpdateRumusRequest: {
+            /** Format: double */
+            bobot_cbt: number;
+            /** Format: double */
+            bobot_prestasi: number;
+            /** Format: double */
+            bobot_rapor: number;
+            /** Format: double */
+            bobot_wawancara: number;
+            /** Format: double */
+            default_passing_score: number;
+            keterangan?: string | null;
+        };
+        UpdateStatusKandidatRequest: {
+            catatan: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            /** Format: uuid */
+            prodi_diterima_id?: string | null;
+            status_baru: string;
+        };
+        UpdateTahunAkademikRequest: {
+            is_active: boolean;
+            kode: string;
+            nama: string;
+            /** Format: date */
+            tgl_mulai: string;
+            /** Format: date */
+            tgl_selesai: string;
+        };
+        UpdateUserRoleRequest: {
+            role: string;
+        };
+        UpdateVoucherRequest: {
+            /** Format: uuid */
+            batas_jalur_id?: string | null;
+            /** Format: uuid */
+            batas_prodi_id?: string | null;
+            deskripsi?: string | null;
+            is_active: boolean;
+            /** Format: int32 */
+            kuota: number;
+            /** Format: int64 */
+            nilai_diskon: number;
+            /** Format: date-time */
+            tgl_kadaluarsa: string;
+            tipe_diskon: string;
+        };
+        UploadBerkasDaftarUlangRequest: {
+            file_key: string;
+            file_name: string;
+            /** Format: int64 */
+            file_size_bytes: number;
+            jenis_berkas: string;
+            mime_type: string;
+        };
+        UploadBerkasRequest: {
+            file_name: string;
+            /** Format: int64 */
+            file_size_bytes: number;
+            jenis_berkas: string;
+            mime_type: string;
+        };
+        UploadMediaResponse: {
+            file_key: string;
+            file_name: string;
+            upload_url: string;
+            url: string;
+        };
+        UserListItemResponse: {
+            /** Format: date-time */
+            created_at: string;
+            email: string;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            is_email_verified: boolean;
+            nama_lengkap: string;
+            no_hp: string;
+            role: string;
+        };
+        VerifikasiBerkasDaftarUlangRequest: {
+            catatan?: string | null;
+            status: string;
+        };
+        VerifikasiBerkasRequest: {
+            /** Format: uuid */
+            berkas_id: string;
+            catatan?: string | null;
+            status_verifikasi: string;
+        };
+        VerifyEmailRequest: {
+            token: string;
+        };
+        VoucherDetailResponse: {
+            /** Format: uuid */
+            batas_jalur_id?: string | null;
+            /** Format: uuid */
+            batas_prodi_id?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            deskripsi?: string | null;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            kode_voucher: string;
+            /** Format: int32 */
+            kuota: number;
+            /** Format: int32 */
+            kuota_terpakai: number;
+            /** Format: int64 */
+            nilai_diskon: number;
+            /** Format: date-time */
+            tgl_kadaluarsa: string;
+            tipe_diskon: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+    };
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  register_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["RegisterRequest"];
-      };
-    };
-    responses: {
-      /** @description Registrasi berhasil */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthResponse"];
-        };
-      };
-      /** @description Validasi gagal */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ApiErrorResponse"];
-        };
-      };
-    };
-  };
-  login_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LoginRequest"];
-      };
-    };
-    responses: {
-      /** @description Login berhasil */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthResponse"];
-        };
-      };
-      /** @description Kredensial tidak valid */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ApiErrorResponse"];
-        };
-      };
-    };
-  };
-  logout_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Logout berhasil */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  me_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Profil aktif */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthResponse"];
-        };
-      };
-    };
-  };
-  verify_email_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["VerifyEmailRequest"];
-      };
-    };
-    responses: {
-      /** @description Email berhasil diverifikasi */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-      /** @description Token verifikasi tidak valid atau kedaluwarsa */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ApiErrorResponse"];
-        };
-      };
-    };
-  };
-  forgot_password_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ForgotPasswordRequest"];
-      };
-    };
-    responses: {
-      /** @description Instruksi reset password dikirim jika terdaftar */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-    };
-  };
-  reset_password_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ResetPasswordRequest"];
-      };
-    };
-    responses: {
-      /** @description Password berhasil direset */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-      /** @description Token reset tidak valid atau kedaluwarsa */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ApiErrorResponse"];
-        };
-      };
-    };
-  };
-  change_password_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ChangePasswordRequest"];
-      };
-    };
-    responses: {
-      /** @description Password berhasil diganti */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-      /** @description Password lama salah */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ApiErrorResponse"];
-        };
-      };
-    };
-  };
-  admin_list_users_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar pengguna */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["UserListItemResponse"][];
-        };
-      };
-      /** @description Belum login */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ApiErrorResponse"];
-        };
-      };
-      /** @description Akses ditolak - bukan admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ApiErrorResponse"];
-        };
-      };
-    };
-  };
-  admin_update_role_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID Pengguna */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateUserRoleRequest"];
-      };
-    };
-    responses: {
-      /** @description Peran berhasil diperbarui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["UserListItemResponse"];
-        };
-      };
-      /** @description Peran tidak valid */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ApiErrorResponse"];
-        };
-      };
-      /** @description Hanya Super Admin yang berwenang */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ApiErrorResponse"];
-        };
-      };
-    };
-  };
-  list_prodi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar prodi aktif */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ProdiResponse"][];
-        };
-      };
-    };
-  };
-  list_jalur_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar jalur */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["JalurResponse"][];
-        };
-      };
-    };
-  };
-  list_gelombang_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar gelombang */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GelombangResponse"][];
-        };
-      };
-    };
-  };
-  get_my_pendaftaran_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Detail formulir */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PendaftarDetailResponse"];
-        };
-      };
-    };
-  };
-  upload_berkas_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UploadBerkasRequest"];
-      };
-    };
-    responses: {
-      /** @description Berkas berhasil dicatat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BerkasResponse"];
-        };
-      };
-    };
-  };
-  get_presigned_url_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Presigned URL */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PresignedUrlResponse"];
-        };
-      };
-    };
-  };
-  get_my_tagihan_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar tagihan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PembayaranDetailResponse"][];
-        };
-      };
-    };
-  };
-  get_calon_dashboard_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Data dashboard calon mahasiswa */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CalonDashboardResponse"];
-        };
-      };
-    };
-  };
-  get_admin_dashboard_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Statistik admin */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AdminDashboardResponse"];
-        };
-      };
-    };
-  };
-  health_check_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Status kesehatan layanan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HealthCheckResponse"];
-        };
-      };
-    };
-  };
-  list_tahun_akademik_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar tahun akademik */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TahunAkademikResponse"][];
-        };
-      };
-    };
-  };
-  create_tahun_akademik_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateTahunAkademikRequest"];
-      };
-    };
-    responses: {
-      /** @description Tahun akademik berhasil dibuat */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TahunAkademikResponse"];
-        };
-      };
-    };
-  };
-  update_tahun_akademik_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateTahunAkademikRequest"];
-      };
-    };
-    responses: {
-      /** @description Tahun akademik berhasil diperbarui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TahunAkademikResponse"];
-        };
-      };
-    };
-  };
-  delete_tahun_akademik_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Tahun akademik berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-    };
-  };
-  list_fakultas_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar fakultas */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["FakultasResponse"][];
-        };
-      };
-    };
-  };
-  create_fakultas_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateFakultasRequest"];
-      };
-    };
-    responses: {
-      /** @description Fakultas berhasil dibuat */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["FakultasResponse"];
-        };
-      };
-    };
-  };
-  update_fakultas_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateFakultasRequest"];
-      };
-    };
-    responses: {
-      /** @description Fakultas berhasil diperbarui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["FakultasResponse"];
-        };
-      };
-    };
-  };
-  delete_fakultas_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Fakultas berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-    };
-  };
-  list_gelombang_admin_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar gelombang */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GelombangDetailResponse"][];
-        };
-      };
-    };
-  };
-  create_gelombang_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateGelombangRequest"];
-      };
-    };
-    responses: {
-      /** @description Gelombang berhasil dibuat */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GelombangDetailResponse"];
-        };
-      };
-    };
-  };
-  update_gelombang_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateGelombangRequest"];
-      };
-    };
-    responses: {
-      /** @description Gelombang berhasil diubah */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GelombangDetailResponse"];
-        };
-      };
-    };
-  };
-  delete_gelombang_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Gelombang berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-    };
-  };
-  list_prodi_admin_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar program studi */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ProdiDetailResponse"][];
-        };
-      };
-    };
-  };
-  create_prodi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateProdiKonfigurasiRequest"];
-      };
-    };
-    responses: {
-      /** @description Program studi berhasil dibuat */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ProdiDetailResponse"];
-        };
-      };
-    };
-  };
-  update_prodi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateProdiKonfigurasiRequest"];
-      };
-    };
-    responses: {
-      /** @description Program studi berhasil diubah */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ProdiDetailResponse"];
-        };
-      };
-    };
-  };
-  delete_prodi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Program studi berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-    };
-  };
-  list_kuota_prodi_gelombang_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar kuota prodi per gelombang */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["KuotaProdiGelombangResponse"][];
-        };
-      };
-    };
-  };
-  set_kuota_prodi_gelombang_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SetKuotaProdiGelombangRequest"];
-      };
-    };
-    responses: {
-      /** @description Kuota berhasil disimpan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["KuotaProdiGelombangResponse"];
-        };
-      };
-    };
-  };
-  list_jalur_admin_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar jalur masuk */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["JalurDetailResponse"][];
-        };
-      };
-    };
-  };
-  create_jalur_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateJalurKonfigurasiRequest"];
-      };
-    };
-    responses: {
-      /** @description Jalur berhasil dibuat */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["JalurDetailResponse"];
-        };
-      };
-    };
-  };
-  update_jalur_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateJalurKonfigurasiRequest"];
-      };
-    };
-    responses: {
-      /** @description Jalur berhasil diubah */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["JalurDetailResponse"];
-        };
-      };
-    };
-  };
-  delete_jalur_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Jalur berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-    };
-  };
-  list_komponen_biaya_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar komponen biaya */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["KomponenBiayaResponse"][];
-        };
-      };
-    };
-  };
-  create_komponen_biaya_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateKomponenBiayaRequest"];
-      };
-    };
-    responses: {
-      /** @description Komponen biaya berhasil dibuat */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["KomponenBiayaResponse"];
-        };
-      };
-    };
-  };
-  update_komponen_biaya_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateKomponenBiayaRequest"];
-      };
-    };
-    responses: {
-      /** @description Komponen biaya berhasil diubah */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["KomponenBiayaResponse"];
-        };
-      };
-    };
-  };
-  delete_komponen_biaya_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Komponen biaya berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-    };
-  };
-  list_matriks_biaya_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar matriks biaya */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MatriksBiayaResponse"][];
-        };
-      };
-    };
-  };
-  create_matriks_biaya_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateMatriksBiayaRequest"];
-      };
-    };
-    responses: {
-      /** @description Matriks biaya berhasil dibuat */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-    };
-  };
-  update_matriks_biaya_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateMatriksBiayaRequest"];
-      };
-    };
-    responses: {
-      /** @description Matriks biaya berhasil diubah */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-    };
-  };
-  delete_matriks_biaya_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Matriks biaya berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-    };
-  };
-  hitung_biaya_simulasi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["HitungBiayaRequest"];
-      };
-    };
-    responses: {
-      /** @description Hasil perhitungan simulasi biaya */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HitungBiayaResponse"];
-        };
-      };
-    };
-  };
-  list_vouchers_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar voucher */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["VoucherDetailResponse"][];
-        };
-      };
-    };
-  };
-  create_voucher_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateVoucherRequest"];
-      };
-    };
-    responses: {
-      /** @description Voucher berhasil dibuat */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["VoucherDetailResponse"];
-        };
-      };
-    };
-  };
-  update_voucher_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateVoucherRequest"];
-      };
-    };
-    responses: {
-      /** @description Voucher berhasil diubah */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["VoucherDetailResponse"];
-        };
-      };
-    };
-  };
-  delete_voucher_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Voucher berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenericMessageResponse"];
-        };
-      };
-    };
-  };
-  list_pengaturan_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar pengaturan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PengaturanResponse"][];
-        };
-      };
-    };
-  };
-  update_pengaturan_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdatePengaturanRequest"];
-      };
-    };
-    responses: {
-      /** @description Pengaturan berhasil diperbarui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PengaturanResponse"];
-        };
-      };
-    };
-  };
-  get_fields_handler: {
-    parameters: {
-      query?: {
-        jalur_id?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar definisi field */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DefinisiField"][];
-        };
-      };
-    };
-  };
-  submit_formulir_dinamis_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SubmitDinamisRequest"];
-      };
-    };
-    responses: {
-      /** @description Formulir biodata berhasil disimpan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PendaftarDetailResponse"];
-        };
-      };
-    };
-  };
-  get_berkas_syarat_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar berkas */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BerkasCalonItem"][];
-        };
-      };
-    };
-  };
-  presign_upload_berkas_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["PresignUploadRequest"];
-      };
-    };
-    responses: {
-      /** @description Presigned PUT URL dihasilkan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PresignedUploadResponse"];
-        };
-      };
-    };
-  };
-  konfirmasi_upload_berkas_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["KonfirmasiUploadRequest"];
-      };
-    };
-    responses: {
-      /** @description Berkas berhasil dikonfirmasi */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BerkasCalonItem"];
-        };
-      };
-    };
-  };
-  presign_download_berkas_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Presigned GET URL dihasilkan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PresignedDownloadResponse"];
-        };
-      };
-    };
-  };
-  get_langkah_progress_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar progress langkah */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LangkahProgressItem"][];
-        };
-      };
-    };
-  };
-  admin_list_fields_handler: {
-    parameters: {
-      query?: {
-        jalur_id?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar definisi field */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DefinisiField"][];
-        };
-      };
-    };
-  };
-  admin_create_field_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateDefinisiFieldRequest"];
-      };
-    };
-    responses: {
-      /** @description Field berhasil dibuat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DefinisiField"];
-        };
-      };
-    };
-  };
-  admin_update_field_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateDefinisiFieldRequest"];
-      };
-    };
-    responses: {
-      /** @description Field berhasil diperbarui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DefinisiField"];
-        };
-      };
-    };
-  };
-  admin_delete_field_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Field berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  admin_reorder_fields_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ReorderFieldsRequest"];
-      };
-    };
-    responses: {
-      /** @description Urutan berhasil diperbarui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  admin_list_definisi_berkas_handler: {
-    parameters: {
-      query?: {
-        jalur_id?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar berkas */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DefinisiBerkas"][];
-        };
-      };
-    };
-  };
-  admin_create_definisi_berkas_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateDefinisiBerkasRequest"];
-      };
-    };
-    responses: {
-      /** @description Definisi berkas berhasil dibuat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DefinisiBerkas"];
-        };
-      };
-    };
-  };
-  admin_update_definisi_berkas_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateDefinisiBerkasRequest"];
-      };
-    };
-    responses: {
-      /** @description Definisi berkas berhasil diperbarui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DefinisiBerkas"];
-        };
-      };
-    };
-  };
-  admin_delete_definisi_berkas_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Definisi berkas berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  admin_list_definisi_langkah_handler: {
-    parameters: {
-      query?: {
-        jalur_id?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar definisi langkah */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DefinisiLangkah"][];
-        };
-      };
-    };
-  };
-  admin_create_definisi_langkah_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateDefinisiLangkahRequest"];
-      };
-    };
-    responses: {
-      /** @description Definisi langkah berhasil dibuat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DefinisiLangkah"];
-        };
-      };
-    };
-  };
-  admin_update_definisi_langkah_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateDefinisiLangkahRequest"];
-      };
-    };
-    responses: {
-      /** @description Definisi langkah berhasil diperbarui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DefinisiLangkah"];
-        };
-      };
-    };
-  };
-  admin_delete_definisi_langkah_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Definisi langkah berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  admin_list_berkas_handler: {
-    parameters: {
-      query?: {
-        status?: string;
-        search?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar berkas untuk verifikasi */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BerkasDetailItem"][];
-        };
-      };
-    };
-  };
-  pilih_prodi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["PilihProdiRequest"];
-      };
-    };
-    responses: {
-      /** @description Pilihan berhasil disimpan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PendaftarDetailResponse"];
-        };
-      };
-    };
-  };
-  get_dashboard_summary_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Ringkasan dashboard */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DashboardSummaryResponse"];
-        };
-      };
-    };
-  };
-  admin_pendaftaran_offline_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["PendaftaranOfflineRequest"];
-      };
-    };
-    responses: {
-      /** @description Pendaftaran offline berhasil */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PendaftaranOfflineResponse"];
-        };
-      };
-    };
-  };
-  cetak_bukti_pendaftaran_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Berkas PDF Bukti Pendaftaran */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/pdf": string;
-        };
-      };
-    };
-  };
-  cetak_kartu_peserta_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Berkas PDF Kartu Peserta Ujian */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/pdf": string;
-        };
-      };
-    };
-  };
-  charge_payment_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ChargePaymentRequest"];
-      };
-    };
-    responses: {
-      /** @description Transaksi pembayaran berhasil dibuat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TransaksiDetailResponse"];
-        };
-      };
-    };
-  };
-  admin_rekonsiliasi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Hasil rekonsiliasi gateway */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RekonsiliasiResponse"];
-        };
-      };
-    };
-  };
-  admin_konfirmasi_manual_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["KonfirmasiBayarRequest"];
-      };
-    };
-    responses: {
-      /** @description Pelunasan tagihan manual berhasil dicatat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  admin_ekspor_transaksi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description File CSV transaksi keuangan PMB */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  get_my_sesi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Informasi sesi calon */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SesiCalonInfoResponse"];
-        };
-      };
-    };
-  };
-  mulai_cbt_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Sesi ujian dimulai atau dipulihkan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MulaiUjianCbtResponse"];
-        };
-      };
-    };
-  };
-  autosave_jawaban_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AutosaveJawabanRequest"];
-      };
-    };
-    responses: {
-      /** @description Jawaban berhasil diautosave */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AutosaveJawabanResponse"];
-        };
-      };
-    };
-  };
-  submit_cbt_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Ujian berhasil disubmit dan dinilai */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SubmitUjianResponse"];
-        };
-      };
-    };
-  };
-  check_in_presensi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["PresensiCheckInRequest"];
-      };
-    };
-    responses: {
-      /** @description Presensi berhasil dicatat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PresensiCheckInResponse"];
-        };
-      };
-    };
-  };
-  live_stream_sesi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Server-Sent Events stream */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  list_bank_soal_handler: {
-    parameters: {
-      query?: {
-        kategori?: string;
-        tingkat_kesulitan?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar bank soal */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BankSoal"][];
-        };
-      };
-    };
-  };
-  create_bank_soal_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateSoalRequest"];
-      };
-    };
-    responses: {
-      /** @description Soal berhasil dibuat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BankSoal"];
-        };
-      };
-    };
-  };
-  import_bank_soal_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Hasil impor soal */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ImportSoalResultResponse"];
-        };
-      };
-    };
-  };
-  list_paket_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar paket ujian */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PaketUjian"][];
-        };
-      };
-    };
-  };
-  create_paket_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreatePaketRequest"];
-      };
-    };
-    responses: {
-      /** @description Paket berhasil dibuat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PaketUjian"];
-        };
-      };
-    };
-  };
-  list_sesi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar sesi ujian */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SesiUjian"][];
-        };
-      };
-    };
-  };
-  create_sesi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateSesiRequest"];
-      };
-    };
-    responses: {
-      /** @description Sesi ujian berhasil dijadwalkan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SesiUjian"];
-        };
-      };
-    };
-  };
-  assign_peserta_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AssignPesertaRequest"];
-      };
-    };
-    responses: {
-      /** @description Peserta berhasil di-assign */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            assigned_count?: number;
-          };
-        };
-      };
-    };
-  };
-  get_sesi_snapshot_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Snapshot data live sesi */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LiveMonitorStreamResponse"];
-        };
-      };
-    };
-  };
-  get_sesi_peserta_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar peserta sesi */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LiveMonitorStreamResponse"];
-        };
-      };
-    };
-  };
-  get_cek_kelulusan_calon_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Status kelulusan calon mahasiswa */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CekKelulusanCalonResponse"];
-        };
-      };
-    };
-  };
-  download_loa_pdf_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Streaming PDF LoA */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/pdf": string;
-        };
-      };
-    };
-  };
-  get_daftar_ulang_info_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Informasi daftar ulang */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DaftarUlangInfoResponse"];
-        };
-      };
-    };
-  };
-  upload_berkas_daftar_ulang_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UploadBerkasDaftarUlangRequest"];
-      };
-    };
-    responses: {
-      /** @description Berkas berhasil diupload */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BerkasDaftarUlang"];
-        };
-      };
-    };
-  };
-  get_rumus_penilaian_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar rumus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RumusPenilaianJalur"][];
-        };
-      };
-    };
-  };
-  update_rumus_penilaian_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        jalur_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateRumusRequest"];
-      };
-    };
-    responses: {
-      /** @description Rumus berhasil disimpan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RumusPenilaianJalur"];
-        };
-      };
-    };
-  };
-  proses_ranking_kelulusan_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ProsesRankingRequest"];
-      };
-    };
-    responses: {
-      /** @description Draf kelulusan berhasil diproses */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DrafKelulusanResponse"];
-        };
-      };
-    };
-  };
-  get_draf_kelulusan_handler: {
-    parameters: {
-      query?: {
-        sidang_id?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Draf sidang kelulusan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DrafKelulusanResponse"];
-        };
-      };
-    };
-  };
-  approve_sidang_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        sidang_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ApprovalSidangRequest"];
-      };
-    };
-    responses: {
-      /** @description Sidang disetujui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SidangKelulusan"];
-        };
-      };
-    };
-  };
-  publish_sidang_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        sidang_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Sidang dipublikasikan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SidangKelulusan"];
-        };
-      };
-    };
-  };
-  update_status_kandidat_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateStatusKandidatRequest"];
-      };
-    };
-    responses: {
-      /** @description Status kandidat berhasil diubah */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HasilKelulusanResponse"];
-        };
-      };
-    };
-  };
-  verifikasi_berkas_daftar_ulang_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        berkas_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["VerifikasiBerkasDaftarUlangRequest"];
-      };
-    };
-    responses: {
-      /** @description Berkas diverifikasi */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BerkasDaftarUlang"];
-        };
-      };
-    };
-  };
-  generate_nim_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        pendaftar_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description NIM resmi diterbitkan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["GenerateNimResponse"];
-        };
-      };
-    };
-  };
-  ekspor_siakad_handler: {
-    parameters: {
-      query?: {
-        sidang_id?: string;
-        format?: "json" | "csv";
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Data SIAKAD */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["EksporSiakadItemDto"][];
-        };
-      };
-    };
-  };
-  list_daftar_ulang_admin_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar mahasiswa daftar ulang */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MahasiswaDaftarUlangDto"][];
-        };
-      };
-    };
-  };
-  list_berkas_daftar_ulang_admin_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        pendaftar_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar berkas daftar ulang */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BerkasDaftarUlang"][];
-        };
-      };
-    };
-  };
-  get_mata_kuliah_by_prodi_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        prodi_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar mata kuliah */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MataKuliah"][];
-        };
-      };
-    };
-  };
-  get_my_permohonan_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Data permohonan RPL calon */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RplPermohonanDetailResponse"];
-        };
-      };
-    };
-  };
-  submit_permohonan_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SubmitRplPermohonanRequest"];
-      };
-    };
-    responses: {
-      /** @description Permohonan RPL berhasil disimpan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RplPermohonanDetailResponse"];
-        };
-      };
-    };
-  };
-  list_permohonan_handler: {
-    parameters: {
-      query?: {
-        prodi_id?: string;
-        status?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar permohonan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RplItemRekapDto"][];
-        };
-      };
-    };
-  };
-  get_permohonan_detail_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Detail permohonan RPL */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RplPermohonanDetailResponse"];
-        };
-      };
-    };
-  };
-  assign_asesor_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AssignAsesorRequest"];
-      };
-    };
-    responses: {
-      /** @description Asesor berhasil ditugaskan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RplPermohonanDetailResponse"];
-        };
-      };
-    };
-  };
-  submit_penilaian_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SubmitPenilaianRplRequest"];
-      };
-    };
-    responses: {
-      /** @description Hasil penilaian berhasil disimpan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RplPermohonanDetailResponse"];
-        };
-      };
-    };
-  };
-  get_laporan_rpl_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Laporan Berita Acara */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LaporanRplResponse"];
-        };
-      };
-    };
-  };
-  export_laporan_csv_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description File CSV Berita Acara */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  list_all_mata_kuliah_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar mata kuliah */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MataKuliah"][];
-        };
-      };
-    };
-  };
-  create_mata_kuliah_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateMataKuliahRequest"];
-      };
-    };
-    responses: {
-      /** @description Mata kuliah berhasil ditambahkan */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MataKuliah"];
-        };
-      };
-    };
-  };
-  update_mata_kuliah_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateMataKuliahRequest"];
-      };
-    };
-    responses: {
-      /** @description Mata kuliah berhasil diperbarui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MataKuliah"];
-        };
-      };
-    };
-  };
-  list_posts_handler: {
-    parameters: {
-      query?: {
-        kategori?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar artikel terpublikasi */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsPostResponse"][];
-        };
-      };
-    };
-  };
-  get_post_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Detail artikel */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsPostResponse"];
-        };
-      };
-    };
-  };
-  list_banners_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar banner aktif */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsBannerResponse"][];
-        };
-      };
-    };
-  };
-  list_faqs_handler: {
-    parameters: {
-      query?: {
-        kategori?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar FAQ */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsFaqResponse"][];
-        };
-      };
-    };
-  };
-  get_page_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Konten halaman statis */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsPageResponse"];
-        };
-      };
-    };
-  };
-  admin_list_posts_handler: {
-    parameters: {
-      query?: {
-        kategori?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar artikel */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsPostResponse"][];
-        };
-      };
-    };
-  };
-  admin_create_post_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateCmsPostRequest"];
-      };
-    };
-    responses: {
-      /** @description Artikel baru berhasil dibuat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsPostResponse"];
-        };
-      };
-    };
-  };
-  admin_get_post_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Detail artikel */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsPostResponse"];
-        };
-      };
-    };
-  };
-  admin_update_post_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateCmsPostRequest"];
-      };
-    };
-    responses: {
-      /** @description Artikel berhasil diperbarui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsPostResponse"];
-        };
-      };
-    };
-  };
-  admin_delete_post_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Artikel berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  admin_list_banners_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar banner */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsBannerResponse"][];
-        };
-      };
-    };
-  };
-  admin_create_banner_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateCmsBannerRequest"];
-      };
-    };
-    responses: {
-      /** @description Banner berhasil dibuat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsBannerResponse"];
-        };
-      };
-    };
-  };
-  admin_get_banner_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Detail banner */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsBannerResponse"];
-        };
-      };
-    };
-  };
-  admin_update_banner_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateCmsBannerRequest"];
-      };
-    };
-    responses: {
-      /** @description Banner berhasil diperbarui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsBannerResponse"];
-        };
-      };
-    };
-  };
-  admin_delete_banner_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Banner berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  admin_list_faqs_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar FAQ */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsFaqResponse"][];
-        };
-      };
-    };
-  };
-  admin_create_faq_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateCmsFaqRequest"];
-      };
-    };
-    responses: {
-      /** @description FAQ baru berhasil dibuat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsFaqResponse"];
-        };
-      };
-    };
-  };
-  admin_get_faq_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Detail FAQ */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsFaqResponse"];
-        };
-      };
-    };
-  };
-  admin_update_faq_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateCmsFaqRequest"];
-      };
-    };
-    responses: {
-      /** @description FAQ berhasil diperbarui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsFaqResponse"];
-        };
-      };
-    };
-  };
-  admin_delete_faq_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description FAQ berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  admin_list_pages_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daftar halaman */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsPageResponse"][];
-        };
-      };
-    };
-  };
-  admin_create_page_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateCmsPageRequest"];
-      };
-    };
-    responses: {
-      /** @description Halaman berhasil dibuat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsPageResponse"];
-        };
-      };
-    };
-  };
-  admin_get_page_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Detail halaman */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsPageResponse"];
-        };
-      };
-    };
-  };
-  admin_update_page_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateCmsPageRequest"];
-      };
-    };
-    responses: {
-      /** @description Halaman berhasil diperbarui */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CmsPageResponse"];
-        };
-      };
-    };
-  };
-  admin_delete_page_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Halaman berhasil dihapus */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  admin_upload_presign_handler: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["PresignMediaUploadRequest"];
-      };
-    };
-    responses: {
-      /** @description Presigned URL berhasil dibuat */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["UploadMediaResponse"];
-        };
-      };
-    };
-  };
-  get_executive_dashboard_handler: {
-    parameters: {
-      query?: {
-        start_date?: string;
-        end_date?: string;
-        gelombang_id?: string;
-        jalur_id?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Ringkasan analitik eksekutif */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ExecutiveDashboardResponse"];
-        };
-      };
-    };
-  };
-  export_excel_dashboard_handler: {
-    parameters: {
-      query?: {
-        start_date?: string;
-        end_date?: string;
-        gelombang_id?: string;
-        jalur_id?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description File laporan CSV UTF-8 BOM */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
+    list_fakultas_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar fakultas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FakultasResponse"][];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    create_fakultas_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFakultasRequest"];
+            };
+        };
+        responses: {
+            /** @description Fakultas berhasil dibuat */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FakultasResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    update_fakultas_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Fakultas */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFakultasRequest"];
+            };
+        };
+        responses: {
+            /** @description Fakultas berhasil diubah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FakultasResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_fakultas_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Fakultas */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fakultas berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_gelombang_admin_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar seluruh gelombang */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GelombangDetailResponse"][];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    create_gelombang_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGelombangRequest"];
+            };
+        };
+        responses: {
+            /** @description Gelombang berhasil dibuat */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GelombangDetailResponse"];
+                };
+            };
+            /** @description Tanggal tidak valid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Jadwal gelombang tumpang tindih */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    update_gelombang_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Gelombang */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGelombangRequest"];
+            };
+        };
+        responses: {
+            /** @description Gelombang berhasil diubah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GelombangDetailResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Jadwal gelombang tumpang tindih */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_gelombang_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Gelombang */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Gelombang berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_jalur_admin_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar jalur masuk */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JalurDetailResponse"][];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    create_jalur_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateJalurKonfigurasiRequest"];
+            };
+        };
+        responses: {
+            /** @description Jalur masuk berhasil dibuat */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JalurDetailResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    update_jalur_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Jalur Masuk */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateJalurKonfigurasiRequest"];
+            };
+        };
+        responses: {
+            /** @description Jalur masuk berhasil diubah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JalurDetailResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_jalur_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Jalur Masuk */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Jalur masuk berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_komponen_biaya_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar komponen biaya */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KomponenBiayaResponse"][];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    create_komponen_biaya_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateKomponenBiayaRequest"];
+            };
+        };
+        responses: {
+            /** @description Komponen biaya berhasil dibuat */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KomponenBiayaResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    update_komponen_biaya_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Komponen Biaya */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateKomponenBiayaRequest"];
+            };
+        };
+        responses: {
+            /** @description Komponen biaya berhasil diubah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KomponenBiayaResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_komponen_biaya_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Komponen Biaya */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Komponen biaya berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_kuota_prodi_gelombang_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar kuota prodi per gelombang */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KuotaProdiGelombangResponse"][];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    set_kuota_prodi_gelombang_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetKuotaProdiGelombangRequest"];
+            };
+        };
+        responses: {
+            /** @description Kuota prodi per gelombang berhasil diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KuotaProdiGelombangResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_matriks_biaya_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar matriks biaya */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatriksBiayaResponse"][];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    create_matriks_biaya_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMatriksBiayaRequest"];
+            };
+        };
+        responses: {
+            /** @description Matriks biaya berhasil dibuat */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    hitung_biaya_simulasi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HitungBiayaRequest"];
+            };
+        };
+        responses: {
+            /** @description Hasil kalkulasi matriks biaya dan cicilan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HitungBiayaResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    update_matriks_biaya_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Matriks Biaya */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMatriksBiayaRequest"];
+            };
+        };
+        responses: {
+            /** @description Matriks biaya berhasil diubah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_matriks_biaya_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Matriks Biaya */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matriks biaya berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_pengaturan_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar pengaturan sistem PMB */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PengaturanResponse"][];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    update_pengaturan_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePengaturanRequest"];
+            };
+        };
+        responses: {
+            /** @description Pengaturan berhasil diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PengaturanResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_prodi_admin_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar program studi lengkap */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProdiDetailResponse"][];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    create_prodi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProdiKonfigurasiRequest"];
+            };
+        };
+        responses: {
+            /** @description Program studi berhasil dibuat */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProdiDetailResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    update_prodi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Program Studi */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProdiKonfigurasiRequest"];
+            };
+        };
+        responses: {
+            /** @description Program studi berhasil diubah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProdiDetailResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_prodi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Program Studi */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Program studi berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_tahun_akademik_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar tahun akademik */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TahunAkademikResponse"][];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    create_tahun_akademik_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTahunAkademikRequest"];
+            };
+        };
+        responses: {
+            /** @description Tahun akademik berhasil dibuat */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TahunAkademikResponse"];
+                };
+            };
+            /** @description Validasi gagal */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    update_tahun_akademik_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Tahun Akademik */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTahunAkademikRequest"];
+            };
+        };
+        responses: {
+            /** @description Tahun akademik berhasil diubah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TahunAkademikResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_tahun_akademik_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Tahun Akademik */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tahun akademik berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_vouchers_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar seluruh voucher */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoucherDetailResponse"][];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    create_voucher_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateVoucherRequest"];
+            };
+        };
+        responses: {
+            /** @description Voucher berhasil dibuat */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoucherDetailResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Kode voucher sudah ada */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    update_voucher_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Voucher */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateVoucherRequest"];
+            };
+        };
+        responses: {
+            /** @description Voucher berhasil diubah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoucherDetailResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_voucher_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Voucher */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Voucher berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_list_users_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar seluruh pengguna sistem PMB */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserListItemResponse"][];
+                };
+            };
+            /** @description Belum login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_update_role_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Pengguna yang akan diubah perannya */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Peran pengguna berhasil diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserListItemResponse"];
+                };
+            };
+            /** @description Peran tidak valid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Belum login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Hanya Super Admin yang berwenang mengubah peran */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    change_password_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Password berhasil diubah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Password lama salah */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Belum login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    forgot_password_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Instruksi reset password dikirim jika email terdaftar */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+        };
+    };
+    login_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Login berhasil */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResponse"];
+                };
+            };
+            /** @description Email atau password salah */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Akun dinonaktifkan atau terkunci sementara */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Format input tidak valid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Terlalu banyak percobaan login */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    logout_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logout berhasil */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+        };
+    };
+    me_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Profil user yang sedang aktif */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResponse"];
+                };
+            };
+            /** @description Belum login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    register_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Registrasi calon mahasiswa berhasil */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResponse"];
+                };
+            };
+            /** @description Email sudah terdaftar */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Validasi data gagal */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    reset_password_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Password berhasil direset */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Token reset tidak valid atau kedaluwarsa */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    verify_email_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description Email berhasil diverifikasi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Token verifikasi tidak valid atau kedaluwarsa */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_bank_soal_handler: {
+        parameters: {
+            query?: {
+                /** @description Kategori soal */
+                kategori?: string;
+                /** @description Tingkat kesulitan */
+                kesulitan?: string;
+                /** @description Pencarian pertanyaan */
+                q?: string;
+                /** @description Nomor halaman */
+                page?: number;
+                /** @description Jumlah per halaman */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar butir bank soal */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    create_bank_soal_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSoalRequest"];
+            };
+        };
+        responses: {
+            /** @description Soal baru berhasil dibuat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankSoal"];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_paket_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar paket ujian */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaketUjian"][];
+                };
+            };
+        };
+    };
+    create_paket_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePaketRequest"];
+            };
+        };
+        responses: {
+            /** @description Paket ujian berhasil dibuat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaketUjian"];
+                };
+            };
+        };
+    };
+    check_in_presensi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresensiCheckInRequest"];
+            };
+        };
+        responses: {
+            /** @description Presensi calon berhasil dicatat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresensiCheckInResponse"];
+                };
+            };
+            /** @description Akses ditolak (bukan pengawas) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Peserta tidak ditemukan */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_sesi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar sesi ujian */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SesiUjian"][];
+                };
+            };
+        };
+    };
+    create_sesi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSesiRequest"];
+            };
+        };
+        responses: {
+            /** @description Sesi ujian berhasil dibuat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SesiUjian"];
+                };
+            };
+        };
+    };
+    assign_peserta_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Sesi Ujian */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignPesertaRequest"];
+            };
+        };
+        responses: {
+            /** @description Peserta berhasil dialokasikan ke sesi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    autosave_jawaban_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AutosaveJawabanRequest"];
+            };
+        };
+        responses: {
+            /** @description Jawaban berhasil diautosave */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutosaveJawabanResponse"];
+                };
+            };
+            /** @description Sesi tidak valid / sudah selesai */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    mulai_ujian_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesi ujian dimulai atau dipulihkan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MulaiUjianCbtResponse"];
+                };
+            };
+            /** @description Ujian sudah selesai */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Belum presensi / presensi terkunci */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_my_sesi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Informasi sesi ujian calon & status presensi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SesiCalonInfoResponse"];
+                };
+            };
+            /** @description Belum login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    submit_ujian_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ujian berhasil disubmit dan dinilai otomatis */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmitUjianResponse"];
+                };
+            };
+            /** @description Tidak ada sesi aktif */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_list_banners_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar banner admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsBannerResponse"][];
+                };
+            };
+        };
+    };
+    admin_create_banner_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCmsBannerRequest"];
+            };
+        };
+        responses: {
+            /** @description Banner baru berhasil dibuat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsBannerResponse"];
+                };
+            };
+        };
+    };
+    admin_get_banner_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detail banner admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsBannerResponse"];
+                };
+            };
+        };
+    };
+    admin_update_banner_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCmsBannerRequest"];
+            };
+        };
+        responses: {
+            /** @description Banner berhasil diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsBannerResponse"];
+                };
+            };
+        };
+    };
+    admin_delete_banner_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Banner berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_list_faqs_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar FAQ admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsFaqResponse"][];
+                };
+            };
+        };
+    };
+    admin_create_faq_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCmsFaqRequest"];
+            };
+        };
+        responses: {
+            /** @description FAQ baru berhasil dibuat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsFaqResponse"];
+                };
+            };
+        };
+    };
+    admin_get_faq_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detail FAQ admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsFaqResponse"];
+                };
+            };
+        };
+    };
+    admin_update_faq_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCmsFaqRequest"];
+            };
+        };
+        responses: {
+            /** @description FAQ berhasil diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsFaqResponse"];
+                };
+            };
+        };
+    };
+    admin_delete_faq_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description FAQ berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_list_pages_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar halaman statis admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPageResponse"][];
+                };
+            };
+        };
+    };
+    admin_create_page_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCmsPageRequest"];
+            };
+        };
+        responses: {
+            /** @description Halaman statis berhasil dibuat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPageResponse"];
+                };
+            };
+        };
+    };
+    admin_get_page_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detail halaman statis admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPageResponse"];
+                };
+            };
+        };
+    };
+    admin_update_page_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCmsPageRequest"];
+            };
+        };
+        responses: {
+            /** @description Halaman statis berhasil diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPageResponse"];
+                };
+            };
+        };
+    };
+    admin_delete_page_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Halaman statis berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_list_posts_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar semua artikel untuk admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPostResponse"][];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_create_post_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCmsPostRequest"];
+            };
+        };
+        responses: {
+            /** @description Artikel baru berhasil dibuat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPostResponse"];
+                };
+            };
+            /** @description Validasi data gagal */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_get_post_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detail artikel untuk admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPostResponse"];
+                };
+            };
+            /** @description Artikel tidak ditemukan */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_update_post_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCmsPostRequest"];
+            };
+        };
+        responses: {
+            /** @description Artikel berhasil diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPostResponse"];
+                };
+            };
+        };
+    };
+    admin_delete_post_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Artikel berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_upload_presign_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresignMediaUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Presigned PUT URL berhasil dibuat untuk unggah media */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadMediaResponse"];
+                };
+            };
+        };
+    };
+    list_banners_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar banner slider beranda aktif */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsBannerResponse"][];
+                };
+            };
+        };
+    };
+    list_faqs_handler: {
+        parameters: {
+            query?: {
+                /** @description Filter kategori FAQ */
+                kategori?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar pertanyaan umum aktif */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsFaqResponse"][];
+                };
+            };
+        };
+    };
+    get_page_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Slug halaman statis */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Konten halaman statis */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPageResponse"];
+                };
+            };
+            /** @description Halaman tidak ditemukan */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_posts_handler: {
+        parameters: {
+            query?: {
+                /** @description Filter kategori artikel / berita */
+                kategori?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar artikel terpublikasi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPostResponse"][];
+                };
+            };
+        };
+    };
+    get_post_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Slug artikel / pengumuman */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detail artikel publik */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPostResponse"];
+                };
+            };
+            /** @description Artikel tidak ditemukan */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_admin_dashboard_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Statistik ringkas PMB */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDashboardResponse"];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    export_excel_dashboard_handler: {
+        parameters: {
+            query?: {
+                start_date?: string | null;
+                end_date?: string | null;
+                gelombang_id?: string | null;
+                jalur_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description File spreadsheet CSV laporan eksekutif siap buka di Microsoft Excel */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_executive_dashboard_handler: {
+        parameters: {
+            query?: {
+                start_date?: string | null;
+                end_date?: string | null;
+                gelombang_id?: string | null;
+                jalur_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Analitik eksekutif lengkap dengan filter periode, tren harian, distribusi prodi & jalur */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecutiveDashboardResponse"];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_calon_dashboard_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ringkasan progres dan status tahapan calon mahasiswa */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalonDashboardResponse"];
+                };
+            };
+            /** @description Belum login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    health_check_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status kesehatan layanan API, PostgreSQL, dan Redis */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthCheckResponse"];
+                };
+            };
+        };
+    };
+    approve_sidang_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sidang_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApprovalSidangRequest"];
+            };
+        };
+        responses: {
+            /** @description Sidang kelulusan berhasil disetujui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SidangKelulusan"];
+                };
+            };
+            /** @description Akses khusus admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_berkas_daftar_ulang_admin_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Pendaftar */
+                pendaftar_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar berkas daftar ulang pendaftar */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BerkasDaftarUlang"][];
+                };
+            };
+            /** @description Akses khusus admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_daftar_ulang_admin_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar calon mahasiswa yang lulus dan status daftar ulangnya */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MahasiswaDaftarUlangDto"][];
+                };
+            };
+            /** @description Akses khusus admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    verifikasi_berkas_daftar_ulang_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                berkas_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifikasiBerkasDaftarUlangRequest"];
+            };
+        };
+        responses: {
+            /** @description Berkas daftar ulang berhasil diverifikasi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BerkasDaftarUlang"];
+                };
+            };
+            /** @description Akses khusus admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_draf_kelulusan_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Draf hasil sidang kelulusan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DrafKelulusanResponse"];
+                };
+            };
+            /** @description Belum ada sidang */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    ekspor_siakad_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar mahasiswa baru untuk SIAKAD (JSON atau CSV) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EksporSiakadItemDto"][];
+                };
+            };
+            /** @description Akses khusus admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    generate_nim_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pendaftar_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description NIM resmi berhasil diterbitkan secara atomic */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerateNimResponse"];
+                };
+            };
+            /** @description Akses khusus admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    update_status_kandidat_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStatusKandidatRequest"];
+            };
+        };
+        responses: {
+            /** @description Status kandidat berhasil diubah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HasilKelulusanResponse"];
+                };
+            };
+            /** @description Akses khusus admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_list_kelulusan_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar seluruh kelulusan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HasilKelulusanResponse"][];
+                };
+            };
+        };
+    };
+    proses_ranking_kelulusan_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProsesRankingRequest"];
+            };
+        };
+        responses: {
+            /** @description Draf ranking kelulusan berhasil diproses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DrafKelulusanResponse"];
+                };
+            };
+            /** @description Akses khusus admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_proses_seleksi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Proses seleksi massal */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    publish_sidang_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sidang_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Hasil kelulusan resmi dipublikasikan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SidangKelulusan"];
+                };
+            };
+            /** @description Akses khusus admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_rumus_penilaian_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar konfigurasi rumus penilaian per jalur */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RumusPenilaianJalur"][];
+                };
+            };
+            /** @description Akses khusus admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    update_rumus_penilaian_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jalur_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRumusRequest"];
+            };
+        };
+        responses: {
+            /** @description Rumus penilaian berhasil diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RumusPenilaianJalur"];
+                };
+            };
+            /** @description Akses khusus admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_cek_kelulusan_calon_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status kelulusan resmi calon mahasiswa */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CekKelulusanCalonResponse"];
+                };
+            };
+            /** @description Formulir pendaftaran tidak ditemukan */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_daftar_ulang_info_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Informasi daftar ulang, tagihan UKT, dan status berkas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DaftarUlangInfoResponse"];
+                };
+            };
+            /** @description Hasil kelulusan belum ada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    upload_berkas_daftar_ulang_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadBerkasDaftarUlangRequest"];
+            };
+        };
+        responses: {
+            /** @description Berkas daftar ulang berhasil diunggah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BerkasDaftarUlang"];
+                };
+            };
+            /** @description Validasi berkas gagal */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    download_loa_pdf_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Streaming Letter of Acceptance (LoA) PDF resmi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
+                };
+            };
+            /** @description Bukan calon mahasiswa yang berstatus LULUS */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_my_kelulusan_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status kelulusan calon mahasiswa */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HasilKelulusanResponse"];
+                };
+            };
+            /** @description Hasil belum ada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_fakultas_prodi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar fakultas aktif beserta program studi binaannya */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FakultasWithProdiResponse"][];
+                };
+            };
+        };
+    };
+    list_gelombang_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar gelombang pendaftaran aktif */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GelombangResponse"][];
+                };
+            };
+        };
+    };
+    list_jalur_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar jalur pendaftaran */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JalurResponse"][];
+                };
+            };
+        };
+    };
+    list_prodi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar seluruh program studi aktif */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProdiResponse"][];
+                };
+            };
+        };
+    };
+    get_prodi_by_slug_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Slug Program Studi, misal s1-informatika */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detail program studi berdasarkan slug */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProdiResponse"];
+                };
+            };
+            /** @description Program studi tidak ditemukan */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_prodi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Program Studi */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detail program studi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProdiResponse"];
+                };
+            };
+            /** @description Program studi tidak ditemukan */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_ekspor_transaksi_handler: {
+        parameters: {
+            query?: {
+                /** @description Kata kunci pencarian */
+                q?: string;
+                /** @description Filter status pembayaran */
+                status?: string;
+                /** @description Filter metode pembayaran */
+                metode?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description File CSV rekonsiliasi keuangan transaksi PMB */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_konfirmasi_bayar_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KonfirmasiBayarRequest"];
+            };
+        };
+        responses: {
+            /** @description Konfirmasi pembayaran berhasil diproses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Akses ditolak (bukan admin) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_konfirmasi_manual_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KonfirmasiBayarRequest"];
+            };
+        };
+        responses: {
+            /** @description Pelunasan tagihan manual berhasil diproses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Akses ditolak (bukan admin) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_list_pembayaran_handler: {
+        parameters: {
+            query?: {
+                /** @description Kata kunci pencarian */
+                q?: string;
+                /** @description Filter status pembayaran */
+                status?: string;
+                /** @description Filter metode pembayaran */
+                metode?: string;
+                /** @description Halaman */
+                page?: number;
+                /** @description Jumlah data per halaman */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar seluruh transaksi pembayaran */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTransaksiAdminResponse"];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_rekonsiliasi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Transaksi pembayaran yang akan direkonsiliasi */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Hasil rekonsiliasi gateway */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RekonsiliasiResponse"];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    buat_tagihan_formulir_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PilihMetodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Tagihan berhasil diterbitkan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagihanWithTransaksiResponse"];
+                };
+            };
+            /** @description Belum login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    cek_voucher_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CekVoucherRequest"];
+            };
+        };
+        responses: {
+            /** @description Hasil pengecekan kode voucher */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CekVoucherResponse"];
+                };
+            };
+            /** @description Voucher tidak valid / habis / kedaluwarsa */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Voucher tidak ditemukan */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    charge_payment_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChargePaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Transaksi gateway berhasil dibuat (VA / QRIS) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransaksiDetailResponse"];
+                };
+            };
+            /** @description Belum login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_my_tagihan_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tagihan aktif pendaftar */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagihanWithTransaksiResponse"] | null;
+                };
+            };
+            /** @description Belum login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    simulasi_va_bayar_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Tagihan atau Pembayaran yang akan disimulasikan lunas */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Simulasi pembayaran lunas berhasil */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Akses ditolak atau bukan mode mock */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Tagihan tidak ditemukan */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    midtrans_webhook_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MidtransWebhookPayload"];
+            };
+        };
+        responses: {
+            /** @description Webhook Midtrans berhasil diproses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mock_webhook_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MockWebhookPayload"];
+            };
+        };
+        responses: {
+            /** @description Webhook mock dev berhasil diproses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_list_berkas_handler: {
+        parameters: {
+            query?: {
+                /** @description Filter status (PENDING, VALID, INVALID, DITERIMA, DITOLAK) */
+                status?: string;
+                /** @description Pencarian nama / nomor pendaftaran */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar seluruh berkas pendaftar untuk verifikasi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BerkasDetailItem"][];
+                };
+            };
+            /** @description Hanya admin PMB yang berhak mengakses */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_list_definisi_berkas_handler: {
+        parameters: {
+            query?: {
+                /** @description Filter per Jalur */
+                jalur_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar definisi berkas persyaratan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinisiBerkas"][];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_create_definisi_berkas_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDefinisiBerkasRequest"];
+            };
+        };
+        responses: {
+            /** @description Definisi berkas baru berhasil dibuat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinisiBerkas"];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_update_definisi_berkas_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Definisi Berkas */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDefinisiBerkasRequest"];
+            };
+        };
+        responses: {
+            /** @description Definisi berkas berhasil diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinisiBerkas"];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_delete_definisi_berkas_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Definisi Berkas */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Definisi berkas berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_list_fields_handler: {
+        parameters: {
+            query?: {
+                /** @description Filter per Jalur */
+                jalur_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar definisi field untuk admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinisiField"][];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_create_field_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDefinisiFieldRequest"];
+            };
+        };
+        responses: {
+            /** @description Definisi field baru berhasil dibuat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinisiField"];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_reorder_fields_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderFieldsRequest"];
+            };
+        };
+        responses: {
+            /** @description Urutan field berhasil diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_update_field_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Definisi Field */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDefinisiFieldRequest"];
+            };
+        };
+        responses: {
+            /** @description Definisi field berhasil diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinisiField"];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_delete_field_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Definisi Field */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Definisi field berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_list_definisi_langkah_handler: {
+        parameters: {
+            query?: {
+                /** @description Filter per Jalur */
+                jalur_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar definisi alur langkah pendaftaran */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinisiLangkah"][];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_create_definisi_langkah_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDefinisiLangkahRequest"];
+            };
+        };
+        responses: {
+            /** @description Definisi langkah baru berhasil dibuat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinisiLangkah"];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_update_definisi_langkah_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Definisi Langkah */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDefinisiLangkahRequest"];
+            };
+        };
+        responses: {
+            /** @description Definisi langkah berhasil diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinisiLangkah"];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_delete_definisi_langkah_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Definisi Langkah */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Definisi langkah berhasil dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_list_pendaftar_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar seluruh pendaftar PMB */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendaftarDetailResponse"][];
+                };
+            };
+            /** @description Hanya admin PMB yang berhak mengakses */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_pendaftaran_offline_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PendaftaranOfflineRequest"];
+            };
+        };
+        responses: {
+            /** @description Pendaftaran offline loket berhasil */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendaftaranOfflineResponse"];
+                };
+            };
+            /** @description Validasi gagal atau calon sudah terdaftar */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Hanya admin PMB yang berhak mendaftarkan calon offline */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_verifikasi_berkas_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifikasiBerkasRequest"];
+            };
+        };
+        responses: {
+            /** @description Status verifikasi berkas berhasil dicatat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Hanya admin PMB yang berhak memverifikasi */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    konfirmasi_upload_berkas_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KonfirmasiUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Konfirmasi unggahan berkas berhasil dicatat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BerkasCalonItem"];
+                };
+            };
+        };
+    };
+    presign_upload_berkas_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresignUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description URL Presigned PUT berhasil dihasilkan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresignedUploadResponse"];
+                };
+            };
+            /** @description Ukuran atau tipe file tidak diizinkan */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_berkas_syarat_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar syarat berkas dan status unggah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BerkasCalonItem"][];
+                };
+            };
+        };
+    };
+    presign_download_berkas_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Dokumen Berkas */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description URL Presigned GET berumur pendek berhasil dihasilkan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresignedDownloadResponse"];
+                };
+            };
+            /** @description Akses berkas ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_presigned_url_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Dokumen Berkas */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description URL akses berkas berumur pendek */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresignedUrlResponse"];
+                };
+            };
+            /** @description Berkas tidak ditemukan */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_dashboard_summary_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ringkasan data dashboard calon mahasiswa */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardSummaryResponse"];
+                };
+            };
+        };
+    };
+    get_fields_handler: {
+        parameters: {
+            query?: {
+                /** @description Filter berdasarkan Jalur Pendaftaran */
+                jalur_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar definisi field form aktif */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinisiField"][];
+                };
+            };
+        };
+    };
+    finalisasi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Finalisasi pendaftaran berhasil */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Berkas wajib belum diunggah */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_langkah_progress_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Progress alur langkah pendaftaran calon */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LangkahProgressItem"][];
+                };
+            };
+        };
+    };
+    get_my_pendaftaran_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detail formulir pendaftaran pendaftar aktif */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendaftarDetailResponse"];
+                };
+            };
+            /** @description Belum login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Belum ada formulir pendaftaran */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    pilih_prodi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PilihProdiRequest"];
+            };
+        };
+        responses: {
+            /** @description Pemilihan Program Studi berhasil disimpan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendaftarDetailResponse"];
+                };
+            };
+            /** @description Validasi gagal atau kuota penuh */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    submit_akademik_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitAkademikRequest"];
+            };
+        };
+        responses: {
+            /** @description Data akademik berhasil disimpan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendaftarDetailResponse"];
+                };
+            };
+            /** @description Validasi data gagal */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    submit_biodata_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitBiodataRequest"];
+            };
+        };
+        responses: {
+            /** @description Biodata berhasil disimpan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendaftarDetailResponse"];
+                };
+            };
+            /** @description Validasi data gagal */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    submit_formulir_dinamis_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitDinamisRequest"];
+            };
+        };
+        responses: {
+            /** @description Formulir biodata berhasil disimpan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendaftarDetailResponse"];
+                };
+            };
+            /** @description Validasi data gagal */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    upload_berkas_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadBerkasRequest"];
+            };
+        };
+        responses: {
+            /** @description Berkas berhasil diunggah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BerkasResponse"];
+                };
+            };
+            /** @description Format atau ukuran berkas tidak valid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    cetak_bukti_pendaftaran_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Pendaftar */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dokumen PDF Bukti Pendaftaran */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
+                };
+            };
+            /** @description Tidak berhak mengakses dokumen ini */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Pendaftar tidak ditemukan */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    cetak_kartu_peserta_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Pendaftar */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dokumen PDF Kartu Peserta Ujian */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
+                };
+            };
+            /** @description Tidak berhak mengakses dokumen ini */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Pendaftar tidak ditemukan */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    assign_asesor_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Permohonan RPL */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignAsesorRequest"];
+            };
+        };
+        responses: {
+            /** @description Asesor berhasil ditugaskan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RplPermohonanDetailResponse"];
+                };
+            };
+            /** @description Asesor tidak valid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden (bukan admin) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_laporan_rpl_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Permohonan RPL */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Data laporan Berita Acara Rekognisi RPL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LaporanRplResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    export_laporan_csv_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Permohonan RPL */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description File CSV Berita Acara Rekognisi RPL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_all_mata_kuliah_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar semua mata kuliah kurikulum */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MataKuliah"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    create_mata_kuliah_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMataKuliahRequest"];
+            };
+        };
+        responses: {
+            /** @description Mata kuliah berhasil ditambahkan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MataKuliah"];
+                };
+            };
+            /** @description Validasi gagal */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_mata_kuliah_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Mata Kuliah */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMataKuliahRequest"];
+            };
+        };
+        responses: {
+            /** @description Mata kuliah berhasil diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MataKuliah"];
+                };
+            };
+            /** @description Validasi gagal */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_permohonan_handler: {
+        parameters: {
+            query?: {
+                prodi_id?: string | null;
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar permohonan RPL (terfilter untuk asesor) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RplItemRekapDto"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_permohonan_detail_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Permohonan RPL */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detail lengkap permohonan RPL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RplPermohonanDetailResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden (asesor tidak berwenang) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    submit_penilaian_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Permohonan RPL */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitPenilaianRplRequest"];
+            };
+        };
+        responses: {
+            /** @description Penilaian berhasil disimpan / difinalisasi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RplPermohonanDetailResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden (bukan asesor yang ditugaskan) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_mata_kuliah_by_prodi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID Program Studi */
+                prodi_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar mata kuliah kurikulum program studi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MataKuliah"][];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_my_permohonan_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detail permohonan RPL milik calon mahasiswa login */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RplPermohonanDetailResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Pendaftar tidak ditemukan */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    submit_permohonan_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitRplPermohonanRequest"];
+            };
+        };
+        responses: {
+            /** @description Permohonan RPL berhasil disimpan atau diajukan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RplPermohonanDetailResponse"];
+                };
+            };
+            /** @description Validasi gagal */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
 }

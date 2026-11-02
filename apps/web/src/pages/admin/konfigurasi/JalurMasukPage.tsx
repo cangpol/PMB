@@ -129,6 +129,7 @@ export const JalurMasukPage: React.FC = () => {
     try {
       if (editingJalur) {
         const updatePayload: UpdateJalurKonfigurasiRequest = {
+          kode_jalur: form.kode_jalur,
           nama_jalur: form.nama_jalur,
           deskripsi: form.deskripsi,
           biaya_formulir: form.biaya_formulir,

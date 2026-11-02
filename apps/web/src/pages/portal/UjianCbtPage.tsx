@@ -101,7 +101,7 @@ export const UjianCbtPage: React.FC = () => {
         method: "POST",
       });
 
-      const rawSoal = (res as any).daftar_soal || res.soal || [];
+      const rawSoal = res.daftar_soal || [];
       setSoalList(rawSoal);
       setSisaDetik(res.sisa_detik);
 
@@ -360,7 +360,7 @@ export const UjianCbtPage: React.FC = () => {
                 Dijawab
               </p>
               <p className="text-xl font-bold text-biru-600">
-                {hasilUjian?.total_dijawab || sesiInfo?.total_dijawab || "-"}
+                {hasilUjian?.total_dijawab ?? "-"}
               </p>
             </div>
             <div>
@@ -420,9 +420,9 @@ export const UjianCbtPage: React.FC = () => {
               {/* Detail Sesi Ujian */}
               <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-3 text-sm mb-6">
                 <div className="flex justify-between border-b border-slate-200 pb-2">
-                  <span className="text-slate-500">Nama Calon:</span>
+                  <span className="text-slate-500">Sesi Ujian:</span>
                   <span className="font-semibold text-biru-950">
-                    {sesiInfo.nama_peserta}
+                    {sesiInfo.nama_sesi || "Sesi CBT PMB"}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-slate-200 pb-2">

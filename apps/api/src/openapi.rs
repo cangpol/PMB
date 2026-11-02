@@ -34,6 +34,8 @@ use crate::{
         // Master
         list_prodi_handler,
         get_prodi_handler,
+        get_prodi_by_slug_handler,
+        list_fakultas_prodi_handler,
         list_jalur_handler,
         list_gelombang_handler,
         // Pendaftaran
@@ -220,6 +222,7 @@ use crate::{
             GenericMessageResponse,
             // Master
             ProdiResponse,
+            FakultasWithProdiResponse,
             CreateProdiRequest,
             JalurResponse,
             GelombangResponse,

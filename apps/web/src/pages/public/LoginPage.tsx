@@ -181,7 +181,7 @@ export const LoginPage: React.FC = () => {
           <button
             type="button"
             onClick={() =>
-              fillCredentials("maba@triputra.id", "Pignatelli2026!")
+              fillCredentials("calon@triputra.id", "Pignatelli2026!")
             }
             className="flex flex-col items-center justify-center p-2 rounded-lg border border-biru-200 bg-putih text-biru-900 hover:bg-biru-100 transition-colors text-center"
           >

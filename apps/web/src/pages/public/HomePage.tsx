@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "motion/react";
@@ -8,22 +8,35 @@ import {
   ArrowRight,
   Calendar,
   CheckCircle2,
-  Clock,
   BookOpen,
   Award,
   Briefcase,
   ChevronDown,
   ChevronRight,
+  BadgePercent,
+  Gift,
 } from "lucide-react";
 import { Button, Card, EmptyState } from "../../components/common";
 import { SeoHead } from "../../components/common/SeoHead";
+import {
+  STATISTIK_BERANDA,
+  HERO_CONTENT,
+  GELOMBANG_CONTENT,
+} from "../../content/beranda";
+import { getProdiList } from "../../services/prodi";
 import type { components } from "../../types/api";
 
 type CmsPost = components["schemas"]["CmsPostResponse"];
 type CmsFaq = components["schemas"]["CmsFaqResponse"];
 
-// Mock closing date gelombang aktif: 31 Juli 2026 (atau 30 hari ke depan)
-const GELOMBANG_TARGET_DATE = new Date("2026-07-31T23:59:59").getTime();
+interface MasterGelombangItem {
+  id: string;
+  nama_gelombang: string;
+  tgl_mulai: string;
+  tgl_selesai: string;
+  kuota: number;
+  is_active: boolean;
+}
 
 interface TimeLeft {
   days: number;
@@ -45,7 +58,40 @@ export const HomePage: React.FC = () => {
         transition: { duration: 0.45, ease: "easeOut" as const },
       };
 
-  // 1. Countdown Timer Gelombang Aktif
+  // 1. Fetch Gelombang Aktif dari API Master
+  const {
+    data: gelombangList,
+    isLoading: isGelombangLoading,
+    isError: isGelombangError,
+  } = useQuery<MasterGelombangItem[]>({
+    queryKey: ["master-gelombang-home"],
+    queryFn: async () => {
+      const res = await fetch("/api/master/gelombang");
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  const activeGelombang = useMemo(() => {
+    if (!gelombangList || gelombangList.length === 0) return null;
+    const now = Date.now();
+    return (
+      gelombangList.find((g) => {
+        const selesai = new Date(g.tgl_selesai).getTime();
+        return g.is_active && selesai > now;
+      }) || null
+    );
+  }, [gelombangList]);
+
+  // Target timestamp: jika ada gelombang aktif gunakan tgl_selesai-nya, jika tidak fallback ke 31 Juli 2026
+  const targetTimestamp = useMemo(() => {
+    if (activeGelombang?.tgl_selesai) {
+      return new Date(activeGelombang.tgl_selesai).getTime();
+    }
+    return new Date("2026-07-31T23:59:59").getTime();
+  }, [activeGelombang]);
+
+  const [isGelombangClosed, setIsGelombangClosed] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({
     days: 0,
     hours: 0,
@@ -55,21 +101,41 @@ export const HomePage: React.FC = () => {
 
   useEffect(() => {
     const updateCountdown = () => {
-      const now = new Date().getTime();
-      const difference = Math.max(0, GELOMBANG_TARGET_DATE - now);
+      const now = Date.now();
+      const difference = targetTimestamp - now;
 
-      setTimeLeft({
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((difference / 1000 / 60) % 60),
-        seconds: Math.floor((difference / 1000) % 60),
-      });
+      // State Berakhir: Jika waktu habis, error terjadi, atau tidak ada gelombang aktif
+      if (
+        difference <= 0 ||
+        isGelombangError ||
+        (!isGelombangLoading &&
+          !activeGelombang &&
+          gelombangList &&
+          gelombangList.length > 0)
+      ) {
+        setIsGelombangClosed(true);
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      } else {
+        setIsGelombangClosed(false);
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60),
+        });
+      }
     };
 
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [
+    targetTimestamp,
+    isGelombangLoading,
+    isGelombangError,
+    activeGelombang,
+    gelombangList,
+  ]);
 
   // 2. Fetch Berita / Pengumuman CMS
   const { data: postsData } = useQuery<CmsPost[]>({
@@ -94,15 +160,36 @@ export const HomePage: React.FC = () => {
   // 4. State FAQ Akordion
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
-  // 5. State Filter Program Studi
+  // 5. Query Daftar Program Studi untuk Statistik & Kalkulator Otomatis
+  const { data: prodiApiList = [] } = useQuery({
+    queryKey: ["public-prodi-list"],
+    queryFn: getProdiList,
+  });
+
+  const prodiCount = prodiApiList.length > 0 ? prodiApiList.length : 10;
+
+  const statistikDinamis = useMemo(() => {
+    return STATISTIK_BERANDA.map((item) => {
+      if (item.label.toLowerCase().includes("program studi")) {
+        return {
+          ...item,
+          nilai: `${prodiCount} Prodi`,
+        };
+      }
+      return item;
+    });
+  }, [prodiCount]);
+
+  // 6. State Filter Program Studi
   const [jenjangFilter, setJenjangFilter] = useState<string>("semua");
 
-  // 6. State Simulasi Kalkulator UKT
-  const [selectedProdi, setSelectedProdi] = useState<string>("S1-SD");
+  // 7. State Simulasi Kalkulator UKT
+  const [selectedProdi, setSelectedProdi] = useState<string>("S1-IF");
   const [selectedJalur, setSelectedJalur] = useState<string>("reguler");
   const [voucherCode, setVoucherCode] = useState<string>("TRIPUTRA2026");
   const [voucherApplied, setVoucherApplied] = useState<boolean>(true);
 
+  // 10 Program Studi Resmi Universitas Pignatelli Triputra
   const PRODI_DATA: Record<
     string,
     {
@@ -115,22 +202,13 @@ export const HomePage: React.FC = () => {
       dpp: number;
     }
   > = {
-    "S1-SD": {
-      nama: "Sains Data",
+    "S1-IF": {
+      nama: "Informatika",
       jenjang: "S1",
       fakultas: "Sains & Teknologi",
       akreditasi: "Baik Sekali",
-      uktMin: 5500000,
+      uktMin: 7000000,
       uktMax: 7000000,
-      dpp: 8000000,
-    },
-    "S1-TI": {
-      nama: "Teknologi Informasi",
-      jenjang: "S1",
-      fakultas: "Sains & Teknologi",
-      akreditasi: "Baik Sekali",
-      uktMin: 5000000,
-      uktMax: 6500000,
       dpp: 7500000,
     },
     "S1-SI": {
@@ -138,36 +216,81 @@ export const HomePage: React.FC = () => {
       jenjang: "S1",
       fakultas: "Sains & Teknologi",
       akreditasi: "Baik Sekali",
-      uktMin: 4800000,
-      uktMax: 6200000,
+      uktMin: 6500000,
+      uktMax: 6500000,
       dpp: 7000000,
     },
-    "S1-MN": {
+    "S1-SE": {
+      nama: "Software Engineering",
+      jenjang: "S1",
+      fakultas: "Sains & Teknologi",
+      akreditasi: "Baik",
+      uktMin: 7000000,
+      uktMax: 7000000,
+      dpp: 7500000,
+    },
+    "S1-MNJ": {
       nama: "Manajemen",
       jenjang: "S1",
-      fakultas: "Ekonomi & Bisnis",
-      akreditasi: "Unggul",
-      uktMin: 4500000,
-      uktMax: 6000000,
+      fakultas: "Ekonomika Bisnis",
+      akreditasi: "Baik Sekali",
+      uktMin: 5500000,
+      uktMax: 5500000,
       dpp: 6500000,
     },
-    "S1-AK": {
+    "S1-AKT": {
       nama: "Akuntansi",
       jenjang: "S1",
-      fakultas: "Ekonomi & Bisnis",
+      fakultas: "Ekonomika Bisnis",
       akreditasi: "Baik Sekali",
-      uktMin: 4500000,
+      uktMin: 6000000,
       uktMax: 6000000,
       dpp: 6500000,
     },
-    "D3-KP": {
-      nama: "Keuangan & Perbankan",
+    "S1-PAR": {
+      nama: "Pariwisata",
+      jenjang: "S1",
+      fakultas: "Sosial Humaniora",
+      akreditasi: "Baik",
+      uktMin: 5000000,
+      uktMax: 5000000,
+      dpp: 6000000,
+    },
+    "S1-BIG": {
+      nama: "Bahasa Inggris",
+      jenjang: "S1",
+      fakultas: "Sosial Humaniora",
+      akreditasi: "Baik",
+      uktMin: 5000000,
+      uktMax: 5000000,
+      dpp: 6000000,
+    },
+    "S1-K3": {
+      nama: "Keselamatan & Kesehatan Kerja (K3)",
+      jenjang: "S1",
+      fakultas: "Kesehatan",
+      akreditasi: "Baik",
+      uktMin: 6000000,
+      uktMax: 6000000,
+      dpp: 7000000,
+    },
+    "S1-FIS": {
+      nama: "Fisioterapi",
+      jenjang: "S1",
+      fakultas: "Kesehatan",
+      akreditasi: "Baik",
+      uktMin: 6500000,
+      uktMax: 6500000,
+      dpp: 7500000,
+    },
+    "D3-KEP": {
+      nama: "Keperawatan",
       jenjang: "D3",
-      fakultas: "Vokasi",
+      fakultas: "Kesehatan",
       akreditasi: "Baik Sekali",
-      uktMin: 3500000,
-      uktMax: 4800000,
-      dpp: 5000000,
+      uktMin: 5000000,
+      uktMax: 5000000,
+      dpp: 5500000,
     },
   };
 
@@ -176,7 +299,7 @@ export const HomePage: React.FC = () => {
     return prodi.jenjang === jenjangFilter;
   });
 
-  const currentProdi = PRODI_DATA[selectedProdi] || PRODI_DATA["S1-SD"];
+  const currentProdi = PRODI_DATA[selectedProdi] || PRODI_DATA["S1-IF"];
 
   // Perhitungan diskon & simulasi biaya formulir
   const biayaFormulir = 250000;
@@ -226,9 +349,9 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       {/* 1. HERO SECTION DENGAN ROYAL BLUE GRADIENT, POLA SVG, & COUNTDOWN */}
       {/* ========================================================================= */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-biru-950 via-biru-900 to-biru-800 text-putih py-16 sm:py-20 lg:py-24 border-b border-biru-800 shadow-soft-lg">
-        {/* Subtle Geometric SVG Pattern (Pure CSS/SVG, No Internet Images) */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
+      <section className="relative overflow-hidden bg-gradient-to-br from-biru-950 via-biru-900 to-biru-800 text-putih min-h-[calc(100dvh-var(--navbar-h,72px))] pt-8 sm:pt-12 pb-24 sm:pb-28 lg:pb-32 border-b border-biru-800 shadow-soft-lg flex items-center">
+        {/* Subtle Geometric SVG Pattern (Pure CSS/SVG, 4-5% Opacity) */}
+        <div className="absolute inset-0 opacity-[0.05] pointer-events-none">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <pattern
@@ -249,188 +372,301 @@ export const HomePage: React.FC = () => {
             <rect width="100%" height="100%" fill="url(#hero-grid-pattern)" />
           </svg>
         </div>
+
+        {/* Soft Radial Ambient Lighting */}
         <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-biru-600/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-biru-500/15 blur-3xl pointer-events-none" />
 
-        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Local Abstract Decorative SVG (Concentric Rings & Diamond Accent di Sisi Kanan) */}
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/4 w-[600px] h-[600px] pointer-events-none opacity-[0.08] hidden lg:block">
+          <svg
+            viewBox="0 0 600 600"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-full text-biru-300"
+          >
+            <circle
+              cx="300"
+              cy="300"
+              r="280"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeDasharray="6 6"
+            />
+            <circle
+              cx="300"
+              cy="300"
+              r="220"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+            <circle
+              cx="300"
+              cy="300"
+              r="160"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeDasharray="4 4"
+            />
+            <circle
+              cx="300"
+              cy="300"
+              r="100"
+              stroke="currentColor"
+              strokeWidth="1"
+            />
+            <rect
+              x="200"
+              y="200"
+              width="200"
+              height="200"
+              transform="rotate(45 300 300)"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+          </svg>
+        </div>
+
+        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-            {/* Teks Hero Utama */}
+            {/* Teks Hero Utama (Kiri) */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-biru-800/80 border border-biru-500/40 text-biru-100 text-xs font-semibold uppercase tracking-wider backdrop-blur-sm">
+              {/* Eyebrow Chip Konfigurasi */}
+              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-biru-800/80 border border-biru-500/40 text-biru-100 text-xs font-semibold uppercase tracking-wider backdrop-blur-sm shadow-soft-sm">
                 <Sparkles className="w-3.5 h-3.5 text-biru-300" />
-                <span>
-                  Penerimaan Mahasiswa Baru T.A. 2026/2027 Resmi Dibuka
-                </span>
+                <span>{HERO_CONTENT.eyebrow}</span>
               </div>
 
-              <h1 className="font-serif text-3.5xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-putih leading-[1.14]">
-                Membangun Pemimpin Unggul bersama{" "}
-                <span className="text-biru-200 underline decoration-biru-400 decoration-wavy decoration-1 underline-offset-8">
-                  Universitas Pignatelli Triputra
+              {/* H1 Serif Bersih (Tanpa Wavy Underline) */}
+              <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-putih leading-[1.12] max-w-2xl">
+                {HERO_CONTENT.judulUtama}{" "}
+                <span className="text-biru-200">
+                  {HERO_CONTENT.kampusSorot}
                 </span>
               </h1>
 
-              <p className="text-base sm:text-lg text-biru-100 leading-relaxed font-sans max-w-2xl">
-                Wujudkan masa depan gemilang dengan pendidikan tinggi
-                berkarakter, fasilitas modern, dan jalur karier langsung bersama
-                jejaring industri strategis <strong>Triputra Group</strong>.
+              {/* Paragraf Keterangan: Sans, 18px, Line-height 1.7, Letter-spacing 0 */}
+              <p className="text-base sm:text-lg text-biru-100 leading-[1.7] font-sans tracking-normal max-w-[56ch]">
+                {HERO_CONTENT.deskripsi}
+                <strong className="text-putih font-semibold">
+                  {HERO_CONTENT.mitraIndustri}
+                </strong>
+                .
               </p>
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <Link to="/register">
+              {/* Action Buttons (Kontras Tinggi, Mobile Full Width Stacked) */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+                <Link to={HERO_CONTENT.ctaPrimer.href} className="w-full sm:w-auto">
                   <Button
-                    variant="primary"
+                    variant="white"
                     size="lg"
-                    className="shadow-soft-md bg-putih text-biru-950 hover:bg-biru-50 font-bold"
+                    className="w-full sm:w-auto h-[52px] px-7 text-sm sm:text-base font-bold shadow-soft-md"
                     rightIcon={<ArrowRight className="w-4 h-4 text-biru-900" />}
                   >
-                    Daftar Sekarang
+                    {HERO_CONTENT.ctaPrimer.label}
                   </Button>
                 </Link>
-                <Link to="/jalur-masuk">
+                <Link to={HERO_CONTENT.ctaSekunder.href} className="w-full sm:w-auto">
                   <Button
-                    variant="outline"
+                    variant="outline-white"
                     size="lg"
-                    className="border-biru-300 text-putih hover:bg-biru-800/60 font-semibold"
+                    className="w-full sm:w-auto h-[52px] px-7 text-sm sm:text-base font-semibold"
                   >
-                    Pelajari Jalur Masuk
+                    {HERO_CONTENT.ctaSekunder.label}
                   </Button>
                 </Link>
-                <Link to="/cek-kelulusan">
+                <Link to={HERO_CONTENT.ctaKelulusan.href} className="w-full sm:w-auto">
                   <Button
                     variant="ghost"
                     size="lg"
-                    className="text-biru-200 hover:text-putih hover:bg-biru-800/40 font-medium"
+                    className="w-full sm:w-auto h-[52px] text-biru-200 hover:text-putih hover:bg-biru-800/40 text-sm sm:text-base font-medium"
                     leftIcon={
                       <GraduationCap className="w-4 h-4 text-biru-300" />
                     }
                   >
-                    Cek Kelulusan
+                    {HERO_CONTENT.ctaKelulusan.label}
                   </Button>
                 </Link>
               </div>
-
-              {/* 4 Metrik Statistik Cepat */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-biru-800/80">
-                <div className="rounded-xl bg-biru-950/60 border border-biru-800/80 p-3">
-                  <div className="font-mono text-xl sm:text-2xl font-extrabold text-putih tabular-nums">
-                    100%
-                  </div>
-                  <div className="text-[11px] text-biru-300 mt-0.5">
-                    Beasiswa Kemitraan
-                  </div>
-                </div>
-                <div className="rounded-xl bg-biru-950/60 border border-biru-800/80 p-3">
-                  <div className="font-mono text-xl sm:text-2xl font-extrabold text-putih tabular-nums">
-                    6 Prodi
-                  </div>
-                  <div className="text-[11px] text-biru-300 mt-0.5">
-                    Terakreditasi Baik Sekali
-                  </div>
-                </div>
-                <div className="rounded-xl bg-biru-950/60 border border-biru-800/80 p-3">
-                  <div className="font-mono text-xl sm:text-2xl font-extrabold text-putih tabular-nums">
-                    3x Cicilan
-                  </div>
-                  <div className="text-[11px] text-biru-300 mt-0.5">
-                    Opsi UKT Fleksibel
-                  </div>
-                </div>
-                <div className="rounded-xl bg-biru-950/60 border border-biru-800/80 p-3">
-                  <div className="font-mono text-xl sm:text-2xl font-extrabold text-putih tabular-nums">
-                    94%
-                  </div>
-                  <div className="text-[11px] text-biru-300 mt-0.5">
-                    Keterserapan Industri
-                  </div>
-                </div>
-              </div>
             </div>
 
-            {/* Countdown Box & Card Gelombang */}
+            {/* Countdown Box & Card Gelombang (Kanan - Glass Card) */}
             <div className="lg:col-span-5">
-              <div className="rounded-2xl border border-biru-700/60 bg-biru-900/90 backdrop-blur-md p-6 sm:p-8 shadow-soft-lg space-y-6">
-                <div className="flex items-center justify-between border-b border-biru-800 pb-4">
+              <div className="rounded-[20px] border border-biru-700/50 bg-biru-900/60 backdrop-blur-md p-6 sm:p-8 shadow-soft-lg space-y-6">
+                <div className="flex items-center justify-between border-b border-biru-800/80 pb-4">
                   <div>
                     <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-biru-500/20 text-biru-200 border border-biru-400/30 mb-1">
-                      Gelombang 1
+                      {activeGelombang?.nama_gelombang
+                        ? activeGelombang.nama_gelombang.replace(
+                            /\[CONTOH\]\s*/i,
+                            "",
+                          )
+                        : GELOMBANG_CONTENT.badgeDefault}
                     </span>
                     <h2 className="font-serif text-xl font-bold text-putih">
-                      Early Bird Admissions
+                      {GELOMBANG_CONTENT.judulDefault}
                     </h2>
                   </div>
-                  <Calendar className="w-6 h-6 text-biru-300" />
+                  <BadgePercent className="w-6 h-6 text-biru-300" />
                 </div>
 
-                <div className="space-y-1.5">
-                  <p className="text-xs text-biru-200 font-medium">
-                    Batas Akhir Pendaftaran & Verifikasi:
-                  </p>
-                  <p className="text-sm font-semibold text-putih">
-                    Jumat, 31 Juli 2026 &bull; 23:59 WIB
-                  </p>
-                </div>
+                {/* State Gelombang Loading */}
+                {isGelombangLoading ? (
+                  <div className="py-8 text-center space-y-3">
+                    <div className="h-8 w-3/4 mx-auto rounded-lg bg-biru-800/60 animate-pulse" />
+                    <div className="h-4 w-1/2 mx-auto rounded bg-biru-800/40 animate-pulse" />
+                  </div>
+                ) : isGelombangClosed ? (
+                  /* STATE BERAKHIR / DITUTUP: Tidak menampilkan 00:00:00:00 */
+                  <div className="space-y-4">
+                    <div className="rounded-xl border border-biru-700/80 bg-biru-950/80 p-4 space-y-2 text-center">
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-800 text-biru-200 border border-biru-700">
+                        {GELOMBANG_CONTENT.stateDitutup.badge}
+                      </span>
+                      <h3 className="font-serif text-lg font-bold text-putih">
+                        {GELOMBANG_CONTENT.stateDitutup.judul}
+                      </h3>
+                      <p className="text-xs text-biru-200 leading-relaxed">
+                        {GELOMBANG_CONTENT.stateDitutup.subjudul}
+                      </p>
+                    </div>
 
-                {/* Counter Grid Tabular */}
-                <div className="grid grid-cols-4 gap-2.5 text-center">
-                  <div className="rounded-xl bg-biru-950/80 border border-biru-800 p-2.5">
-                    <span className="font-mono text-2xl sm:text-3xl font-extrabold text-putih tabular-nums">
-                      {String(timeLeft.days).padStart(2, "0")}
-                    </span>
-                    <span className="block text-[10px] uppercase tracking-wider text-biru-300 mt-0.5">
-                      Hari
-                    </span>
-                  </div>
-                  <div className="rounded-xl bg-biru-950/80 border border-biru-800 p-2.5">
-                    <span className="font-mono text-2xl sm:text-3xl font-extrabold text-putih tabular-nums">
-                      {String(timeLeft.hours).padStart(2, "0")}
-                    </span>
-                    <span className="block text-[10px] uppercase tracking-wider text-biru-300 mt-0.5">
-                      Jam
-                    </span>
-                  </div>
-                  <div className="rounded-xl bg-biru-950/80 border border-biru-800 p-2.5">
-                    <span className="font-mono text-2xl sm:text-3xl font-extrabold text-putih tabular-nums">
-                      {String(timeLeft.minutes).padStart(2, "0")}
-                    </span>
-                    <span className="block text-[10px] uppercase tracking-wider text-biru-300 mt-0.5">
-                      Menit
-                    </span>
-                  </div>
-                  <div className="rounded-xl bg-biru-950/80 border border-biru-800 p-2.5">
-                    <span className="font-mono text-2xl sm:text-3xl font-extrabold text-biru-300 animate-pulse tabular-nums">
-                      {String(timeLeft.seconds).padStart(2, "0")}
-                    </span>
-                    <span className="block text-[10px] uppercase tracking-wider text-biru-300 mt-0.5">
-                      Detik
-                    </span>
-                  </div>
-                </div>
+                    <div className="rounded-xl bg-biru-950/60 border border-biru-800/80 p-3.5 text-xs text-biru-200 flex items-center gap-2.5">
+                      <Calendar className="w-4 h-4 text-biru-400 shrink-0" />
+                      <span>{GELOMBANG_CONTENT.stateDitutup.jadwalBerikutnya}</span>
+                    </div>
 
-                <div className="rounded-xl bg-biru-950/60 border border-biru-800/80 p-3.5 text-xs text-biru-200 space-y-1">
-                  <div className="flex items-center gap-1.5 font-semibold text-putih">
-                    <Clock className="w-3.5 h-3.5 text-biru-400" />
-                    <span>Keuntungan Gelombang 1:</span>
+                    <Link
+                      to={GELOMBANG_CONTENT.stateDitutup.ctaHref}
+                      className="block"
+                    >
+                      <Button
+                        variant="white"
+                        className="w-full font-bold text-sm h-[48px]"
+                        rightIcon={
+                          <ArrowRight className="w-4 h-4 text-biru-900" />
+                        }
+                      >
+                        {GELOMBANG_CONTENT.stateDitutup.cta}
+                      </Button>
+                    </Link>
                   </div>
-                  <p>
-                    &bull; Potongan Dana Pengembangan Pendidikan (DPP) Rp
-                    2.000.000
-                  </p>
-                  <p>&bull; Peluang beasiswa kemitraan prioritas utama</p>
-                </div>
+                ) : (
+                  /* STATE GELOMBANG AKTIF DENGAN HITUNG MUNDUR SANS TABULAR-NUMS */
+                  <div className="space-y-5">
+                    <div className="space-y-1">
+                      <p className="text-xs text-biru-200 font-medium">
+                        {GELOMBANG_CONTENT.subjudulTarget}
+                      </p>
+                      <p className="text-sm font-semibold text-putih">
+                        {activeGelombang
+                          ? new Date(
+                              activeGelombang.tgl_selesai,
+                            ).toLocaleDateString("id-ID", {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            }) + " • 23:59 WIB"
+                          : "Jumat, 31 Juli 2026 • 23:59 WIB"}
+                      </p>
+                    </div>
 
-                <Link to="/register" className="block">
-                  <Button
-                    variant="primary"
-                    className="w-full bg-putih text-biru-950 hover:bg-biru-50 font-bold text-sm py-2.5"
-                    rightIcon={<ArrowRight className="w-4 h-4 text-biru-900" />}
-                  >
-                    Amankan Kuota Anda Sekarang
-                  </Button>
-                </Link>
+                    {/* Counter Grid Tabular (4 Kotak Berbobot Visual Sama, Font Sans) */}
+                    <div className="grid grid-cols-4 gap-2.5 text-center">
+                      <div className="rounded-xl bg-biru-950/80 border border-biru-800 p-2.5">
+                        <span className="font-sans text-2xl sm:text-3xl font-extrabold text-putih tabular-nums block">
+                          {String(timeLeft.days).padStart(2, "0")}
+                        </span>
+                        <span className="block text-[10px] uppercase tracking-wider text-biru-300 mt-0.5">
+                          Hari
+                        </span>
+                      </div>
+                      <div className="rounded-xl bg-biru-950/80 border border-biru-800 p-2.5">
+                        <span className="font-sans text-2xl sm:text-3xl font-extrabold text-putih tabular-nums block">
+                          {String(timeLeft.hours).padStart(2, "0")}
+                        </span>
+                        <span className="block text-[10px] uppercase tracking-wider text-biru-300 mt-0.5">
+                          Jam
+                        </span>
+                      </div>
+                      <div className="rounded-xl bg-biru-950/80 border border-biru-800 p-2.5">
+                        <span className="font-sans text-2xl sm:text-3xl font-extrabold text-putih tabular-nums block">
+                          {String(timeLeft.minutes).padStart(2, "0")}
+                        </span>
+                        <span className="block text-[10px] uppercase tracking-wider text-biru-300 mt-0.5">
+                          Menit
+                        </span>
+                      </div>
+                      <div className="rounded-xl bg-biru-950/80 border border-biru-800 p-2.5">
+                        <span className="font-sans text-2xl sm:text-3xl font-extrabold text-putih tabular-nums block">
+                          {String(timeLeft.seconds).padStart(2, "0")}
+                        </span>
+                        <span className="block text-[10px] uppercase tracking-wider text-biru-300 mt-0.5">
+                          Detik
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Daftar Keuntungan dengan Ikon Centang Rapi */}
+                    <div className="rounded-xl bg-biru-950/60 border border-biru-800/80 p-3.5 text-xs text-biru-200 space-y-2">
+                      <div className="flex items-center gap-1.5 font-semibold text-putih">
+                        <Gift className="w-3.5 h-3.5 text-biru-400" />
+                        <span>{GELOMBANG_CONTENT.keuntunganJudul}</span>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {GELOMBANG_CONTENT.keuntunganList.map(
+                          (keuntungan, idx) => (
+                            <li
+                              key={idx}
+                              className="flex items-start gap-2 text-xs sm:text-[13px] text-biru-100 leading-relaxed"
+                            >
+                              <CheckCircle2 className="w-4 h-4 text-biru-400 shrink-0 mt-0.5" />
+                              <span>{keuntungan}</span>
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                    </div>
+
+                    <Link to="/register" className="block">
+                      <Button
+                        variant="white"
+                        className="w-full font-bold text-sm h-[48px]"
+                        rightIcon={
+                          <ArrowRight className="w-4 h-4 text-biru-900" />
+                        }
+                      >
+                        {GELOMBANG_CONTENT.ctaAktif}
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 2. STRIP STATISTIK MENGAMBANG (OVERLAP -MT-12 SM:-MT-14 BG-PUTIH SHADOW-SOFT-XL) */}
+      {/* ========================================================================= */}
+      <section className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 -mt-12 sm:-mt-14 relative z-20">
+        <div className="rounded-2xl border border-biru-100 bg-putih p-6 sm:p-8 shadow-soft-xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-biru-100 text-center">
+            {statistikDinamis.map((item, idx) => (
+              <div key={idx} className="p-3 sm:px-4">
+                <div className="font-sans text-2xl sm:text-3xl lg:text-4xl font-extrabold text-biru-950 tabular-nums tracking-tight">
+                  {item.nilai}
+                </div>
+                <div className="text-xs sm:text-sm font-semibold text-biru-900 mt-1">
+                  {item.label}
+                </div>
+                <div className="text-[11px] text-biru-600 mt-0.5">
+                  {item.deskripsi}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -736,7 +972,7 @@ export const HomePage: React.FC = () => {
 
                   <div className="pt-5 mt-4 border-t border-biru-100 flex items-center justify-between">
                     <Link
-                      to={`/prodi/${key}`}
+                      to={`/program-studi/${key.toLowerCase()}`}
                       className="text-xs font-bold text-biru-800 hover:text-biru-950 hover:underline inline-flex items-center gap-1"
                     >
                       Profil Lengkap
@@ -812,7 +1048,7 @@ export const HomePage: React.FC = () => {
               className="relative p-5 rounded-2xl border border-biru-200 bg-putih shadow-soft-sm hover:shadow-soft-md transition-all flex flex-col justify-between"
             >
               <div className="space-y-3">
-                <span className="font-mono text-3xl font-extrabold text-biru-200 block tabular-nums">
+                <span className="font-sans text-3xl font-extrabold text-biru-200 block tabular-nums">
                   {item.step}
                 </span>
                 <h3 className="font-serif text-lg font-bold text-biru-950">
@@ -973,7 +1209,7 @@ export const HomePage: React.FC = () => {
                 <div className="rounded-xl bg-biru-950/70 border border-biru-800 p-4 space-y-2.5 text-xs text-biru-200">
                   <div className="flex items-center justify-between">
                     <span>Biaya Formulir Pendaftaran:</span>
-                    <span className="font-mono text-sm text-putih font-semibold tabular-nums">
+                    <span className="font-sans text-sm text-putih font-semibold tabular-nums">
                       Rp {totalFormulir.toLocaleString("id-ID")}
                       {diskonFormulir > 0 && (
                         <span className="line-through text-biru-400 text-xs ml-2 tabular-nums">
@@ -984,14 +1220,14 @@ export const HomePage: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Estimasi UKT per Semester:</span>
-                    <span className="font-mono text-sm text-putih font-bold tabular-nums">
+                    <span className="font-sans text-sm text-putih font-bold tabular-nums">
                       Rp {currentProdi.uktMin.toLocaleString("id-ID")} &ndash;
                       Rp {currentProdi.uktMax.toLocaleString("id-ID")}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Dana Pengembangan Pendidikan (DPP):</span>
-                    <span className="font-mono text-sm text-putih font-semibold tabular-nums">
+                    <span className="font-sans text-sm text-putih font-semibold tabular-nums">
                       Rp {currentProdi.dpp.toLocaleString("id-ID")}
                       <span className="text-[11px] text-biru-400 ml-1.5">
                         (Hanya semester 1)
