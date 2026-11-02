@@ -43,23 +43,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("[1/9] Memverifikasi & menerapkan skema migrasi database...");
     sqlx::migrate!("./migrations").run(&pool).await?;
 
-    // 2. Seeding Data Pengguna Default
-    println!("[2/9] Melakukan seeding akun pengguna default (Admin & Calon)...");
+    // 2. Seeding Data Pengguna Default (Termasuk Akun Cepat Login)
+    println!("[2/9] Melakukan seeding akun pengguna default (Super Admin, Admin, Staf & Calon)...");
+    let pignatelli_pass_hash = hash_password_seed("Pignatelli2026!");
     let admin_pass_hash = hash_password_seed("AdminUPT2026!");
+    let superadmin_pass_hash = hash_password_seed("SuperAdminUPT2026!");
     let calon_pass_hash = hash_password_seed("CalonUPT2026!");
 
     sqlx::query(
         r#"
-        INSERT INTO users (email, password_hash, role, nama_lengkap, no_hp, is_active)
+        INSERT INTO users (email, password_hash, role, nama_lengkap, no_hp, is_active, is_email_verified)
         VALUES 
-            ('admin@pignatelli.ac.id', $1, 'admin_pmb', 'Administrator PMB UPT', '081122334455', TRUE),
-            ('calon@pignatelli.ac.id', $2, 'calon_mahasiswa', 'Yohanes Baptista Pratama', '081234567890', TRUE)
+            -- Akun Standar Demo UI (Pignatelli2026!)
+            ('superadmin@triputra.id', $1, 'super_admin', 'Super Administrator Triputra', '081100000001', TRUE, TRUE),
+            ('admin@triputra.id', $1, 'admin_pmb', 'Administrator PMB Triputra', '081100000002', TRUE, TRUE),
+            ('keuangan@triputra.id', $1, 'keuangan', 'Staf Keuangan PMB', '081100000003', TRUE, TRUE),
+            ('pengawas@triputra.id', $1, 'pengawas_ujian', 'Pengawas Ujian CBT PMB', '081100000004', TRUE, TRUE),
+            ('asesor@triputra.id', $1, 'asesor_rpl', 'Asesor Program RPL PMB', '081100000005', TRUE, TRUE),
+            ('calon@triputra.id', $1, 'calon_mahasiswa', 'Calon Mahasiswa Demo', '081100000006', TRUE, TRUE),
+            -- Akun Domain Resmi Institusi
+            ('superadmin@pignatelli.ac.id', $2, 'super_admin', 'Super Administrator UPT', '081100000011', TRUE, TRUE),
+            ('superadmin@upitra.ac.id', $2, 'super_admin', 'Super Administrator UPITRA', '081100000012', TRUE, TRUE),
+            ('admin@pignatelli.ac.id', $3, 'admin_pmb', 'Administrator PMB UPT', '081122334455', TRUE, TRUE),
+            ('calon@pignatelli.ac.id', $4, 'calon_mahasiswa', 'Yohanes Baptista Pratama', '081234567890', TRUE, TRUE)
         ON CONFLICT (email) DO UPDATE 
         SET nama_lengkap = EXCLUDED.nama_lengkap,
             password_hash = EXCLUDED.password_hash,
+            role = EXCLUDED.role,
+            is_active = TRUE,
+            is_email_verified = TRUE,
             updated_at = NOW();
         "#,
     )
+    .bind(&pignatelli_pass_hash)
+    .bind(&superadmin_pass_hash)
     .bind(&admin_pass_hash)
     .bind(&calon_pass_hash)
     .execute(&pool)
@@ -181,7 +198,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "[CONTOH] Jalur Reguler Prestasi (RAPOR)",
             "Seleksi berkas nilai rapor semester 1-5 tanpa tes tertulis",
             250000i64,
-            "berkas",
+            "BERKAS",
             "Nilai rata-rata rapor semester 1-5 minimal 75.0",
         ),
         (
@@ -189,7 +206,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "[CONTOH] Jalur Mandiri Tes CBT Online",
             "Ujian Computer-Based Testing potensi akademik & bahasa Inggris",
             250000i64,
-            "cbt",
+            "CBT",
             "Mengikuti ujian CBT online 60 menit dengan nilai ambang batas",
         ),
         (
@@ -197,7 +214,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "[CONTOH] Jalur Beasiswa Triputra Peduli",
             "Program beasiswa penuh biaya kuliah dari Yayasan Triputra",
             0i64,
-            "campuran",
+            "CAMPURAN",
             "Seleksi berkas prestasi akademik/non-akademik + tes wawancara",
         ),
         (
@@ -205,7 +222,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "[CONTOH] Jalur Rekognisi Pembelajaran Lampau (RPL)",
             "Pengakuan pengalaman kerja atau alih jenjang D3 ke S1",
             350000i64,
-            "rpl",
+            "RPL",
             "Portofolio pengalaman kerja minimal 2 tahun atau transkrip D3",
         ),
     ];
@@ -233,17 +250,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 6. Seeding Gelombang Pendaftaran & Kuota Gelombang [CONTOH]
     println!("[6/9] Melakukan seeding Gelombang Pendaftaran & Kuota Prodi [CONTOH]...");
-    let gelombang_id = sqlx::query_scalar::<_, Uuid>(
+    let gelombang_row = sqlx::query_scalar::<_, Uuid>(
         r#"
         INSERT INTO gelombang (nama_gelombang, tahun_akademik_id, nomor_gelombang, status, tgl_mulai, tgl_selesai, kuota, is_active)
-        VALUES ('[CONTOH] Gelombang I (Early Bird)', $1, 1, 'buka', NOW() - INTERVAL '7 days', NOW() + INTERVAL '60 days', 150, TRUE)
-        ON CONFLICT (nomor_gelombang) DO UPDATE SET nama_gelombang = EXCLUDED.nama_gelombang, tahun_akademik_id = EXCLUDED.tahun_akademik_id
+        SELECT '[CONTOH] Gelombang I (Early Bird)', $1, 1, 'DIBUKA', NOW() - INTERVAL '7 days', NOW() + INTERVAL '60 days', 150, TRUE
+        WHERE NOT EXISTS (SELECT 1 FROM gelombang WHERE nama_gelombang = '[CONTOH] Gelombang I (Early Bird)')
         RETURNING id;
         "#,
     )
     .bind(ta_id)
-    .fetch_one(&pool)
+    .fetch_optional(&pool)
     .await?;
+
+    let gelombang_id = match gelombang_row {
+        Some(id) => id,
+        None => {
+            sqlx::query_scalar::<_, Uuid>(
+                "SELECT id FROM gelombang WHERE nama_gelombang = '[CONTOH] Gelombang I (Early Bird)' LIMIT 1",
+            )
+            .fetch_one(&pool)
+            .await?
+        }
+    };
 
     for p_id in &prodi_ids {
         sqlx::query(

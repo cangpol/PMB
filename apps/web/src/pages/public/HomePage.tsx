@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { motion, useReducedMotion } from "motion/react";
 import {
   GraduationCap,
   Sparkles,
@@ -12,10 +13,9 @@ import {
   Award,
   Briefcase,
   ChevronDown,
-  ShieldCheck,
   ChevronRight,
 } from "lucide-react";
-import { Button, Card } from "../../components/common";
+import { Button, Card, EmptyState } from "../../components/common";
 import { SeoHead } from "../../components/common/SeoHead";
 import type { components } from "../../types/api";
 
@@ -33,6 +33,18 @@ interface TimeLeft {
 }
 
 export const HomePage: React.FC = () => {
+  const shouldReduceMotion = useReducedMotion();
+
+  // Motion wrapper props honoring prefers-reduced-motion
+  const motionSectionProps = shouldReduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 16 },
+        whileInView: { opacity: 1, y: 0 },
+        viewport: { once: true, margin: "-40px" },
+        transition: { duration: 0.45, ease: "easeOut" as const },
+      };
+
   // 1. Countdown Timer Gelombang Aktif
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({
     days: 0,
@@ -82,7 +94,10 @@ export const HomePage: React.FC = () => {
   // 4. State FAQ Akordion
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
-  // 5. State Simulasi Kalkulator UKT
+  // 5. State Filter Program Studi
+  const [jenjangFilter, setJenjangFilter] = useState<string>("semua");
+
+  // 6. State Simulasi Kalkulator UKT
   const [selectedProdi, setSelectedProdi] = useState<string>("S1-SD");
   const [selectedJalur, setSelectedJalur] = useState<string>("reguler");
   const [voucherCode, setVoucherCode] = useState<string>("TRIPUTRA2026");
@@ -156,6 +171,11 @@ export const HomePage: React.FC = () => {
     },
   };
 
+  const filteredProdiList = Object.entries(PRODI_DATA).filter(([, prodi]) => {
+    if (jenjangFilter === "semua") return true;
+    return prodi.jenjang === jenjangFilter;
+  });
+
   const currentProdi = PRODI_DATA[selectedProdi] || PRODI_DATA["S1-SD"];
 
   // Perhitungan diskon & simulasi biaya formulir
@@ -166,32 +186,84 @@ export const HomePage: React.FC = () => {
       : 0;
   const totalFormulir = biayaFormulir - diskonFormulir;
 
+  // Jadwal Timeline Gelombang
+  const GELOMBANG_SCHEDULE = [
+    {
+      nama: "Gelombang 1 (Early Bird)",
+      periode: "1 Januari – 31 Juli 2026",
+      status: "Dibuka Sekarang",
+      statusBadge: "bg-biru-100 text-biru-950 border-biru-300 font-bold",
+      highlight:
+        "Potongan DPP Rp 2.000.000 & kuota beasiswa kemitraan prioritas utama.",
+      tahap: "Pendaftaran, verifikasi berkas, dan ujian CBT fleksibel.",
+    },
+    {
+      nama: "Gelombang 2 (Reguler & Prestasi)",
+      periode: "1 Agustus – 31 Agustus 2026",
+      status: "Segera Dibuka",
+      statusBadge: "bg-biru-50 text-biru-800 border-biru-200 font-semibold",
+      highlight: "Seleksi berbasis CBT online dan evaluasi prestasi rapor.",
+      tahap: "Ujian CBT mingguan dengan pengumuman hasil berkala.",
+    },
+    {
+      nama: "Gelombang 3 (Mandiri & Jalur RPL)",
+      periode: "1 September – 15 September 2026",
+      status: "Mendatang",
+      statusBadge: "bg-putih text-biru-700 border-biru-200 font-medium",
+      highlight:
+        "Pengisian kuota akhir prodi dan asesmen portofolio praktisi RPL.",
+      tahap: "Sidang kelulusan final dan penerbitan NIM serentak.",
+    },
+  ];
+
   return (
-    <div className="space-y-24 pb-20">
+    <div className="space-y-20 lg:space-y-28">
       <SeoHead
         title="PMB UPITRA 2026/2027 | Universitas Pignatelli Triputra"
         description="Penerimaan Mahasiswa Baru Universitas Pignatelli Triputra Surakarta. Tersedia Jalur Reguler, Prestasi Rapor, Beasiswa Triputra Group, dan Jalur RPL."
       />
 
       {/* ========================================================================= */}
-      {/* 1. HERO SECTION DENGAN ROYAL BLUE GRADIENT & COUNTDOWN */}
+      {/* 1. HERO SECTION DENGAN ROYAL BLUE GRADIENT, POLA SVG, & COUNTDOWN */}
       {/* ========================================================================= */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-biru-950 via-biru-900 to-biru-800 text-putih py-20 lg:py-28 border-b border-biru-800 shadow-soft-lg">
-        {/* Subtle Background Elements */}
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-biru-950 via-biru-900 to-biru-800 text-putih py-16 sm:py-20 lg:py-24 border-b border-biru-800 shadow-soft-lg">
+        {/* Subtle Geometric SVG Pattern (Pure CSS/SVG, No Internet Images) */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern
+                id="hero-grid-pattern"
+                width="32"
+                height="32"
+                patternUnits="userSpaceOnUse"
+              >
+                <path
+                  d="M 32 0 L 0 0 0 32"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="0.75"
+                  className="text-putih"
+                />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#hero-grid-pattern)" />
+          </svg>
+        </div>
         <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-biru-600/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-biru-500/15 blur-3xl pointer-events-none" />
 
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Teks Hero */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+            {/* Teks Hero Utama */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-biru-800/80 border border-biru-500/40 text-biru-100 text-xs font-semibold uppercase tracking-wider backdrop-blur-sm">
+              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-biru-800/80 border border-biru-500/40 text-biru-100 text-xs font-semibold uppercase tracking-wider backdrop-blur-sm">
                 <Sparkles className="w-3.5 h-3.5 text-biru-300" />
-                <span>Penerimaan Mahasiswa Baru T.A. 2026/2027 Dibuka</span>
+                <span>
+                  Penerimaan Mahasiswa Baru T.A. 2026/2027 Resmi Dibuka
+                </span>
               </div>
 
-              <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-putih leading-[1.12]">
+              <h1 className="font-serif text-3.5xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-putih leading-[1.14]">
                 Membangun Pemimpin Unggul bersama{" "}
                 <span className="text-biru-200 underline decoration-biru-400 decoration-wavy decoration-1 underline-offset-8">
                   Universitas Pignatelli Triputra
@@ -200,13 +272,12 @@ export const HomePage: React.FC = () => {
 
               <p className="text-base sm:text-lg text-biru-100 leading-relaxed font-sans max-w-2xl">
                 Wujudkan masa depan gemilang dengan pendidikan tinggi
-                berkarakter, fasilitas laboratorium mutakhir, dan jalur karier
-                langsung bersama jejaring industri{" "}
-                <strong>Triputra Group</strong>.
+                berkarakter, fasilitas modern, dan jalur karier langsung bersama
+                jejaring industri strategis <strong>Triputra Group</strong>.
               </p>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3.5 pt-2">
+              <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Link to="/register">
                   <Button
                     variant="primary"
@@ -235,24 +306,44 @@ export const HomePage: React.FC = () => {
                       <GraduationCap className="w-4 h-4 text-biru-300" />
                     }
                   >
-                    Cek Hasil Kelulusan
+                    Cek Kelulusan
                   </Button>
                 </Link>
               </div>
 
-              {/* Keunggulan Ringkas */}
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-biru-800/80 text-xs text-biru-200">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-biru-400 shrink-0" />
-                  <span>Akreditasi Institusi Baik Sekali</span>
+              {/* 4 Metrik Statistik Cepat */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-biru-800/80">
+                <div className="rounded-xl bg-biru-950/60 border border-biru-800/80 p-3">
+                  <div className="font-mono text-xl sm:text-2xl font-extrabold text-putih tabular-nums">
+                    100%
+                  </div>
+                  <div className="text-[11px] text-biru-300 mt-0.5">
+                    Beasiswa Kemitraan
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Award className="w-4 h-4 text-biru-400 shrink-0" />
-                  <span>Beasiswa s.d. 100% UKT</span>
+                <div className="rounded-xl bg-biru-950/60 border border-biru-800/80 p-3">
+                  <div className="font-mono text-xl sm:text-2xl font-extrabold text-putih tabular-nums">
+                    6 Prodi
+                  </div>
+                  <div className="text-[11px] text-biru-300 mt-0.5">
+                    Terakreditasi Baik Sekali
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 text-biru-400 shrink-0" />
-                  <span>Kemitraan Industri Nyata</span>
+                <div className="rounded-xl bg-biru-950/60 border border-biru-800/80 p-3">
+                  <div className="font-mono text-xl sm:text-2xl font-extrabold text-putih tabular-nums">
+                    3x Cicilan
+                  </div>
+                  <div className="text-[11px] text-biru-300 mt-0.5">
+                    Opsi UKT Fleksibel
+                  </div>
+                </div>
+                <div className="rounded-xl bg-biru-950/60 border border-biru-800/80 p-3">
+                  <div className="font-mono text-xl sm:text-2xl font-extrabold text-putih tabular-nums">
+                    94%
+                  </div>
+                  <div className="text-[11px] text-biru-300 mt-0.5">
+                    Keterserapan Industri
+                  </div>
                 </div>
               </div>
             </div>
@@ -272,7 +363,7 @@ export const HomePage: React.FC = () => {
                   <Calendar className="w-6 h-6 text-biru-300" />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <p className="text-xs text-biru-200 font-medium">
                     Batas Akhir Pendaftaran & Verifikasi:
                   </p>
@@ -281,10 +372,10 @@ export const HomePage: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Counter Grid */}
+                {/* Counter Grid Tabular */}
                 <div className="grid grid-cols-4 gap-2.5 text-center">
                   <div className="rounded-xl bg-biru-950/80 border border-biru-800 p-2.5">
-                    <span className="font-mono text-2xl sm:text-3xl font-extrabold text-putih">
+                    <span className="font-mono text-2xl sm:text-3xl font-extrabold text-putih tabular-nums">
                       {String(timeLeft.days).padStart(2, "0")}
                     </span>
                     <span className="block text-[10px] uppercase tracking-wider text-biru-300 mt-0.5">
@@ -292,7 +383,7 @@ export const HomePage: React.FC = () => {
                     </span>
                   </div>
                   <div className="rounded-xl bg-biru-950/80 border border-biru-800 p-2.5">
-                    <span className="font-mono text-2xl sm:text-3xl font-extrabold text-putih">
+                    <span className="font-mono text-2xl sm:text-3xl font-extrabold text-putih tabular-nums">
                       {String(timeLeft.hours).padStart(2, "0")}
                     </span>
                     <span className="block text-[10px] uppercase tracking-wider text-biru-300 mt-0.5">
@@ -300,7 +391,7 @@ export const HomePage: React.FC = () => {
                     </span>
                   </div>
                   <div className="rounded-xl bg-biru-950/80 border border-biru-800 p-2.5">
-                    <span className="font-mono text-2xl sm:text-3xl font-extrabold text-putih">
+                    <span className="font-mono text-2xl sm:text-3xl font-extrabold text-putih tabular-nums">
                       {String(timeLeft.minutes).padStart(2, "0")}
                     </span>
                     <span className="block text-[10px] uppercase tracking-wider text-biru-300 mt-0.5">
@@ -308,7 +399,7 @@ export const HomePage: React.FC = () => {
                     </span>
                   </div>
                   <div className="rounded-xl bg-biru-950/80 border border-biru-800 p-2.5">
-                    <span className="font-mono text-2xl sm:text-3xl font-extrabold text-biru-300 animate-pulse">
+                    <span className="font-mono text-2xl sm:text-3xl font-extrabold text-biru-300 animate-pulse tabular-nums">
                       {String(timeLeft.seconds).padStart(2, "0")}
                     </span>
                     <span className="block text-[10px] uppercase tracking-wider text-biru-300 mt-0.5">
@@ -345,9 +436,12 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 2. RINGKASAN JALUR PENERIMAAN (4 JALUR MASUK) */}
+      {/* 2. RINGKASAN JALUR PENERIMAAN (RITME: BG-PUTIH) */}
       {/* ========================================================================= */}
-      <section className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
+      <motion.section
+        {...motionSectionProps}
+        className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8"
+      >
         <div className="text-center max-w-2xl mx-auto space-y-3 mb-12">
           <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-100 text-biru-800">
             Pilihan Jalur Masuk
@@ -356,8 +450,8 @@ export const HomePage: React.FC = () => {
             Jalur Penerimaan Sesuai Potensi Anda
           </h2>
           <p className="text-sm text-biru-700 leading-relaxed font-sans">
-            Tersedia berbagai pilihan jalur masuk dengan seleksi objektif,
-            fleksibel, serta fasilitas beasiswa prestasi.
+            Tersedia pilihan jalur seleksi yang objektif, transparan, dan
+            dilengkapi fasilitas beasiswa prestasi unggulan.
           </p>
         </div>
 
@@ -531,14 +625,17 @@ export const HomePage: React.FC = () => {
             </div>
           </Card>
         </div>
-      </section>
+      </motion.section>
 
       {/* ========================================================================= */}
-      {/* 3. PROGRAM STUDI UNGGULAN & AKREDITASI */}
+      {/* 3. PROGRAM STUDI DENGAN FILTER JENJANG (RITME: BG-BIRU-50/60) */}
       {/* ========================================================================= */}
-      <section className="bg-biru-50/70 py-16 border-y border-biru-100">
+      <motion.section
+        {...motionSectionProps}
+        className="bg-biru-50/60 py-16 border-y border-biru-100"
+      >
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
             <div>
               <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-200 text-biru-900 mb-2">
                 Fakultas & Jurusan
@@ -551,82 +648,124 @@ export const HomePage: React.FC = () => {
                 masa depan.
               </p>
             </div>
-            <Link to="/prodi">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs font-semibold"
+
+            {/* Filter Buttons Jenjang */}
+            <div className="flex items-center gap-2 self-start md:self-auto bg-putih p-1.5 rounded-xl border border-biru-200 shadow-soft-xs">
+              <button
+                type="button"
+                onClick={() => setJenjangFilter("semua")}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  jenjangFilter === "semua"
+                    ? "bg-biru-900 text-putih shadow-soft-xs"
+                    : "text-biru-800 hover:bg-biru-50"
+                }`}
               >
-                Lihat Seluruh Prodi (6) &rarr;
-              </Button>
-            </Link>
+                Semua Jenjang ({Object.keys(PRODI_DATA).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setJenjangFilter("S1")}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  jenjangFilter === "S1"
+                    ? "bg-biru-900 text-putih shadow-soft-xs"
+                    : "text-biru-800 hover:bg-biru-50"
+                }`}
+              >
+                Sarjana (S1)
+              </button>
+              <button
+                type="button"
+                onClick={() => setJenjangFilter("D3")}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  jenjangFilter === "D3"
+                    ? "bg-biru-900 text-putih shadow-soft-xs"
+                    : "text-biru-800 hover:bg-biru-50"
+                }`}
+              >
+                Diploma Tiga (D3)
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Object.entries(PRODI_DATA).map(([key, prodi]) => (
-              <Card
-                key={key}
-                className="p-6 bg-putih border-biru-200 hover:border-biru-400 hover:shadow-soft-md transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-biru-100 text-biru-900">
-                      {prodi.jenjang}
-                    </span>
-                    <span className="text-[11px] font-semibold text-biru-700 bg-biru-50 px-2 py-0.5 rounded border border-biru-200">
-                      Akreditasi: {prodi.akreditasi}
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="font-serif text-xl font-bold text-biru-950">
-                      {prodi.nama}
-                    </h3>
-                    <p className="text-xs text-biru-600 mt-0.5 font-medium">
-                      Fakultas {prodi.fakultas}
+          {filteredProdiList.length === 0 ? (
+            <div className="p-8 rounded-2xl bg-putih border border-biru-200">
+              <EmptyState
+                title="Program Studi Tidak Ditemukan"
+                description="Tidak ada program studi yang cocok dengan filter jenjang yang Anda pilih."
+                actionLabel="Tampilkan Semua Jenjang"
+                onAction={() => setJenjangFilter("semua")}
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProdiList.map(([key, prodi]) => (
+                <Card
+                  key={key}
+                  className="p-6 bg-putih border-biru-200 hover:border-biru-400 hover:shadow-soft-md transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-biru-100 text-biru-900">
+                        {prodi.jenjang}
+                      </span>
+                      <span className="text-[11px] font-semibold text-biru-800 bg-biru-50 px-2 py-0.5 rounded border border-biru-200">
+                        Akreditasi: {prodi.akreditasi}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="font-serif text-xl font-bold text-biru-950">
+                        {prodi.nama}
+                      </h3>
+                      <p className="text-xs text-biru-600 mt-0.5 font-medium">
+                        Fakultas {prodi.fakultas}
+                      </p>
+                    </div>
+                    <p className="text-xs text-biru-700 leading-relaxed">
+                      Mempersiapkan lulusan berdaya saing dengan kompetensi
+                      praktis, sertifikasi profesional, dan bimbingan praktisi
+                      Triputra.
                     </p>
+                    <div className="pt-2 text-xs border-t border-biru-100 flex items-center justify-between text-biru-800">
+                      <span>Estimasi UKT:</span>
+                      <span className="font-semibold text-biru-950 tabular-nums">
+                        Rp {(prodi.uktMin / 1000000).toFixed(1)} &ndash;{" "}
+                        {(prodi.uktMax / 1000000).toFixed(1)} Jt / smt
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-xs text-biru-700 leading-relaxed">
-                    Mempersiapkan lulusan berdaya saing dengan kompetensi
-                    praktis, sertifikasi internasional, dan bimbingan praktisi
-                    Triputra.
-                  </p>
-                  <div className="pt-2 text-xs border-t border-biru-100 flex items-center justify-between text-biru-800">
-                    <span>Estimasi UKT:</span>
-                    <span className="font-semibold text-biru-950">
-                      Rp {(prodi.uktMin / 1000000).toFixed(1)} &ndash;{" "}
-                      {(prodi.uktMax / 1000000).toFixed(1)} Jt / smt
-                    </span>
-                  </div>
-                </div>
 
-                <div className="pt-5 mt-4 border-t border-biru-100 flex items-center justify-between">
-                  <Link
-                    to={`/prodi/${key}`}
-                    className="text-xs font-bold text-biru-800 hover:text-biru-950 hover:underline inline-flex items-center gap-1"
-                  >
-                    Profil Lengkap & Kurikulum
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                  <Link to={`/register?prodi=${key}`}>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="text-xs py-1.5 px-3"
+                  <div className="pt-5 mt-4 border-t border-biru-100 flex items-center justify-between">
+                    <Link
+                      to={`/prodi/${key}`}
+                      className="text-xs font-bold text-biru-800 hover:text-biru-950 hover:underline inline-flex items-center gap-1"
                     >
-                      Pilih Prodi
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
-            ))}
-          </div>
+                      Profil Lengkap
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                    <Link to={`/register?prodi=${key}`}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="text-xs py-1.5 px-3"
+                      >
+                        Pilih Prodi
+                      </Button>
+                    </Link>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
-      </section>
+      </motion.section>
 
       {/* ========================================================================= */}
-      {/* 4. ALUR PENDAFTARAN (5 LANGKAH MUDAH) */}
+      {/* 4. ALUR PENDAFTARAN TIMELINE BERNOMOR (RITME: BG-PUTIH) */}
       {/* ========================================================================= */}
-      <section className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
+      <motion.section
+        {...motionSectionProps}
+        className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8"
+      >
         <div className="text-center max-w-2xl mx-auto space-y-3 mb-14">
           <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-100 text-biru-800">
             Proses Mudah & Transparan
@@ -673,7 +812,7 @@ export const HomePage: React.FC = () => {
               className="relative p-5 rounded-2xl border border-biru-200 bg-putih shadow-soft-sm hover:shadow-soft-md transition-all flex flex-col justify-between"
             >
               <div className="space-y-3">
-                <span className="font-mono text-3xl font-extrabold text-biru-200 block">
+                <span className="font-mono text-3xl font-extrabold text-biru-200 block tabular-nums">
                   {item.step}
                 </span>
                 <h3 className="font-serif text-lg font-bold text-biru-950">
@@ -683,20 +822,23 @@ export const HomePage: React.FC = () => {
                   {item.desc}
                 </p>
               </div>
-              <div className="pt-4 text-[11px] font-semibold text-biru-600 flex items-center gap-1">
+              <div className="pt-4 text-[11px] font-semibold text-biru-600 flex items-center gap-1 border-t border-biru-50 mt-4">
                 <span>Tahap {idx + 1}</span>
                 <span className="h-1 w-1 rounded-full bg-biru-400" />
-                <span className="text-biru-500">100% Online</span>
+                <span className="text-biru-700">100% Online</span>
               </div>
             </div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* ========================================================================= */}
-      {/* 5. SIMULASI BIAYA & UKT INTERAKTIF */}
+      {/* 5. SIMULASI BIAYA & UKT INTERAKTIF (RITME: BG-BIRU-950 KONTRASTING) */}
       {/* ========================================================================= */}
-      <section className="bg-biru-950 text-putih py-16 border-y border-biru-900">
+      <motion.section
+        {...motionSectionProps}
+        className="bg-biru-950 text-putih py-16 sm:py-20 border-y border-biru-900"
+      >
         <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             {/* Info Kiri */}
@@ -716,7 +858,9 @@ export const HomePage: React.FC = () => {
               <div className="space-y-3 pt-2 text-xs text-biru-300">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-biru-400 shrink-0" />
-                  <span>Tidak ada biaya tersembunyi / praktikum tambahan</span>
+                  <span>
+                    Tidak ada biaya tersembunyi atau praktikum tambahan
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-biru-400 shrink-0" />
@@ -825,14 +969,14 @@ export const HomePage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Rincian Hasil Perhitungan */}
+                {/* Rincian Hasil Perhitungan Tabular */}
                 <div className="rounded-xl bg-biru-950/70 border border-biru-800 p-4 space-y-2.5 text-xs text-biru-200">
                   <div className="flex items-center justify-between">
                     <span>Biaya Formulir Pendaftaran:</span>
-                    <span className="font-mono text-sm text-putih font-semibold">
+                    <span className="font-mono text-sm text-putih font-semibold tabular-nums">
                       Rp {totalFormulir.toLocaleString("id-ID")}
                       {diskonFormulir > 0 && (
-                        <span className="line-through text-biru-400 text-xs ml-2">
+                        <span className="line-through text-biru-400 text-xs ml-2 tabular-nums">
                           Rp 250.000
                         </span>
                       )}
@@ -840,14 +984,14 @@ export const HomePage: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Estimasi UKT per Semester:</span>
-                    <span className="font-mono text-sm text-putih font-bold">
+                    <span className="font-mono text-sm text-putih font-bold tabular-nums">
                       Rp {currentProdi.uktMin.toLocaleString("id-ID")} &ndash;
                       Rp {currentProdi.uktMax.toLocaleString("id-ID")}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Dana Pengembangan Pendidikan (DPP):</span>
-                    <span className="font-mono text-sm text-putih font-semibold">
+                    <span className="font-mono text-sm text-putih font-semibold tabular-nums">
                       Rp {currentProdi.dpp.toLocaleString("id-ID")}
                       <span className="text-[11px] text-biru-400 ml-1.5">
                         (Hanya semester 1)
@@ -872,229 +1016,303 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ========================================================================= */}
-      {/* 6. BERITA & PENGUMUMAN PMB TERKINI */}
+      {/* 6. JADWAL GELOMBANG SELEKSI TIMELINE (RITME: BG-PUTIH) */}
       {/* ========================================================================= */}
-      <section className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
-          <div>
-            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-100 text-biru-800 mb-2">
-              Kabar Kampus
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-biru-950">
-              Berita &amp; Pengumuman Terbaru
-            </h2>
-            <p className="text-sm text-biru-700 font-sans mt-1">
-              Informasi terkini mengenai jadwal seleksi, beasiswa, dan panduan
-              akademik.
-            </p>
-          </div>
-          <Link to="/pengumuman">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs font-semibold"
-            >
-              Lihat Semua Berita &rarr;
-            </Button>
-          </Link>
+      <motion.section
+        {...motionSectionProps}
+        className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8"
+      >
+        <div className="text-center max-w-2xl mx-auto space-y-3 mb-12">
+          <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-100 text-biru-800">
+            Agenda Seleksi
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-biru-950">
+            Jadwal Gelombang Pendaftaran
+          </h2>
+          <p className="text-sm text-biru-700 leading-relaxed font-sans">
+            Catat tanggal-tanggal penting setiap gelombang untuk memastikan Anda
+            tidak tertinggal kesempatan beasiswa.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {(postsData && postsData.length > 0
-            ? postsData.slice(0, 3)
-            : [
-                {
-                  id: "1",
-                  slug: "penerimaan-mahasiswa-baru-2026-resmi-dibuka",
-                  judul:
-                    "Pendaftaran Mahasiswa Baru T.A. 2026/2027 Resmi Dibuka",
-                  kategori: "PENGUMUMAN",
-                  ringkasan:
-                    "Universitas Pignatelli Triputra membuka kesempatan emas bagi calon mahasiswa baru berprestasi untuk bergabung.",
-                  published_at: "2026-11-01T08:00:00Z",
-                  author_nama: "Humas PMB",
-                },
-                {
-                  id: "2",
-                  slug: "panduan-beasiswa-kemitraan-triputra-group",
-                  judul: "Panduan Beasiswa Penuh Kemitraan Triputra Group",
-                  kategori: "BEASISWA",
-                  ringkasan:
-                    "Dapatkan pembebasan biaya kuliah 100% dan program kepemimpinan intensif bersama jajaran pimpinan Triputra.",
-                  published_at: "2026-10-28T09:00:00Z",
-                  author_nama: "Humas PMB",
-                },
-                {
-                  id: "3",
-                  slug: "jalur-rpl-kesempatan-sarjana-praktisi",
-                  judul:
-                    "Jalur Rekognisi Pembelajaran Lampau (RPL) untuk Praktisi Kerja",
-                  kategori: "BERITA",
-                  ringkasan:
-                    "Konversikan pengalaman kerja nyata Anda menjadi SKS perkuliahan resmi di UPITRA.",
-                  published_at: "2026-10-25T10:00:00Z",
-                  author_nama: "Tim Akademik",
-                },
-              ]
-          ).map((post) => (
-            <Card
-              key={post.id}
-              className="p-6 border-biru-200 hover:border-biru-400 hover:shadow-soft-md transition-all flex flex-col justify-between"
+        <div className="space-y-4 max-w-4xl mx-auto">
+          {GELOMBANG_SCHEDULE.map((g) => (
+            <div
+              key={g.nama}
+              className="p-6 rounded-2xl border border-biru-200 bg-putih shadow-soft-sm hover:shadow-soft-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-6"
             >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs text-biru-600">
-                  <span className="font-semibold px-2 py-0.5 rounded bg-biru-100 text-biru-800">
-                    {post.kategori}
+              <div className="space-y-2 sm:max-w-xl">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-xs border ${g.statusBadge}`}
+                  >
+                    {g.status}
                   </span>
-                  <span>
-                    {new Date(post.published_at).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                  <span className="text-xs text-biru-600 font-medium">
+                    {g.periode}
                   </span>
                 </div>
-                <h3 className="font-serif text-lg font-bold text-biru-950 leading-snug hover:text-biru-800">
-                  <Link to={`/pengumuman/${post.slug}`}>{post.judul}</Link>
+                <h3 className="font-serif text-xl font-bold text-biru-950">
+                  {g.nama}
                 </h3>
-                <p className="text-xs text-biru-700 leading-relaxed line-clamp-3">
-                  {post.ringkasan}
+                <p className="text-xs text-biru-700 leading-relaxed font-sans">
+                  {g.highlight}
+                </p>
+                <p className="text-[11px] text-biru-600 font-medium">
+                  {g.tahap}
                 </p>
               </div>
 
-              <div className="pt-4 mt-3 border-t border-biru-100 flex items-center justify-between text-xs">
-                <span className="text-biru-600 font-medium">
-                  {post.author_nama}
-                </span>
-                <Link
-                  to={`/pengumuman/${post.slug}`}
-                  className="font-bold text-biru-800 hover:text-biru-950 inline-flex items-center gap-1"
-                >
-                  Baca Selengkapnya
-                  <ChevronRight className="w-3 h-3" />
+              <div className="sm:self-center shrink-0">
+                <Link to="/register">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full sm:w-auto text-xs font-semibold"
+                  >
+                    Daftar Sekarang &rarr;
+                  </Button>
                 </Link>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* ========================================================================= */}
-      {/* 7. FAQ AKORDION INTERAKTIF */}
+      {/* 7. BERITA & PENGUMUMAN PMB TERKINI (RITME: BG-BIRU-50/60) */}
       {/* ========================================================================= */}
-      <section className="bg-biru-50/70 py-16 border-t border-biru-100">
-        <div className="max-w-[900px] mx-auto px-4 sm:px-6">
-          <div className="text-center space-y-3 mb-12">
-            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-200 text-biru-900">
-              Pertanyaan Umum
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-biru-950">
-              Kerap Ditanyakan Calon Mahasiswa (FAQ)
-            </h2>
-            <p className="text-sm text-biru-700 font-sans">
-              Jawaban cepat untuk hal-hal seputar pendaftaran, biaya, ujian CBT,
-              dan beasiswa.
-            </p>
+      <motion.section
+        {...motionSectionProps}
+        className="bg-biru-50/60 py-16 border-y border-biru-100"
+      >
+        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+            <div>
+              <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-200 text-biru-900 mb-2">
+                Kabar Kampus
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-biru-950">
+                Berita &amp; Pengumuman Terbaru
+              </h2>
+              <p className="text-sm text-biru-700 font-sans mt-1">
+                Informasi terkini mengenai jadwal seleksi, beasiswa, dan panduan
+                akademik.
+              </p>
+            </div>
+            <Link to="/pengumuman">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs font-semibold"
+              >
+                Lihat Semua Berita &rarr;
+              </Button>
+            </Link>
           </div>
 
-          <div className="space-y-3.5">
-            {(faqsData && faqsData.length > 0
-              ? faqsData.slice(0, 6)
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {(postsData && postsData.length > 0
+              ? postsData.slice(0, 3)
               : [
                   {
                     id: "1",
-                    pertanyaan:
-                      "Apakah pendaftaran PMB UPITRA bisa dilakukan secara online penuh?",
-                    jawaban:
-                      "Ya! Seluruh proses pendaftaran, pembayaran formulir, pengunggahan berkas, pelaksanaan ujian CBT potensi akademik, hingga pengumuman kelulusan dapat diselesaikan 100% online.",
+                    slug: "penerimaan-mahasiswa-baru-2026-resmi-dibuka",
+                    judul:
+                      "Pendaftaran Mahasiswa Baru T.A. 2026/2027 Resmi Dibuka",
+                    kategori: "PENGUMUMAN",
+                    ringkasan:
+                      "Universitas Pignatelli Triputra membuka kesempatan emas bagi calon mahasiswa baru berprestasi untuk bergabung.",
+                    published_at: "2026-11-01T08:00:00Z",
+                    author_nama: "Humas PMB",
                   },
                   {
                     id: "2",
-                    pertanyaan:
-                      "Bagaimana cara mendapatkan Beasiswa Penuh Kemitraan Triputra?",
-                    jawaban:
-                      "Pilih Jalur Beasiswa Kemitraan saat mendaftar, unggah bukti prestasi akademik (rata-rata rapor minimal 85.0), dan ikuti wawancara motivasi bersama panelis rektorat & Triputra Group.",
+                    slug: "panduan-beasiswa-kemitraan-triputra-group",
+                    judul: "Panduan Beasiswa Penuh Kemitraan Triputra Group",
+                    kategori: "BEASISWA",
+                    ringkasan:
+                      "Dapatkan pembebasan biaya kuliah 100% dan program kepemimpinan intensif bersama jajaran pimpinan Triputra.",
+                    published_at: "2026-10-28T09:00:00Z",
+                    author_nama: "Humas PMB",
                   },
                   {
                     id: "3",
-                    pertanyaan:
-                      "Apakah ada biaya praktikum atau biaya SKS terpisah selain UKT?",
-                    jawaban:
-                      "Tidak ada. Sistem Uang Kuliah Tunggal (UKT) di UPITRA sudah mencakup seluruh biaya perkuliahan, praktikum laboratorium, ujian semester, serta akses perpustakaan digital.",
-                  },
-                  {
-                    id: "4",
-                    pertanyaan:
-                      "Berapa lama masa tunggu pengumuman kelulusan setelah ujian CBT?",
-                    jawaban:
-                      "Nilai ujian CBT dihitung secara instan. Hasil sidang penetapan kelulusan resmi dapat dicek di portal dalam waktu 1x24 jam setelah sesi ujian selesai.",
-                  },
-                  {
-                    id: "5",
-                    pertanyaan:
-                      "Apa syarat utama untuk mendaftar melalui Jalur Rekognisi Pembelajaran Lampau (RPL)?",
-                    jawaban:
-                      "Memiliki pengalaman kerja relevan minimal 2 tahun atau sertifikat kompetensi profesional. Calon dapat mengajukan mata kuliah untuk dikonversi menjadi SKS resmi.",
+                    slug: "jalur-rpl-kesempatan-sarjana-praktisi",
+                    judul:
+                      "Jalur Rekognisi Pembelajaran Lampau (RPL) untuk Praktisi Kerja",
+                    kategori: "BERITA",
+                    ringkasan:
+                      "Konversikan pengalaman kerja nyata Anda menjadi SKS perkuliahan resmi di UPITRA.",
+                    published_at: "2026-10-25T10:00:00Z",
+                    author_nama: "Tim Akademik",
                   },
                 ]
-            ).map((faq, idx) => {
-              const isOpen = openFaqIndex === idx;
-              return (
-                <div
-                  key={faq.id}
-                  className="rounded-xl border border-biru-200 bg-putih overflow-hidden shadow-soft-xs transition-all"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                    className="w-full flex items-center justify-between p-4 sm:p-5 text-left font-serif text-base font-bold text-biru-950 hover:bg-biru-50/50 transition-colors"
-                  >
-                    <span>{faq.pertanyaan}</span>
-                    <ChevronDown
-                      className={`w-5 h-5 text-biru-600 shrink-0 transition-transform duration-200 ${
-                        isOpen ? "rotate-180 text-biru-900" : ""
-                      }`}
-                    />
-                  </button>
-                  {isOpen && (
-                    <div className="px-4 pb-5 sm:px-5 pt-0 text-sm text-biru-800 leading-relaxed font-sans border-t border-biru-100/60 mt-1">
-                      <p>{faq.jawaban}</p>
-                    </div>
-                  )}
+            ).map((post) => (
+              <Card
+                key={post.id}
+                className="p-6 bg-putih border-biru-200 hover:border-biru-400 hover:shadow-soft-md transition-all flex flex-col justify-between"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-biru-600">
+                    <span className="font-semibold px-2 py-0.5 rounded bg-biru-100 text-biru-800">
+                      {post.kategori}
+                    </span>
+                    <span className="tabular-nums">
+                      {new Date(post.published_at).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <h3 className="font-serif text-lg font-bold text-biru-950 leading-snug hover:text-biru-800">
+                    <Link to={`/pengumuman/${post.slug}`}>{post.judul}</Link>
+                  </h3>
+                  <p className="text-xs text-biru-700 leading-relaxed line-clamp-3">
+                    {post.ringkasan}
+                  </p>
                 </div>
-              );
-            })}
-          </div>
 
-          <div className="mt-8 text-center">
-            <p className="text-xs text-biru-700">
-              Masih memiliki pertanyaan lain yang belum terjawab?{" "}
-              <Link
-                to="/faq"
-                className="font-bold text-biru-900 underline hover:text-biru-700"
-              >
-                Kunjungi Halaman FAQ Lengkap
-              </Link>{" "}
-              atau{" "}
-              <Link
-                to="/kontak"
-                className="font-bold text-biru-900 underline hover:text-biru-700"
-              >
-                Hubungi Panitia PMB
-              </Link>
-              .
-            </p>
+                <div className="pt-4 mt-3 border-t border-biru-100 flex items-center justify-between text-xs">
+                  <span className="text-biru-600 font-medium">
+                    {post.author_nama}
+                  </span>
+                  <Link
+                    to={`/pengumuman/${post.slug}`}
+                    className="font-bold text-biru-800 hover:text-biru-950 inline-flex items-center gap-1"
+                  >
+                    Baca Selengkapnya
+                    <ChevronRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </Card>
+            ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ========================================================================= */}
-      {/* 8. CALL TO ACTION FINAL */}
+      {/* 8. FAQ AKORDION INTERAKTIF (RITME: BG-PUTIH) */}
       {/* ========================================================================= */}
-      <section className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
+      <motion.section
+        {...motionSectionProps}
+        className="max-w-[900px] mx-auto px-4 sm:px-6"
+      >
+        <div className="text-center space-y-3 mb-12">
+          <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-100 text-biru-800">
+            Pertanyaan Umum
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-biru-950">
+            Kerap Ditanyakan Calon Mahasiswa (FAQ)
+          </h2>
+          <p className="text-sm text-biru-700 font-sans">
+            Jawaban ringkas seputar pendaftaran, biaya, ujian CBT online, dan
+            beasiswa.
+          </p>
+        </div>
+
+        <div className="space-y-3.5">
+          {(faqsData && faqsData.length > 0
+            ? faqsData.slice(0, 6)
+            : [
+                {
+                  id: "1",
+                  pertanyaan:
+                    "Apakah pendaftaran PMB UPITRA bisa dilakukan secara online penuh?",
+                  jawaban:
+                    "Ya! Seluruh proses pendaftaran, pembayaran formulir, pengunggahan berkas, pelaksanaan ujian CBT potensi akademik, hingga pengumuman kelulusan dapat diselesaikan 100% online dari mana saja.",
+                },
+                {
+                  id: "2",
+                  pertanyaan:
+                    "Bagaimana cara mendapatkan Beasiswa Penuh Kemitraan Triputra?",
+                  jawaban:
+                    "Pilih Jalur Beasiswa Kemitraan saat mendaftar, unggah bukti prestasi akademik (rata-rata rapor minimal 85.0), dan ikuti wawancara motivasi bersama panelis rektorat & Triputra Group.",
+                },
+                {
+                  id: "3",
+                  pertanyaan:
+                    "Apakah ada biaya praktikum atau biaya SKS terpisah selain UKT?",
+                  jawaban:
+                    "Tidak ada. Sistem Uang Kuliah Tunggal (UKT) di UPITRA sudah mencakup seluruh biaya perkuliahan, praktikum laboratorium, ujian semester, serta akses perpustakaan digital tanpa biaya tersembunyi.",
+                },
+                {
+                  id: "4",
+                  pertanyaan:
+                    "Berapa lama masa tunggu pengumuman kelulusan setelah ujian CBT?",
+                  jawaban:
+                    "Nilai ujian CBT dihitung secara instan. Hasil sidang penetapan kelulusan resmi dapat dicek di portal dalam waktu 1x24 jam setelah sesi ujian selesai.",
+                },
+                {
+                  id: "5",
+                  pertanyaan:
+                    "Apa syarat utama untuk mendaftar melalui Jalur Rekognisi Pembelajaran Lampau (RPL)?",
+                  jawaban:
+                    "Memiliki pengalaman kerja relevan minimal 2 tahun atau sertifikat kompetensi profesional. Calon dapat mengajukan mata kuliah untuk dikonversi menjadi SKS resmi guna mempercepat kelulusan.",
+                },
+              ]
+          ).map((faq, idx) => {
+            const isOpen = openFaqIndex === idx;
+            return (
+              <div
+                key={faq.id}
+                className="rounded-xl border border-biru-200 bg-putih overflow-hidden shadow-soft-xs transition-all"
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                  aria-expanded={isOpen}
+                  className="w-full flex items-center justify-between p-4 sm:p-5 text-left font-serif text-base font-bold text-biru-950 hover:bg-biru-50/50 transition-colors"
+                >
+                  <span className="pr-4">{faq.pertanyaan}</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-biru-600 shrink-0 transition-transform duration-200 ${
+                      isOpen ? "rotate-180 text-biru-900" : ""
+                    }`}
+                  />
+                </button>
+                {isOpen && (
+                  <div className="px-4 pb-5 sm:px-5 pt-0 text-sm text-biru-800 leading-relaxed font-sans border-t border-biru-100/60 mt-1">
+                    <p>{faq.jawaban}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-8 text-center">
+          <p className="text-xs text-biru-700">
+            Masih memiliki pertanyaan lain yang belum terjawab?{" "}
+            <Link
+              to="/faq"
+              className="font-bold text-biru-900 underline hover:text-biru-700"
+            >
+              Kunjungi Halaman FAQ Lengkap
+            </Link>{" "}
+            atau{" "}
+            <Link
+              to="/kontak"
+              className="font-bold text-biru-900 underline hover:text-biru-700"
+            >
+              Hubungi Panitia PMB
+            </Link>
+            .
+          </p>
+        </div>
+      </motion.section>
+
+      {/* ========================================================================= */}
+      {/* 9. CALL TO ACTION FINAL RIBBON (RITME: BG-BIRU ROYAL GRADIENT) */}
+      {/* ========================================================================= */}
+      <motion.section
+        {...motionSectionProps}
+        className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 pb-16"
+      >
         <div className="rounded-3xl bg-gradient-to-r from-biru-900 via-biru-850 to-biru-950 p-8 sm:p-12 text-center text-putih shadow-soft-lg border border-biru-800 space-y-6">
           <span className="inline-block px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-800 text-biru-200 border border-biru-700">
             Mulai Perjalanan Anda
@@ -1111,7 +1329,7 @@ export const HomePage: React.FC = () => {
               <Button
                 variant="primary"
                 size="lg"
-                className="bg-putih text-biru-950 hover:bg-biru-50 font-bold px-8"
+                className="bg-putih text-biru-950 hover:bg-biru-50 font-bold px-8 shadow-soft-md"
                 rightIcon={<ArrowRight className="w-4 h-4 text-biru-900" />}
               >
                 Daftar Sekarang
@@ -1121,14 +1339,14 @@ export const HomePage: React.FC = () => {
               <Button
                 variant="outline"
                 size="lg"
-                className="border-biru-400 text-putih hover:bg-biru-900"
+                className="border-biru-400 text-putih hover:bg-biru-900 font-semibold"
               >
                 Konsultasi Pendaftaran
               </Button>
             </Link>
           </div>
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 };

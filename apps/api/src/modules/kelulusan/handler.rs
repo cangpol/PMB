@@ -92,7 +92,7 @@ pub fn kelulusan_router() -> Router<AppState> {
         // Admin Kelulusan & Seleksi
         .route("/admin/rumus", get(get_rumus_penilaian_handler))
         .route(
-            "/admin/rumus/:jalur_id",
+            "/admin/rumus/{jalur_id}",
             post(update_rumus_penilaian_handler),
         )
         .route(
@@ -100,8 +100,8 @@ pub fn kelulusan_router() -> Router<AppState> {
             post(proses_ranking_kelulusan_handler),
         )
         .route("/admin/draf", get(get_draf_kelulusan_handler))
-        .route("/admin/approve/:sidang_id", post(approve_sidang_handler))
-        .route("/admin/publish/:sidang_id", post(publish_sidang_handler))
+        .route("/admin/approve/{sidang_id}", post(approve_sidang_handler))
+        .route("/admin/publish/{sidang_id}", post(publish_sidang_handler))
         .route(
             "/admin/kandidat/status",
             post(update_status_kandidat_handler),
@@ -112,15 +112,15 @@ pub fn kelulusan_router() -> Router<AppState> {
             get(list_daftar_ulang_admin_handler),
         )
         .route(
-            "/admin/daftar-ulang/berkas/:pendaftar_id",
+            "/admin/daftar-ulang/berkas/{pendaftar_id}",
             get(list_berkas_daftar_ulang_admin_handler),
         )
         .route(
-            "/admin/daftar-ulang/verifikasi/:berkas_id",
+            "/admin/daftar-ulang/verifikasi/{berkas_id}",
             post(verifikasi_berkas_daftar_ulang_handler),
         )
         .route(
-            "/admin/generate-nim/:pendaftar_id",
+            "/admin/generate-nim/{pendaftar_id}",
             post(generate_nim_handler),
         )
         .route("/admin/ekspor-siakad", get(ekspor_siakad_handler))

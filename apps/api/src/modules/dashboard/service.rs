@@ -222,7 +222,7 @@ impl DashboardService {
             .fetch_one(&self.pool)
             .await?;
 
-        let total_dana: (i64,) = sqlx::query_as("SELECT COALESCE(SUM(nominal_akhir), 0) FROM pembayaran WHERE status_pembayaran = 'LUNAS'")
+        let total_dana: (i64,) = sqlx::query_as("SELECT COALESCE(SUM(nominal_akhir), 0)::BIGINT FROM pembayaran WHERE status_pembayaran = 'LUNAS'")
             .fetch_one(&self.pool)
             .await?;
 
@@ -368,7 +368,7 @@ impl DashboardService {
         .await?;
 
         let total_dana_lunas: (i64,) = sqlx::query_as(
-            "SELECT COALESCE(SUM(pb.nominal_akhir), 0)
+            "SELECT COALESCE(SUM(pb.nominal_akhir), 0)::BIGINT
              FROM pembayaran pb
              JOIN pendaftar p ON p.id = pb.pendaftar_id
              WHERE pb.status_pembayaran = 'LUNAS'
@@ -385,7 +385,7 @@ impl DashboardService {
         .await?;
 
         let total_dana_piutang: (i64,) = sqlx::query_as(
-            "SELECT COALESCE(SUM(pb.nominal_akhir), 0)
+            "SELECT COALESCE(SUM(pb.nominal_akhir), 0)::BIGINT
              FROM pembayaran pb
              JOIN pendaftar p ON p.id = pb.pendaftar_id
              WHERE pb.status_pembayaran = 'MENUNGGU_PEMBAYARAN'

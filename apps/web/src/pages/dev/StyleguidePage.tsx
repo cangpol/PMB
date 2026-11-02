@@ -69,6 +69,14 @@ import {
   TooltipContent,
   FileUpload,
 } from "../../components/ui";
+import {
+  H3,
+  Body,
+  Caption,
+  TypographyLabel,
+  Numeric,
+} from "../../components/ui/Typography";
+import { Sparkline } from "../../components/ui/Sparkline";
 
 export const StyleguidePage: React.FC = () => {
   const { toast } = useToast();
@@ -413,6 +421,118 @@ export const StyleguidePage: React.FC = () => {
                     kuliah tunggal semester pertama adalah 30 hari kalender
                     sejak pengumuman resmi dikeluarkan oleh panitia PMB.
                   </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Komponen Typography Terpadu & Tabular Numbers */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Komponen Typography &amp; Tabular Nums</CardTitle>
+                <CardDescription>
+                  Komponen tipe data teks standar (H1–H4, Body, Caption,
+                  TypographyLabel, Numeric) yang menjamin konsistensi skala
+                  tipografi dan alignment angka di tabel/KPI.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl border border-biru-200 bg-biru-50/50 space-y-2">
+                    <TypographyLabel>Komponen Semantik Heading</TypographyLabel>
+                    <H3 className="text-biru-950 font-serif">
+                      Judul Halaman Publik (H3 Serif)
+                    </H3>
+                    <Body className="text-biru-700">
+                      Teks paragraf menggunakan komponen Body standar dengan
+                      warna muted yang nyaman dibaca.
+                    </Body>
+                    <Caption>
+                      Catatan kaki atau label bantuan via komponen Caption.
+                    </Caption>
+                  </div>
+                  <div className="p-4 rounded-xl border border-biru-200 bg-putih space-y-2">
+                    <TypographyLabel>
+                      Tabular Numeric (font-variant-numeric: tabular-nums)
+                    </TypographyLabel>
+                    <div className="flex items-center justify-between text-sm py-1 border-b border-biru-100">
+                      <span>Total Pendaftar Terverifikasi:</span>
+                      <Numeric className="font-bold text-biru-950 text-base">
+                        1.482 Calon
+                      </Numeric>
+                    </div>
+                    <div className="flex items-center justify-between text-sm py-1 border-b border-biru-100">
+                      <span>Penerimaan Pembayaran Loket:</span>
+                      <Numeric className="font-bold text-biru-950 text-base">
+                        Rp 370.500.000
+                      </Numeric>
+                    </div>
+                    <div className="flex items-center justify-between text-sm py-1">
+                      <span>Rasio Kelulusan Seleksi:</span>
+                      <Numeric className="font-bold text-biru-950 text-base">
+                        92,4%
+                      </Numeric>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sparkline KPI Micro Visualizer */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Sparkline KPI Micro Visualizer</CardTitle>
+                <CardDescription>
+                  Komponen visualisasi mikro berbasis SVG murni bernuansa biru
+                  untuk kartu analitik ringkas di Dashboard Admin.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-xl border border-biru-200 bg-putih flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-biru-600 font-medium">
+                        Tren Pendaftaran
+                      </div>
+                      <div className="font-mono text-xl font-bold text-biru-950 tabular-nums">
+                        +24.5%
+                      </div>
+                    </div>
+                    <Sparkline
+                      data={[12, 19, 15, 25, 22, 30, 38]}
+                      width={90}
+                      height={32}
+                    />
+                  </div>
+                  <div className="p-4 rounded-xl border border-biru-200 bg-putih flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-biru-600 font-medium">
+                        Peserta Ujian CBT
+                      </div>
+                      <div className="font-mono text-xl font-bold text-biru-950 tabular-nums">
+                        412 Sesi
+                      </div>
+                    </div>
+                    <Sparkline
+                      data={[40, 35, 55, 60, 48, 70, 85]}
+                      width={90}
+                      height={32}
+                    />
+                  </div>
+                  <div className="p-4 rounded-xl border border-biru-200 bg-putih flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-biru-600 font-medium">
+                        Pelunasan UKT
+                      </div>
+                      <div className="font-mono text-xl font-bold text-biru-950 tabular-nums">
+                        88.2%
+                      </div>
+                    </div>
+                    <Sparkline
+                      data={[20, 25, 45, 60, 75, 80, 92]}
+                      width={90}
+                      height={32}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>

@@ -26,3 +26,5 @@ export * from "./Avatar";
 export * from "./DropdownMenu";
 export * from "./Tooltip";
 export * from "./FileUpload";
+export * from "./Sparkline";
+export * from "./Typography";

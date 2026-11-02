@@ -1,10 +1,10 @@
 @import "tailwindcss";
-@import "@fontsource/cormorant-garamond/600.css";
-@import "@fontsource/cormorant-garamond/700.css";
-@import "@fontsource/plus-jakarta-sans/400.css";
-@import "@fontsource/plus-jakarta-sans/500.css";
-@import "@fontsource/plus-jakarta-sans/600.css";
-@import "@fontsource/plus-jakarta-sans/700.css";
+@import "@fontsource/cormorant-garamond/latin-600.css";
+@import "@fontsource/cormorant-garamond/latin-700.css";
+@import "@fontsource/plus-jakarta-sans/latin-400.css";
+@import "@fontsource/plus-jakarta-sans/latin-500.css";
+@import "@fontsource/plus-jakarta-sans/latin-600.css";
+@import "@fontsource/plus-jakarta-sans/latin-700.css";
 
 @theme {
   --color-biru-950: #061633;
@@ -18,10 +18,25 @@
   --color-biru-50: #f1f6fe;
   --color-putih: #ffffff;
 
-  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-serif:
+    "Cormorant Garamond", Georgia, Cambria, "Times New Roman", Times, serif;
   --font-sans:
     "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont,
-    sans-serif;
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    monospace;
+
+  --text-scale-12: 0.75rem;
+  --text-scale-14: 0.875rem;
+  --text-scale-16: 1rem;
+  --text-scale-18: 1.125rem;
+  --text-scale-20: 1.25rem;
+  --text-scale-24: 1.5rem;
+  --text-scale-30: 1.875rem;
+  --text-scale-36: 2.25rem;
+  --text-scale-48: 3rem;
+  --text-scale-60: 3.75rem;
 
   --radius-xs: 0.25rem;
   --radius-sm: 0.375rem;
@@ -98,4 +113,103 @@
 :focus-visible {
   outline: 2px solid var(--biru-600);
   outline-offset: 2px;
+}
+
+/* Custom Scrollbar Tipis Bernuansa Biru */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--biru-200) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--biru-200);
+  border-radius: 9999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: var(--biru-500);
+}
+
+/* Sticky First Column for Responsive Tables */
+.sticky-first-col th:first-child,
+.sticky-first-col td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background-color: inherit;
+}
+
+/* Tabular Numbers untuk Presisi Angka Statistik, Tabel, & NIM */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Skala Tipografi Terpadu (10 Level) */
+.text-scale-60 {
+  font-size: 3.75rem;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.text-scale-48 {
+  font-size: 3rem;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.text-scale-36 {
+  font-size: 2.25rem;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.text-scale-30 {
+  font-size: 1.875rem;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.text-scale-24 {
+  font-size: 1.5rem;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+
+.text-scale-20 {
+  font-size: 1.25rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.text-scale-18 {
+  font-size: 1.125rem;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.text-scale-16 {
+  font-size: 1rem;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+.text-scale-14 {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.text-scale-12 {
+  font-size: 0.75rem;
+  line-height: 1.33;
+  letter-spacing: 0.05em;
 }

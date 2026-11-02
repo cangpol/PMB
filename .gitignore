@@ -30,9 +30,12 @@ minio-data/
 # Test Artifacts & Playwright
 apps/web/test-results/
 apps/web/playwright-report/
+test-results/
+playwright-report/
 backups/
 
 # OS / Editor files
+.cargo/
 .DS_Store
 Thumbs.db
 .vscode/

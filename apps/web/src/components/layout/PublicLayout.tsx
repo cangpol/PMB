@@ -36,7 +36,16 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
   children,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [isScrolled, setIsScrolled] = React.useState(false);
   const location = useLocation();
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col bg-putih text-biru-950 font-sans selection:bg-biru-100 selection:text-biru-950">
@@ -85,7 +94,13 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
       </div>
 
       {/* Header & Sticky Navbar */}
-      <header className="sticky top-0 z-40 border-b border-biru-100 bg-putih/95 backdrop-blur-md transition-all shadow-soft-sm">
+      <header
+        className={`sticky top-0 z-40 transition-all duration-200 ${
+          isScrolled
+            ? "border-b border-biru-200/80 bg-putih/90 shadow-soft-sm backdrop-blur-md"
+            : "border-b border-transparent bg-putih/95 sm:bg-putih/85 backdrop-blur-sm"
+        }`}
+      >
         <div className="mx-auto flex max-w-[1240px] items-center justify-between px-4 py-3 sm:px-6">
           {/* Logo Brand */}
           <Link
@@ -129,12 +144,16 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
           {/* Action Buttons (Desktop) */}
           <div className="hidden sm:flex items-center gap-2.5">
             <Link to="/cek-kelulusan" className="hidden lg:inline-block">
-              <Button variant="outline" size="sm" className="text-xs">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-biru-800 hover:text-biru-950"
+              >
                 Cek Kelulusan
               </Button>
             </Link>
             <Link to="/login">
-              <Button variant="ghost" size="sm">
+              <Button variant="outline" size="sm">
                 Masuk
               </Button>
             </Link>
@@ -235,10 +254,31 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
         </div>
       </Drawer>
 
-      {/* Main Content Area */}
-      <main id="main-content" className="flex-1">
+      {/* Main Content Area with bottom padding on mobile for sticky floating action */}
+      <main id="main-content" className="flex-1 pb-20 sm:pb-0">
         {children ?? <Outlet />}
       </main>
+
+      {/* Floating Sticky Bottom Bar for Mobile (<640px) */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-biru-200/90 bg-putih/95 p-3 backdrop-blur-md sm:hidden shadow-soft-lg">
+        <div className="mx-auto flex max-w-[420px] items-center gap-2.5">
+          <Link to="/login" className="flex-1">
+            <Button variant="outline" size="sm" className="w-full">
+              Masuk
+            </Button>
+          </Link>
+          <Link to="/register" className="flex-1">
+            <Button
+              variant="primary"
+              size="sm"
+              className="w-full"
+              rightIcon={<ArrowRight className="h-4 w-4" />}
+            >
+              Daftar Sekarang
+            </Button>
+          </Link>
+        </div>
+      </div>
 
       {/* Comprehensive Academic Footer */}
       <footer className="border-t border-biru-200 bg-biru-950 text-biru-200 pt-14 pb-8">

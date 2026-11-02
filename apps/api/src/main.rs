@@ -1,7 +1,6 @@
 use axum::{
-    Json, Router,
+    Router,
     http::{Method, header},
-    response::IntoResponse,
     routing::get,
 };
 use sqlx::postgres::PgPoolOptions;
@@ -63,6 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 4. Inisialisasi Database Pool & Migrasi Skema Otomatis
     let db_pool = match PgPoolOptions::new()
         .max_connections(10)
+        .acquire_timeout(std::time::Duration::from_secs(15))
         .connect(&config.database_url)
         .await
     {
@@ -144,16 +144,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/me", get(me_handler))
         .route("/health", get(health_check_handler))
         .route("/health/live", get(liveness_handler))
-        .route("/health/ready", get(readiness_handler))
-        .route("/openapi.json", get(openapi_json_handler));
+        .route("/health/ready", get(readiness_handler));
 
     let app = Router::new()
         .route("/health", get(health_check_handler))
         .route("/health/live", get(liveness_handler))
         .route("/health/ready", get(readiness_handler))
+        .route(
+            "/api/docs",
+            get(|| async { axum::response::Redirect::temporary("/swagger-ui/") }),
+        )
         .nest("/api", api_router)
         .merge(SwaggerUi::new("/swagger-ui").url("/api/openapi.json", ApiDoc::openapi()))
-        .merge(SwaggerUi::new("/api/docs").url("/api/openapi.json", ApiDoc::openapi()))
         .layer(axum::middleware::from_fn(security_headers_middleware))
         .layer(cors)
         .with_state(state);
@@ -171,11 +173,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     axum::serve(listener, app).await?;
 
     Ok(())
-}
-
-async fn openapi_json_handler() -> impl IntoResponse {
-    let doc = ApiDoc::openapi();
-    Json(doc)
 }
 
 /// Middleware HTTP Security Headers (OWASP Top 10 Best Practices)
