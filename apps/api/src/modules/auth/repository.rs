@@ -13,6 +13,10 @@ pub struct UserRepository {
 }
 
 impl UserRepository {
+    pub fn pool(&self) -> &PgPool {
+        &self.pool
+    }
+
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }

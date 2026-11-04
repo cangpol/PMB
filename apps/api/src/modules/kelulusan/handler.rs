@@ -94,6 +94,7 @@ pub fn kelulusan_router() -> Router<AppState> {
             "/daftar-ulang/berkas",
             post(upload_berkas_daftar_ulang_handler),
         )
+        .merge(super::bukti_bayar::bukti_bayar_router())
         // Admin Kelulusan & Seleksi
         .route("/admin/rumus", get(get_rumus_penilaian_handler))
         .route(

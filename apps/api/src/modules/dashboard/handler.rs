@@ -51,6 +51,7 @@ pub fn dashboard_router() -> Router<AppState> {
         .route("/calon", get(get_calon_dashboard_handler))
         .route("/admin", get(get_admin_dashboard_handler))
         .route("/admin/stats", get(get_executive_dashboard_handler))
+        .route("/admin/sumber-informasi", get(get_sumber_informasi_handler))
         .route("/admin/export-excel", get(export_excel_dashboard_handler))
 }
 
@@ -167,4 +168,61 @@ pub async fn export_excel_dashboard_handler(
         .map_err(|e| AppError::Internal(e.to_string()))?;
 
     Ok(response)
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct SumberInformasiItem {
+    pub kode: String,
+    pub label: String,
+    pub jumlah: i64,
+    pub persen: f64,
+}
+
+/// Rekap "dari mana calon tahu PMB UPITRA" untuk evaluasi strategi promosi.
+pub async fn get_sumber_informasi_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    if !auth_user.is_admin() && !auth_user.is_keuangan() {
+        return Err(AppError::Forbidden(
+            "Akses khusus panitia PMB dan pimpinan".to_string(),
+        ));
+    }
+    let rows: Vec<(Option<String>, i64)> = sqlx::query_as(
+        "SELECT sumber_informasi, COUNT(*) FROM users
+         WHERE role = 'calon_mahasiswa' GROUP BY sumber_informasi",
+    )
+    .fetch_all(&state.db)
+    .await?;
+    let total: i64 = rows.iter().map(|r| r.1).sum();
+    let hitung = |kode: Option<&str>| -> i64 {
+        rows.iter()
+            .filter(|r| r.0.as_deref() == kode)
+            .map(|r| r.1)
+            .sum()
+    };
+    let mut items: Vec<SumberInformasiItem> = crate::modules::auth::dto::SUMBER_INFORMASI
+        .iter()
+        .map(|(kode, label)| SumberInformasiItem {
+            kode: kode.to_string(),
+            label: label.to_string(),
+            jumlah: hitung(Some(kode)),
+            persen: 0.0,
+        })
+        .collect();
+    items.push(SumberInformasiItem {
+        kode: "BELUM_DIISI".to_string(),
+        label: "Belum diisi".to_string(),
+        jumlah: hitung(None),
+        persen: 0.0,
+    });
+    for it in items.iter_mut() {
+        it.persen = if total > 0 {
+            ((it.jumlah as f64 / total as f64) * 1000.0).round() / 10.0
+        } else {
+            0.0
+        };
+    }
+    items.sort_by(|a, b| b.jumlah.cmp(&a.jumlah));
+    Ok(Json(serde_json::json!({ "total": total, "items": items })))
 }

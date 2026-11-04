@@ -19,310 +19,39 @@ use crate::{
 // HTML SANITIZER & SECURITY ENGINE (ANTI-STORED XSS)
 // =============================================================================
 
-const ALLOWED_TAGS: &[&str] = &[
-    "h1",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6",
-    "p",
-    "b",
-    "strong",
-    "i",
-    "em",
-    "u",
-    "s",
-    "strike",
-    "ul",
-    "ol",
-    "li",
-    "a",
-    "blockquote",
-    "code",
-    "pre",
-    "img",
-    "table",
-    "thead",
-    "tbody",
-    "tr",
-    "th",
-    "td",
-    "hr",
-    "br",
-    "span",
-    "div",
-    "figure",
-    "figcaption",
-    "sub",
-    "sup",
-];
-
-const DANGEROUS_BLOCKS: &[&str] = &[
-    "script", "style", "iframe", "object", "embed", "applet", "form",
-];
-
-/// Sanitasi konten HTML secara murni di server untuk menangkal serangan Stored XSS.
-/// - Menghapus seluruh tag berbahaya beserta blok kontennya (<script>, <style>, <iframe>, dll.)
-/// - Menghapus seluruh atribut event handler inline (onclick, onerror, onload, dll.)
-/// - Memvalidasi URL di href dan src agar tidak menggunakan skema javascript: atau vbscript:
-/// - Mengamankan tautan eksternal (target="_blank" -> rel="noopener noreferrer")
+/// Sanitasi konten HTML (rich text) di server untuk menangkal Stored XSS.
+/// Memakai `ammonia` (parser HTML5 sungguhan) — tag/atribut di luar whitelist dibuang,
+/// event handler & skema `javascript:` dihapus, dan tautan `_blank` dipaksa `noopener noreferrer`.
 pub fn sanitize_html(input: &str) -> String {
-    let mut output = String::with_capacity(input.len());
-    let mut chars = input.char_indices().peekable();
+    use std::collections::{HashMap, HashSet};
 
-    while let Some((i, c)) = chars.next() {
-        if c == '<' {
-            // Temukan penutup tag '>'
-            let rest = &input[i..];
-            if let Some(close_idx) = rest.find('>') {
-                let tag_content = &rest[1..close_idx].trim();
-                let is_closing = tag_content.starts_with('/');
-                let raw_tag = if is_closing {
-                    &tag_content[1..].trim()
-                } else {
-                    tag_content
-                };
+    let tags: HashSet<&str> = [
+        "h1", "h2", "h3", "h4", "h5", "h6", "p", "b", "strong", "i", "em", "u", "s", "strike",
+        "ul", "ol", "li", "a", "blockquote", "code", "pre", "img", "table", "thead", "tbody",
+        "tr", "th", "td", "hr", "br", "span", "div", "figure", "figcaption", "sub", "sup",
+    ]
+    .into_iter()
+    .collect();
 
-                // Ambil nama tag
-                let tag_name = raw_tag
-                    .split_whitespace()
-                    .next()
-                    .unwrap_or("")
-                    .trim_end_matches('/')
-                    .to_lowercase();
+    let mut tag_attrs: HashMap<&str, HashSet<&str>> = HashMap::new();
+    tag_attrs.insert("a", ["href", "title", "target"].into_iter().collect());
+    tag_attrs.insert(
+        "img",
+        ["src", "alt", "title", "width", "height", "loading"]
+            .into_iter()
+            .collect(),
+    );
 
-                // 1. Jika ini tag blok berbahaya pembuka, skip seluruh konten hingga penutup
-                if !is_closing && DANGEROUS_BLOCKS.contains(&tag_name.as_str()) {
-                    let close_pattern = format!("</{}>", tag_name);
-                    let close_pattern_ci = close_pattern.to_lowercase();
-                    let remaining_lower = input[i + close_idx + 1..].to_lowercase();
-
-                    if let Some(pos) = remaining_lower.find(&close_pattern_ci) {
-                        let advance_by = close_idx + 1 + pos + close_pattern.len();
-                        for _ in 0..advance_by.saturating_sub(1) {
-                            chars.next();
-                        }
-                    } else {
-                        // Tidak ditemukan penutup, buang sisa teks berbahaya
-                        break;
-                    }
-                    continue;
-                }
-
-                // 2. Jika tag tidak diizinkan, hilangkan tag-nya
-                if !ALLOWED_TAGS.contains(&tag_name.as_str()) {
-                    // Skip hingga close_idx
-                    for _ in 0..close_idx {
-                        chars.next();
-                    }
-                    continue;
-                }
-
-                // 3. Jika tag penutup yang sah, tulis langsung
-                if is_closing {
-                    output.push_str("</");
-                    output.push_str(&tag_name);
-                    output.push('>');
-                    for _ in 0..close_idx {
-                        chars.next();
-                    }
-                    continue;
-                }
-
-                // 4. Tag pembuka atau self-closing yang diizinkan -> filter atribut
-                let is_self_closing =
-                    tag_content.ends_with('/') || matches!(tag_name.as_str(), "img" | "br" | "hr");
-                let mut safe_attrs = Vec::new();
-                let mut has_target_blank = false;
-                let mut explicit_rel: Option<String> = None;
-
-                // Parse atribut sederhana
-                let attr_str = if is_self_closing && raw_tag.ends_with('/') {
-                    &raw_tag[tag_name.len()..raw_tag.len() - 1].trim()
-                } else {
-                    &raw_tag[tag_name.len()..].trim()
-                };
-
-                for (name, val) in parse_attributes(attr_str) {
-                    let name_lower = name.to_lowercase();
-
-                    // Cegah seluruh event handler inline (onclick, onerror, dll.)
-                    if name_lower.starts_with("on") {
-                        continue;
-                    }
-
-                    // Hanya izinkan atribut yang aman
-                    let is_allowed_attr = matches!(
-                        name_lower.as_str(),
-                        "href"
-                            | "src"
-                            | "alt"
-                            | "title"
-                            | "class"
-                            | "width"
-                            | "height"
-                            | "target"
-                            | "rel"
-                            | "loading"
-                    );
-
-                    if !is_allowed_attr {
-                        continue;
-                    }
-
-                    // Validasi skema URL untuk href dan src
-                    if name_lower == "href" || name_lower == "src" {
-                        let clean_val = val.trim().to_lowercase();
-                        if clean_val.starts_with("javascript:")
-                            || clean_val.starts_with("vbscript:")
-                            || clean_val.starts_with("data:text/html")
-                        {
-                            continue;
-                        }
-                    }
-
-                    if name_lower == "target" && val.trim() == "_blank" {
-                        has_target_blank = true;
-                    }
-
-                    if name_lower == "rel" {
-                        explicit_rel = Some(val.clone());
-                        continue;
-                    }
-
-                    safe_attrs.push(format!("{}=\"{}\"", name_lower, escape_attr_value(&val)));
-                }
-
-                // Enforce rel="noopener noreferrer" untuk link target="_blank"
-                if tag_name == "a" && has_target_blank {
-                    let rel_val = if let Some(r) = explicit_rel {
-                        let mut tokens: Vec<&str> = r.split_whitespace().collect();
-                        if !tokens.contains(&"noopener") {
-                            tokens.push("noopener");
-                        }
-                        if !tokens.contains(&"noreferrer") {
-                            tokens.push("noreferrer");
-                        }
-                        tokens.join(" ")
-                    } else {
-                        "noopener noreferrer".to_string()
-                    };
-                    safe_attrs.push(format!("rel=\"{}\"", rel_val));
-                } else if let Some(r) = explicit_rel {
-                    safe_attrs.push(format!("rel=\"{}\"", escape_attr_value(&r)));
-                }
-
-                output.push('<');
-                output.push_str(&tag_name);
-                for a in safe_attrs {
-                    output.push(' ');
-                    output.push_str(&a);
-                }
-
-                if is_self_closing && tag_name != "br" && tag_name != "hr" {
-                    output.push_str(" />");
-                } else {
-                    output.push('>');
-                }
-
-                for _ in 0..close_idx {
-                    chars.next();
-                }
-            } else {
-                // Tidak ada '>' penutup, escape '<'
-                output.push_str("&lt;");
-            }
-        } else {
-            output.push(c);
-        }
-    }
-
-    output
+    ammonia::Builder::default()
+        .tags(tags)
+        .tag_attributes(tag_attrs)
+        .generic_attributes(["class"].into_iter().collect())
+        .url_schemes(["http", "https", "mailto", "tel"].into_iter().collect())
+        .link_rel(Some("noopener noreferrer"))
+        .clean(input)
+        .to_string()
 }
 
-fn parse_attributes(attr_str: &str) -> Vec<(String, String)> {
-    let mut results = Vec::new();
-    let mut chars = attr_str.chars().peekable();
-
-    while let Some(&c) = chars.peek() {
-        if c.is_whitespace() {
-            chars.next();
-            continue;
-        }
-
-        // Baca nama atribut
-        let mut name = String::new();
-        while let Some(&ac) = chars.peek() {
-            if ac == '=' || ac.is_whitespace() || ac == '/' || ac == '>' {
-                break;
-            }
-            name.push(ac);
-            chars.next();
-        }
-
-        if name.is_empty() {
-            chars.next();
-            continue;
-        }
-
-        // Cek apakah ada '='
-        while let Some(&eq) = chars.peek() {
-            if eq.is_whitespace() {
-                chars.next();
-            } else {
-                break;
-            }
-        }
-
-        if chars.peek() == Some(&'=') {
-            chars.next(); // konsumsi '='
-            while let Some(&w) = chars.peek() {
-                if w.is_whitespace() {
-                    chars.next();
-                } else {
-                    break;
-                }
-            }
-
-            let mut val = String::new();
-            if let Some(&quote) = chars.peek() {
-                if quote == '"' || quote == '\'' {
-                    chars.next(); // konsumsi quote pembuka
-                    for vc in chars.by_ref() {
-                        if vc == quote {
-                            break;
-                        }
-                        val.push(vc);
-                    }
-                } else {
-                    while let Some(&vc) = chars.peek() {
-                        if vc.is_whitespace() || vc == '>' || vc == '/' {
-                            break;
-                        }
-                        val.push(vc);
-                        chars.next();
-                    }
-                }
-            }
-            results.push((name, val));
-        } else {
-            // Boolean attribute (e.g. `novalidate` or `disabled`)
-            results.push((name.clone(), name));
-        }
-    }
-
-    results
-}
-
-fn escape_attr_value(val: &str) -> String {
-    val.replace('&', "&amp;")
-        .replace('"', "&quot;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-}
-
-/// Menghasilkan slug URL yang ramah SEO dan aman
 pub fn slugify(text: &str) -> String {
     let mut result = String::new();
     let mut prev_dash = true;
@@ -810,6 +539,16 @@ mod tests {
     }
 
     #[test]
+    fn test_sanitizer_nested_bypass_and_unicode() {
+        let clean = sanitize_html(
+            "<scr<script>ipt>alert(1)</script>Teks – café <img src=x onerror=alert(1)>",
+        );
+        assert!(!clean.contains("<script"));
+        assert!(!clean.contains("onerror"));
+        assert!(clean.contains("café"));
+    }
+
+    #[test]
     fn test_sanitizer_removes_onerror_and_inline_events() {
         let dirty = r#"<img src="foto.jpg" onerror="alert('hack')" alt="Foto Kampus" />"#;
         let clean = sanitize_html(dirty);
@@ -825,7 +564,7 @@ mod tests {
         let clean = sanitize_html(dirty);
         assert!(!clean.contains("javascript:"));
         assert!(!clean.contains("alert"));
-        assert_eq!(clean, "<a>Klik Di Sini</a>");
+        assert!(clean.contains("Klik Di Sini") && !clean.contains("href"));
     }
 
     #[test]

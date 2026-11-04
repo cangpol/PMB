@@ -9,6 +9,7 @@ import {
   ErrorState,
 } from "../../components/common";
 import { fetchApi } from "../../services/api";
+import { BuktiBayarAdminPanel } from "../../components/admin/BuktiBayarAdminPanel";
 
 interface BerkasDaftarUlang {
   id: string;
@@ -167,6 +168,8 @@ export const VerifikasiDaftarUlangPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <BuktiBayarAdminPanel onChanged={loadData} />
+
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-biru-200">
         <div>

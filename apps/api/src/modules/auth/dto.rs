@@ -21,7 +21,35 @@ pub struct RegisterRequest {
         message = "Nomor HP harus antara 10-20 karakter numerik"
     ))]
     pub no_hp: String,
+
+    /// Dari mana calon mengetahui PMB UPITRA (kode dari `SUMBER_INFORMASI`)
+    #[serde(default)]
+    #[validate(length(max = 40))]
+    pub sumber_informasi: Option<String>,
+
+    /// Keterangan tambahan jika sumber = LAINNYA
+    #[serde(default)]
+    #[validate(length(max = 150))]
+    pub sumber_informasi_lainnya: Option<String>,
 }
+
+/// Daftar sumber informasi yang valid (kode, label)
+pub const SUMBER_INFORMASI: [(&str, &str); 14] = [
+    ("INSTAGRAM", "Instagram"),
+    ("TIKTOK", "TikTok"),
+    ("FACEBOOK", "Facebook"),
+    ("YOUTUBE", "YouTube"),
+    ("WEBSITE_UPITRA", "Website UPITRA"),
+    ("GOOGLE", "Pencarian Google"),
+    ("WHATSAPP", "WhatsApp / Broadcast"),
+    ("SOSIALISASI_SEKOLAH", "Sosialisasi di Sekolah"),
+    ("TEMAN_KELUARGA", "Teman / Keluarga"),
+    ("ALUMNI_MAHASISWA", "Alumni / Mahasiswa UPITRA"),
+    ("BROSUR_SPANDUK", "Brosur / Spanduk / Baliho"),
+    ("PAMERAN_EDUFAIR", "Pameran Pendidikan / Edufair"),
+    ("IKLAN_MEDIA", "Iklan Media (Radio/TV/Koran)"),
+    ("LAINNYA", "Lainnya"),
+];
 
 #[derive(Debug, Deserialize, Validate, ToSchema)]
 pub struct LoginRequest {

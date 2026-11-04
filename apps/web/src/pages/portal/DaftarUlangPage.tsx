@@ -17,6 +17,7 @@ import {
   ErrorState,
 } from "../../components/common";
 import { fetchApi } from "../../services/api";
+import { BuktiBayarCard } from "../../components/daftar-ulang/BuktiBayarCard";
 import logoPlaceholder from "../../assets/logo-placeholder.svg";
 
 interface TagihanDto {
@@ -53,6 +54,9 @@ interface DaftarUlangResponse {
   fakultas: string;
   status_kelulusan: string;
   status_daftar_ulang: string; // 'BELUM_DAFTAR_ULANG' | 'TAGIHAN_TERBIT' | 'LUNAS' | 'BERKAS_LENGKAP' | 'TERDAFTAR_SEBAGAI_MAHASISWA'
+  nomor_registrasi?: string | null;
+  status_bukti_bayar?: string | null;
+  catatan_bukti_bayar?: string | null;
   nim_resmi?: string | null;
   nomor_loa?: string | null;
   tagihan?: TagihanDto | null;
@@ -437,6 +441,15 @@ export const DaftarUlangPage: React.FC = () => {
               </p>
             )}
           </Card>
+
+          <BuktiBayarCard
+            nomorRegistrasi={data.nomor_registrasi}
+            statusBukti={data.status_bukti_bayar}
+            catatanBukti={data.catatan_bukti_bayar}
+            nominal={data.tagihan?.nominal_akhir}
+            sudahLunas={Boolean(isLunas)}
+            onUploaded={loadData}
+          />
 
           {/* Section 2: Unggah Berkas Registrasi Mahasiswa Baru */}
           <Card className="p-6 border-biru-200 bg-putih rounded-2xl shadow-sm space-y-4">

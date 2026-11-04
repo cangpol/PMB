@@ -1,11 +1,15 @@
 @import "tailwindcss";
+@import "@fontsource/montserrat/latin-400.css";
 @import "@fontsource/montserrat/latin-500.css";
 @import "@fontsource/montserrat/latin-600.css";
 @import "@fontsource/montserrat/latin-700.css";
+@import "@fontsource/montserrat/latin-800.css";
 @import "@fontsource/poppins/latin-400.css";
 @import "@fontsource/poppins/latin-500.css";
 @import "@fontsource/poppins/latin-600.css";
+@import "@fontsource/poppins/latin-300.css";
 @import "@fontsource/poppins/latin-700.css";
+@import "@fontsource/poppins/latin-800.css";
 
 @theme {
   --color-biru-950: #061633;
@@ -19,13 +23,10 @@
   --color-biru-50: #f1f6fe;
   --color-putih: #ffffff;
 
-  --font-serif: "Montserrat", system-ui, sans-serif;
-  --font-sans:
-    "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    monospace;
+  --font-serif: "Montserrat", "Poppins", sans-serif;
+  --font-sans: "Poppins", "Montserrat", sans-serif;
+  --font-display: "Montserrat", "Poppins", sans-serif;
+  --font-mono: "Poppins", "Montserrat", sans-serif;
 
   --text-scale-12: 0.75rem;
   --text-scale-14: 0.875rem;
@@ -77,6 +78,32 @@
   font-family: var(--font-sans);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Tipografi: hanya Montserrat (judul) & Poppins (isi) di seluruh aplikasi */
+html,
+body,
+button,
+input,
+select,
+textarea,
+optgroup,
+table,
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-serif {
+  font-family: var(--font-display);
 }
 
 /* Aksesibilitas: Hormati prefers-reduced-motion */

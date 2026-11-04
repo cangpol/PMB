@@ -18,7 +18,7 @@ use crate::{
     modules::{
         cbt::{
             dto::{
-                AssignPesertaRequest, AutosaveJawabanRequest, AutosaveJawabanResponse,
+                AssignPesertaRequest, AutosaveJawabanRequest, LaporPelanggaranRequest, AutosaveJawabanResponse,
                 CreatePaketRequest, CreateSesiRequest, CreateSoalRequest, ErrorBarisImport,
                 ImportSoalResultResponse, LiveMonitorStreamResponse, LivePesertaStatusItem,
                 MulaiUjianCbtResponse, PresensiCheckInRequest, PresensiCheckInResponse,
@@ -83,6 +83,7 @@ pub fn cbt_router() -> Router<AppState> {
         .route("/mulai", post(mulai_ujian_handler))
         .route("/autosave", post(autosave_jawaban_handler))
         .route("/submit", post(submit_ujian_handler))
+        .route("/pelanggaran", post(lapor_pelanggaran_handler))
         // Jalur Presensi & Pengawas
         .route("/admin/presensi/check-in", post(check_in_presensi_handler))
         .route(
@@ -188,6 +189,22 @@ pub async fn autosave_jawaban_handler(
 
     let service = CbtService::new(CbtRepository::new(state.db.clone()));
     let res = service.autosave_jawaban(pendaftar.id, req).await?;
+    Ok(Json(res))
+}
+
+pub async fn lapor_pelanggaran_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    ValidatedJson(req): ValidatedJson<LaporPelanggaranRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let pendaftar_repo = PendaftaranRepository::new(state.db.clone());
+    let pendaftar = pendaftar_repo
+        .find_by_user_id(auth_user.user_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Data pendaftar tidak ditemukan".to_string()))?;
+
+    let service = CbtService::new(CbtRepository::new(state.db.clone()));
+    let res = service.lapor_pelanggaran(pendaftar.id, req, None).await?;
     Ok(Json(res))
 }
 

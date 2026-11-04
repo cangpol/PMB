@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { SumberInformasiCard } from "../../components/admin/SumberInformasiCard";
 import { useQuery } from "@tanstack/react-query";
 import {
   Users,
@@ -817,6 +818,8 @@ export const AdminDashboard: React.FC = () => {
           </Card>
         </>
       )}
+
+      <SumberInformasiCard />
     </div>
   );
 };

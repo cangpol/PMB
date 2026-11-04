@@ -137,6 +137,18 @@ export const EditorBeritaPage: React.FC = () => {
     const file = input.files?.[0];
     if (!file) return;
 
+    const TIPE_OK = ["image/png", "image/jpeg", "image/webp"];
+    if (!TIPE_OK.includes(file.type)) {
+      alert("Format gambar harus PNG, JPG, atau WEBP.");
+      input.value = "";
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Ukuran gambar maksimal 5 MB.");
+      input.value = "";
+      return;
+    }
+
     try {
       setUploadLoading(true);
       // 1. Minta Presigned URL dari backend

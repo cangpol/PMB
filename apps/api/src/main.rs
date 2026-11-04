@@ -24,7 +24,6 @@ use api::{
         pembayaran::pembayaran_router,
         pendaftaran::pendaftaran_router,
         rpl::rpl_router,
-        ujian::ujian_router,
     },
     openapi::ApiDoc,
     security::SessionStore,
@@ -135,7 +134,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest("/master", master_router())
         .nest("/pendaftaran", pendaftaran_router())
         .nest("/pembayaran", pembayaran_router())
-        .nest("/ujian", ujian_router())
         .nest("/cbt", cbt_router())
         .nest("/kelulusan", kelulusan_router())
         .nest("/rpl", rpl_router())

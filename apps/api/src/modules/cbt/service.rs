@@ -11,6 +11,7 @@ use crate::{
         cbt::{
             dto::{
                 AutosaveJawabanRequest, AutosaveJawabanResponse, CreatePaketRequest,
+                LaporPelanggaranRequest, LaporPelanggaranResponse,
                 CreateSesiRequest, ImportSoalResultResponse, LivePesertaStatusItem,
                 MulaiUjianCbtResponse, PresensiCheckInRequest, PresensiCheckInResponse,
                 SesiCalonInfoResponse, SoalCbtPesertaResponse, SoalOpsiDto, SubmitUjianResponse,
@@ -215,7 +216,20 @@ impl CbtService {
         let urutan_json = serde_json::to_value(&urutan_ids).unwrap_or_default();
 
         // Durasi dihitung di server
-        let batas_waktu = now + Duration::minutes(paket.durasi_menit as i64);
+        if now > sesi.jadwal_selesai {
+            return Err(AppError::Forbidden(
+                "Jadwal sesi ujian Anda telah berakhir. Hubungi panitia PMB.".to_string(),
+            ));
+        }
+        if now < sesi.jadwal_mulai {
+            return Err(AppError::Forbidden(
+                "Sesi ujian belum dibuka. Tunggu hingga jadwal mulai sesi Anda.".to_string(),
+            ));
+        }
+
+        // Waktu dihitung di SERVER dan tidak boleh melewati penutupan sesi
+        let batas_waktu =
+            (now + Duration::minutes(paket.durasi_menit as i64)).min(sesi.jadwal_selesai);
 
         let started_peserta = self
             .repo
@@ -378,6 +392,53 @@ impl CbtService {
     // 3. CALON MAHASISWA: AUTOSAVE JAWABAN & SUBMIT
     // =========================================================================
 
+    /// Mencatat pelanggaran integritas dari klien. Server sebagai penentu:
+    /// setelah melewati batas, ujian otomatis disubmit.
+    pub async fn lapor_pelanggaran(
+        &self,
+        pendaftar_id: Uuid,
+        req: LaporPelanggaranRequest,
+        ip: Option<&str>,
+    ) -> Result<LaporPelanggaranResponse, AppError> {
+        const BATAS: i64 = 5;
+        const JENIS: [&str; 10] = [
+            "TAB_PINDAH",
+            "WINDOW_BLUR",
+            "FULLSCREEN_KELUAR",
+            "COPY",
+            "PASTE",
+            "CUT",
+            "KLIK_KANAN",
+            "DEVTOOLS",
+            "CETAK",
+            "SHORTCUT",
+        ];
+        let peserta = self
+            .repo
+            .find_active_session_for_pendaftar(pendaftar_id)
+            .await?
+            .ok_or_else(|| AppError::BadRequest("Tidak ada sesi ujian aktif".to_string()))?;
+
+        if !JENIS.contains(&req.jenis.as_str()) {
+            return Err(AppError::BadRequest(
+                "Jenis pelanggaran tidak dikenal".to_string(),
+            ));
+        }
+        self.repo
+            .insert_pelanggaran(peserta.id, &req.jenis, req.detail.as_deref(), ip)
+            .await?;
+        let total = self.repo.count_pelanggaran(peserta.id).await?;
+        let auto = total >= BATAS;
+        if auto {
+            let _ = self.submit_ujian_calon(pendaftar_id).await;
+        }
+        Ok(LaporPelanggaranResponse {
+            total_pelanggaran: total,
+            batas_pelanggaran: BATAS,
+            auto_submitted: auto,
+        })
+    }
+
     pub async fn autosave_jawaban(
         &self,
         pendaftar_id: Uuid,
@@ -403,6 +464,26 @@ impl CbtService {
                 sisa_detik: 0,
                 is_expired: true,
             });
+        }
+
+        // Soal harus bagian dari susunan soal peserta ini; format pilihan dibatasi
+        let soal_valid = match &peserta.urutan_soal_ids {
+            Some(serde_json::Value::Array(ids)) => ids
+                .iter()
+                .any(|v| v.as_str() == Some(req.soal_id.to_string().as_str())),
+            _ => false,
+        };
+        if !soal_valid {
+            return Err(AppError::BadRequest(
+                "Soal tidak termasuk dalam sesi ujian Anda".to_string(),
+            ));
+        }
+        if let Some(p) = req.pilihan_jawaban.as_deref() {
+            if p.is_empty() || p.len() > 10 || !p.chars().all(|c| c.is_ascii_alphanumeric()) {
+                return Err(AppError::BadRequest(
+                    "Format pilihan jawaban tidak valid".to_string(),
+                ));
+            }
         }
 
         self.repo

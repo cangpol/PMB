@@ -44,6 +44,18 @@ impl AuthService {
             ));
         }
 
+        let sumber = req.sumber_informasi.as_deref().map(str::trim).filter(|s| !s.is_empty());
+        if let Some(s) = sumber {
+            if !crate::modules::auth::dto::SUMBER_INFORMASI
+                .iter()
+                .any(|(kode, _)| *kode == s)
+            {
+                return Err(AppError::BadRequest(
+                    "Sumber informasi tidak valid".to_string(),
+                ));
+            }
+        }
+
         let hashed = hash_password(&req.password).map_err(AppError::Internal)?;
 
         let user = self
@@ -56,6 +68,25 @@ impl AuthService {
                 &req.no_hp,
             )
             .await?;
+
+        if let Some(s) = sumber {
+            let lain = if s == "LAINNYA" {
+                req.sumber_informasi_lainnya
+                    .as_deref()
+                    .map(str::trim)
+                    .filter(|t| !t.is_empty())
+            } else {
+                None
+            };
+            sqlx::query(
+                "UPDATE users SET sumber_informasi = $2, sumber_informasi_lainnya = $3 WHERE id = $1",
+            )
+            .bind(user.id)
+            .bind(s)
+            .bind(lain)
+            .execute(self.user_repo.pool())
+            .await?;
+        }
 
         // Buat token verifikasi email (aktif 24 jam)
         let token_raw = Uuid::new_v4().to_string();

@@ -503,6 +503,35 @@ impl CbtRepository {
         Ok(row)
     }
 
+    pub async fn insert_pelanggaran(
+        &self,
+        peserta_sesi_id: Uuid,
+        jenis: &str,
+        detail: Option<&str>,
+        ip: Option<&str>,
+    ) -> Result<(), AppError> {
+        sqlx::query(
+            "INSERT INTO pelanggaran_ujian (peserta_sesi_id, jenis, detail, ip_address) VALUES ($1, $2, $3, $4)",
+        )
+        .bind(peserta_sesi_id)
+        .bind(jenis)
+        .bind(detail)
+        .bind(ip)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    pub async fn count_pelanggaran(&self, peserta_sesi_id: Uuid) -> Result<i64, AppError> {
+        let n: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pelanggaran_ujian WHERE peserta_sesi_id = $1",
+        )
+        .bind(peserta_sesi_id)
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(n)
+    }
+
     pub async fn autosave_jawaban(
         &self,
         peserta_sesi_id: Uuid,

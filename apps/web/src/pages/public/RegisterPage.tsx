@@ -17,6 +17,7 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Card } from "../../components/ui/Card";
 import { useAuth } from "../../context/useAuth";
+import { SUMBER_INFORMASI_OPTIONS } from "../../data/sumberInformasi";
 
 const registerSchema = z
   .object({
@@ -41,11 +42,23 @@ const registerSchema = z
       .string()
       .min(1, "Konfirmasi kata sandi tidak boleh kosong")
       .min(8, "Konfirmasi kata sandi minimal 8 karakter"),
+    sumber_informasi: z.string().min(1, "Pilih dari mana Anda mengetahui PMB UPITRA"),
+    sumber_informasi_lainnya: z.string().max(150, "Maksimal 150 karakter").optional(),
   })
   .refine((data) => data.password === data.confirm_password, {
     message: "Konfirmasi kata sandi tidak cocok dengan kata sandi di atas",
     path: ["confirm_password"],
-  });
+  })
+  .refine(
+    (data) =>
+      data.sumber_informasi !== "LAINNYA" ||
+      !!data.sumber_informasi_lainnya?.trim(),
+    {
+      message: "Mohon sebutkan sumber informasi Anda",
+      path: ["sumber_informasi_lainnya"],
+    },
+  );
+
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
@@ -70,6 +83,7 @@ export const RegisterPage: React.FC = () => {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -79,8 +93,11 @@ export const RegisterPage: React.FC = () => {
       no_hp: "",
       password: "",
       confirm_password: "",
+      sumber_informasi: "",
+      sumber_informasi_lainnya: "",
     },
   });
+  const sumberDipilih = watch("sumber_informasi");
 
   const onSubmit = async (values: RegisterFormValues) => {
     setIsSubmitting(true);
@@ -91,6 +108,11 @@ export const RegisterPage: React.FC = () => {
         email: values.email,
         no_hp: values.no_hp,
         password: values.password,
+        sumber_informasi: values.sumber_informasi,
+        sumber_informasi_lainnya:
+          values.sumber_informasi === "LAINNYA"
+            ? values.sumber_informasi_lainnya?.trim()
+            : undefined,
       });
       setRegisteredEmail(values.email);
     } catch (err: unknown) {
@@ -233,6 +255,49 @@ export const RegisterPage: React.FC = () => {
             <p className="mt-1 text-xs font-semibold text-biru-800">
               {errors.no_hp.message}
             </p>
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="sumber_informasi"
+            className="block text-xs font-bold uppercase tracking-wider text-biru-900 mb-1.5"
+          >
+            Dari mana Anda mengetahui PMB UPITRA?
+          </label>
+          <select
+            id="sumber_informasi"
+            {...register("sumber_informasi")}
+            aria-invalid={!!errors.sumber_informasi}
+            className="w-full rounded-lg border border-biru-200 bg-putih px-3 py-2.5 text-sm text-biru-950 focus:border-biru-600 focus:outline-none focus:ring-2 focus:ring-biru-600/20"
+          >
+            <option value="">-- Pilih sumber informasi --</option>
+            {SUMBER_INFORMASI_OPTIONS.map((o) => (
+              <option key={o.kode} value={o.kode}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          {errors.sumber_informasi && (
+            <p className="mt-1 text-xs font-semibold text-biru-800">
+              {errors.sumber_informasi.message}
+            </p>
+          )}
+          {sumberDipilih === "LAINNYA" && (
+            <div className="mt-2">
+              <Input
+                {...register("sumber_informasi_lainnya")}
+                type="text"
+                maxLength={150}
+                placeholder="Sebutkan sumber informasi Anda"
+                aria-invalid={!!errors.sumber_informasi_lainnya}
+              />
+              {errors.sumber_informasi_lainnya && (
+                <p className="mt-1 text-xs font-semibold text-biru-800">
+                  {errors.sumber_informasi_lainnya.message}
+                </p>
+              )}
+            </div>
           )}
         </div>
 

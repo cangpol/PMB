@@ -1023,6 +1023,21 @@ impl KelulusanService {
         // Ambil daftar berkas daftar ulang yang telah diunggah
         let berkas_list = self.repo.list_berkas_daftar_ulang(pendaftar.id).await?;
 
+        // Nomor registrasi daftar ulang (dibuat sekali) & status bukti bayar terakhir
+        let nomor_registrasi =
+            crate::modules::kelulusan::bukti_bayar::ensure_nomor_registrasi(
+                self.repo.pool(),
+                pendaftar.id,
+            )
+            .await?;
+        let bukti_terakhir: Option<(String, Option<String>)> = sqlx::query_as(
+            "SELECT status, catatan FROM bukti_bayar_daftar_ulang
+             WHERE pendaftar_id = $1 ORDER BY created_at DESC LIMIT 1",
+        )
+        .bind(pendaftar.id)
+        .fetch_optional(self.repo.pool())
+        .await?;
+
         Ok(DaftarUlangInfoResponse {
             pendaftar_id: pendaftar.id,
             nomor_pendaftaran: pendaftar.nomor_pendaftaran,
@@ -1041,6 +1056,9 @@ impl KelulusanService {
                 .unwrap_or_else(|| "-".to_string()),
             status_kelulusan: hasil.status_kelulusan,
             status_daftar_ulang: hasil.status_daftar_ulang,
+            nomor_registrasi: Some(nomor_registrasi),
+            status_bukti_bayar: bukti_terakhir.as_ref().map(|b| b.0.clone()),
+            catatan_bukti_bayar: bukti_terakhir.and_then(|b| b.1),
             nim_resmi: hasil.nim_resmi,
             nomor_loa: hasil.nomor_surat_loa,
             tagihan: tagihan_dto,

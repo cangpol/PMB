@@ -68,6 +68,21 @@ pub struct AutosaveJawabanRequest {
     pub ragu_ragu: bool,
 }
 
+#[derive(Debug, Clone, Deserialize, ToSchema, Validate)]
+pub struct LaporPelanggaranRequest {
+    #[validate(length(min = 1, max = 40))]
+    pub jenis: String,
+    #[validate(length(max = 255))]
+    pub detail: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct LaporPelanggaranResponse {
+    pub total_pelanggaran: i64,
+    pub batas_pelanggaran: i64,
+    pub auto_submitted: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AutosaveJawabanResponse {
     pub status: String,

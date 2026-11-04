@@ -14,13 +14,13 @@
 
   <!-- Tipografi Teks Institusi -->
   <g transform="translate(72, 14)">
-    <text x="0" y="16" font-family="Montserrat, system-ui, sans-serif" font-size="15" font-weight="800" letter-spacing="1.5" fill="#061633">
+    <text x="0" y="16" font-family="Montserrat, sans-serif" font-size="15" font-weight="800" letter-spacing="1.5" fill="#061633">
       UNIVERSITAS
     </text>
-    <text x="0" y="32" font-family="Montserrat, system-ui, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="#1A4BB5">
+    <text x="0" y="32" font-family="Montserrat, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="#1A4BB5">
       PIGNATELLI TRIPUTRA
     </text>
-    <text x="0" y="44" font-family="Poppins, system-ui, sans-serif" font-size="8.5" font-weight="600" letter-spacing="1" fill="#4B6B99">
+    <text x="0" y="44" font-family="Poppins, sans-serif" font-size="8.5" font-weight="600" letter-spacing="1" fill="#4B6B99">
       SURAKARTA &#8226; PMB 2026/2027
     </text>
   </g>

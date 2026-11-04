@@ -165,6 +165,9 @@ pub struct DaftarUlangInfoResponse {
     pub fakultas: String,
     pub status_kelulusan: String,
     pub status_daftar_ulang: String, // 'BELUM_DAFTAR_ULANG', 'TAGIHAN_TERBIT', 'LUNAS', 'BERKAS_LENGKAP', 'TERDAFTAR_SEBAGAI_MAHASISWA'
+    pub nomor_registrasi: Option<String>,
+    pub status_bukti_bayar: Option<String>, // 'PENDING', 'DISETUJUI', 'DITOLAK'
+    pub catatan_bukti_bayar: Option<String>,
     pub nim_resmi: Option<String>,
     pub nomor_loa: Option<String>,
     pub tagihan: Option<TagihanDaftarUlangDto>,

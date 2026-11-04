@@ -5,7 +5,10 @@ export type Schemas = components["schemas"];
 export type ApiErrorResponse = Schemas["ApiErrorResponse"];
 export type AuthResponse = Schemas["AuthResponse"];
 export type LoginRequest = Schemas["LoginRequest"];
-export type RegisterRequest = Schemas["RegisterRequest"];
+export type RegisterRequest = Schemas["RegisterRequest"] & {
+  sumber_informasi?: string;
+  sumber_informasi_lainnya?: string;
+};
 export type VerifyEmailRequest = Schemas["VerifyEmailRequest"];
 export type ForgotPasswordRequest = Schemas["ForgotPasswordRequest"];
 export type ResetPasswordRequest = Schemas["ResetPasswordRequest"];

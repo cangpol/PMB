@@ -22,6 +22,10 @@ import {
 } from "../../components/common";
 import { fetchApi, type ApiError } from "@/services/api";
 import { useToast } from "@/components/ui/useToast";
+import {
+  useCbtAntiCheat,
+  type JenisPelanggaran,
+} from "@/hooks/useCbtAntiCheat";
 import type { components } from "@/types/api";
 
 type SesiCalonInfo = components["schemas"]["SesiCalonInfoResponse"];
@@ -273,6 +277,55 @@ export const UjianCbtPage: React.FC = () => {
       setIsSubmitting(false);
     }
   }, [loadMySesi, toast]);
+
+  // 6. Pengawasan integritas: klien melapor, server menghitung & memutuskan
+  const [pelanggaran, setPelanggaran] = useState<{
+    total: number;
+    batas: number;
+  }>({ total: 0, batas: 5 });
+
+  const handlePelanggaran = useCallback(
+    async (jenis: JenisPelanggaran, detail?: string) => {
+      try {
+        const res = await fetchApi<{
+          total_pelanggaran: number;
+          batas_pelanggaran: number;
+          auto_submitted: boolean;
+        }>("/api/cbt/pelanggaran", {
+          method: "POST",
+          body: JSON.stringify({ jenis, detail }),
+        });
+        setPelanggaran({
+          total: res.total_pelanggaran,
+          batas: res.batas_pelanggaran,
+        });
+        if (res.auto_submitted) {
+          toast({
+            title: "Ujian Dihentikan",
+            description:
+              "Pelanggaran tata tertib melebihi batas. Jawaban dikumpulkan otomatis.",
+            type: "error",
+          });
+          await handleAutoSubmitOnExpiry();
+        } else {
+          toast({
+            title: `Peringatan ${res.total_pelanggaran}/${res.batas_pelanggaran}`,
+            description:
+              "Aktivitas mencurigakan terdeteksi dan dicatat. Tetap fokus pada layar ujian.",
+            type: "error",
+          });
+        }
+      } catch {
+        // Gagal lapor (mis. offline) tidak boleh mengganggu peserta
+      }
+    },
+    [handleAutoSubmitOnExpiry, toast],
+  );
+
+  const { isFullscreen, masukFullscreen } = useCbtAntiCheat({
+    aktif: ujianActive,
+    onPelanggaran: handlePelanggaran,
+  });
 
   // Format detik ke format mm:ss atau hh:mm:ss
   const formatTimer = (totalSeconds: number) => {
@@ -560,6 +613,12 @@ export const UjianCbtPage: React.FC = () => {
                 Jika batas waktu berakhir, seluruh jawaban yang telah dipilih
                 akan otomatis dikumpulkan oleh sistem.
               </li>
+              <li>
+                Ujian berjalan dalam mode layar penuh. Berpindah tab/jendela,
+                keluar layar penuh, menyalin/menempel, klik kanan, membuka
+                developer tools, atau mencetak akan <strong>dicatat</strong>.
+                Setelah 5 pelanggaran, ujian otomatis dikumpulkan.
+              </li>
             </ul>
           </div>
 
@@ -571,7 +630,10 @@ export const UjianCbtPage: React.FC = () => {
             </Link>
             <Button
               variant="primary"
-              onClick={startOrResumeExam}
+              onClick={async () => {
+                await masukFullscreen();
+                await startOrResumeExam();
+              }}
               disabled={loading}
               className="w-full sm:w-auto flex items-center justify-center gap-2"
             >
@@ -600,7 +662,31 @@ export const UjianCbtPage: React.FC = () => {
   const isTimeCritical = sisaDetik <= 300; // < 5 menit
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
+    <div className="min-h-screen bg-slate-100 flex flex-col select-none">
+      {/* Gerbang layar penuh: soal disembunyikan sampai peserta kembali fullscreen */}
+      {!isFullscreen && (
+        <div className="fixed inset-0 z-[60] bg-biru-950/95 flex items-center justify-center p-6 text-center">
+          <div className="max-w-md text-white space-y-4">
+            <ShieldAlert className="w-12 h-12 mx-auto text-amber-400" />
+            <h2 className="text-xl font-serif font-bold">
+              Mode Layar Penuh Diperlukan
+            </h2>
+            <p className="text-sm text-biru-100 leading-relaxed">
+              Soal disembunyikan hingga Anda kembali ke layar penuh. Waktu ujian
+              tetap berjalan di server.
+            </p>
+            <Button variant="primary" onClick={masukFullscreen}>
+              Kembali ke Layar Penuh
+            </Button>
+          </div>
+        </div>
+      )}
+      {pelanggaran.total > 0 && (
+        <div className="bg-rose-600 text-white text-xs text-center py-1.5 font-semibold">
+          Peringatan integritas: {pelanggaran.total}/{pelanggaran.batas}{" "}
+          pelanggaran tercatat. Ujian otomatis berakhir pada batas maksimum.
+        </div>
+      )}
       {/* Top Bar Ujian: Timer & Indikator Sinkronisasi */}
       <header className="sticky top-0 z-30 bg-biru-950 text-white shadow-md border-b border-biru-900 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
