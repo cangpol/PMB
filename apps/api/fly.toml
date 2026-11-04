@@ -1,0 +1,35 @@
+# Konfigurasi Fly.io untuk backend PMB (Axum).
+# Ganti `app` dengan nama unik Anda, lalu jalankan `fly deploy` dari folder apps/api.
+app = "pmb-upitra-api"
+primary_region = "sin" # Singapura (terdekat dari Indonesia)
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  APP_ENV = "production"
+  PORT = "8080"
+  API_HOST = "0.0.0.0"
+  COOKIE_SECURE = "true"
+  COOKIE_SAME_SITE = "Lax"
+  PAYMENT_GATEWAY_PROVIDER = "mock"
+  # Isi domain Vercel Anda (pisahkan koma jika lebih dari satu)
+  CORS_ORIGIN = "https://pmb-qshf.vercel.app"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/health/live"
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "20s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

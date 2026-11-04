@@ -39,6 +39,7 @@ RUN groupadd -g 1001 pmb && useradd -u 1001 -g pmb -s /bin/sh pmb
 
 # Salin binari hasil kompilasi dari builder
 COPY --from=builder /usr/src/app/target/release/api /app/api
+COPY --from=builder /usr/src/app/target/release/seed /app/seed
 COPY --from=builder /usr/src/app/migrations /app/migrations
 
 # Berikan hak akses
