@@ -64,8 +64,9 @@ export const ProdiPage: React.FC = () => {
     queryFn: getFakultasWithProdiList,
   });
 
-  const isLoading = isProdiLoading || isFakultasLoading;
-  const isError = isProdiError || isFakultasError;
+  const isLoading =
+    (isProdiLoading || isFakultasLoading) && prodiList.length === 0;
+  const isError = (isProdiError || isFakultasError) && prodiList.length === 0;
 
   // Handler sinkronisasi filter ke URL Search Params
   const updateFilters = (updates: {

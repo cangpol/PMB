@@ -332,10 +332,8 @@ fn simulate_fetch_candidate_result(
     // Pada arsitektur yang aman (anti-IDOR), endpoint /api/kelulusan/my-result
     // SELALU menggunakan pendaftar_id yang terikat dengan user_id sesi autentikasi,
     // dan menolak upaya calon meminta ID milik pendaftar lain.
-    if let Some(target_id) = requested_pendaftar_id {
-        if target_id != session.pendaftar_id {
-            return Err("403 Forbidden: Anda tidak diizinkan mengakses hasil kandidat lain");
-        }
+    if matches!(requested_pendaftar_id, Some(target_id) if target_id != session.pendaftar_id) {
+        return Err("403 Forbidden: Anda tidak diizinkan mengakses hasil kandidat lain");
     }
 
     Ok(format!("Hasil Kelulusan Milik: {}", session.nama))

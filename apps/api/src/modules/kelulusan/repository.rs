@@ -896,4 +896,68 @@ impl KelulusanRepository {
         .await?;
         Ok(list)
     }
+
+    pub async fn find_publik_by_nomor_pendaftaran(
+        &self,
+        nomor_pendaftaran: &str,
+    ) -> Result<Option<PublikKelulusanRow>, AppError> {
+        let clean_nomor = nomor_pendaftaran.trim();
+        let row = sqlx::query(
+            r#"
+            SELECT 
+                p.nomor_pendaftaran,
+                u.nama_lengkap,
+                j.nama_jalur,
+                g.nama_gelombang,
+                COALESCE(h.status_kelulusan, 'BELUM_DIPUTUSKAN') AS status_kelulusan,
+                prd.nama_prodi,
+                prd.jenjang,
+                prd.fakultas,
+                COALESCE(h.is_published, FALSE) AS is_published,
+                s.tgl_pengumuman
+            FROM pendaftar p
+            JOIN users u ON u.id = p.user_id
+            JOIN jalur_masuk j ON j.id = p.jalur_id
+            JOIN gelombang g ON g.id = p.gelombang_id
+            LEFT JOIN hasil_kelulusan h ON h.pendaftar_id = p.id
+            LEFT JOIN sidang_kelulusan s ON s.id = h.sidang_id
+            LEFT JOIN program_studi prd ON prd.id = h.prodi_diterima_id
+            WHERE LOWER(p.nomor_pendaftaran) = LOWER($1)
+            "#,
+        )
+        .bind(clean_nomor)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        if let Some(r) = row {
+            Ok(Some(PublikKelulusanRow {
+                nomor_pendaftaran: r.get("nomor_pendaftaran"),
+                nama_lengkap: r.get("nama_lengkap"),
+                jalur_nama: r.get("nama_jalur"),
+                gelombang_nama: r.get("nama_gelombang"),
+                status_kelulusan: r.get("status_kelulusan"),
+                nama_prodi: r.get("nama_prodi"),
+                jenjang: r.get("jenjang"),
+                fakultas: r.get("fakultas"),
+                is_published: r.get("is_published"),
+                tgl_pengumuman: r.get("tgl_pengumuman"),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct PublikKelulusanRow {
+    pub nomor_pendaftaran: String,
+    pub nama_lengkap: String,
+    pub jalur_nama: String,
+    pub gelombang_nama: String,
+    pub status_kelulusan: String,
+    pub nama_prodi: Option<String>,
+    pub jenjang: Option<String>,
+    pub fakultas: Option<String>,
+    pub is_published: bool,
+    pub tgl_pengumuman: Option<DateTime<Utc>>,
 }

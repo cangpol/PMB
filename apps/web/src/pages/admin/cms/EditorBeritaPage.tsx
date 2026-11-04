@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Save, Upload } from "lucide-react";
@@ -35,6 +35,7 @@ export const EditorBeritaPage: React.FC = () => {
   const [tagInput, setTagInput] = useState("");
   const [activeTab, setActiveTab] = useState<"editor" | "preview">("editor");
   const [uploadLoading, setUploadLoading] = useState(false);
+  const contentEditorRef = useRef<HTMLTextAreaElement>(null);
 
   // Fetch post data jika mode Edit
   const {
@@ -112,16 +113,28 @@ export const EditorBeritaPage: React.FC = () => {
     });
   };
 
-  const insertFormatting = (before: string, after = "") => {
-    setFormData((prev) => ({
-      ...prev,
-      konten: `${prev.konten}\n${before}${after}`,
-    }));
+  const insertFormatting = (before: string, after = "", placeholder = "") => {
+    const editor = contentEditorRef.current;
+    const content = formData.konten;
+    const start = editor?.selectionStart ?? content.length;
+    const end = editor?.selectionEnd ?? content.length;
+    const selectedText = content.slice(start, end);
+    const insertion = `${before}${selectedText || placeholder}${after}`;
+    const updatedContent =
+      content.slice(0, start) + insertion + content.slice(end);
+
+    setFormData((prev) => ({ ...prev, konten: updatedContent }));
+    requestAnimationFrame(() => {
+      editor?.focus();
+      const cursorPosition = start + insertion.length;
+      editor?.setSelectionRange(cursorPosition, cursorPosition);
+    });
   };
 
   // Upload gambar featured ke S3 via Presigned URL
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.currentTarget;
+    const file = input.files?.[0];
     if (!file) return;
 
     try {
@@ -138,12 +151,12 @@ export const EditorBeritaPage: React.FC = () => {
       // 2. Upload file bytes langsung ke MinIO S3
       const uploadRes = await fetch(presignData.upload_url, {
         method: "PUT",
-        headers: { "Content-Type": file.type },
+        headers: { "Content-Type": file.type || "application/octet-stream" },
         body: file,
       });
 
       if (!uploadRes.ok) {
-        // Fallback: gunakan public url jika bucket lokal
+        throw new Error(`Unggah gambar gagal (HTTP ${uploadRes.status})`);
       }
 
       setFormData((prev) => ({
@@ -151,10 +164,15 @@ export const EditorBeritaPage: React.FC = () => {
         gambar_url: presignData.url,
       }));
       alert("Gambar berhasil diunggah!");
-    } catch (err: any) {
-      alert(`Gagal mengunggah gambar: ${err.message}`);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Terjadi kesalahan yang tidak diketahui";
+      alert(`Gagal mengunggah gambar: ${message}`);
     } finally {
       setUploadLoading(false);
+      input.value = "";
     }
   };
 
@@ -354,14 +372,16 @@ export const EditorBeritaPage: React.FC = () => {
               <div className="flex flex-wrap items-center gap-1 p-2 rounded-xl bg-biru-50/70 border border-biru-200 text-xs">
                 <button
                   type="button"
-                  onClick={() => insertFormatting("<h2>", "Judul Bagian</h2>")}
+                  onClick={() =>
+                    insertFormatting("<h2>", "</h2>", "Judul Bagian")
+                  }
                   className="px-2 py-1 rounded bg-putih border border-biru-200 text-biru-900 font-bold hover:bg-biru-100"
                 >
                   H2
                 </button>
                 <button
                   type="button"
-                  onClick={() => insertFormatting("<h3>", "Subjudul</h3>")}
+                  onClick={() => insertFormatting("<h3>", "</h3>", "Subjudul")}
                   className="px-2 py-1 rounded bg-putih border border-biru-200 text-biru-900 font-bold hover:bg-biru-100"
                 >
                   H3
@@ -369,7 +389,7 @@ export const EditorBeritaPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() =>
-                    insertFormatting("<p>", "Teks paragraf baru...</p>")
+                    insertFormatting("<p>", "</p>", "Teks paragraf baru...")
                   }
                   className="px-2 py-1 rounded bg-putih border border-biru-200 text-biru-900 font-medium hover:bg-biru-100"
                 >
@@ -378,7 +398,7 @@ export const EditorBeritaPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() =>
-                    insertFormatting("<strong>", "Teks Tebal</strong>")
+                    insertFormatting("<strong>", "</strong>", "Teks Tebal")
                   }
                   className="px-2 py-1 rounded bg-putih border border-biru-200 text-biru-900 font-bold hover:bg-biru-100"
                 >
@@ -400,7 +420,8 @@ export const EditorBeritaPage: React.FC = () => {
                   onClick={() =>
                     insertFormatting(
                       '<a href="https://..." target="_blank">',
-                      "Tautan Web</a>",
+                      "</a>",
+                      "Tautan Web",
                     )
                   }
                   className="px-2 py-1 rounded bg-putih border border-biru-200 text-biru-900 hover:bg-biru-100"
@@ -412,6 +433,7 @@ export const EditorBeritaPage: React.FC = () => {
 
             {activeTab === "editor" ? (
               <textarea
+                ref={contentEditorRef}
                 required
                 rows={12}
                 value={formData.konten}

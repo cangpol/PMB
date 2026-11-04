@@ -22,15 +22,19 @@ export async function getFakultasWithProdiList(): Promise<
 }
 
 /**
- * Mengambil detail program studi berdasarkan slug (misal: s1-informatika)
+ * Mengambil detail program studi berdasarkan slug (misal: s1-informatika) atau ID UUID
  */
 export async function getProdiBySlug(slug: string): Promise<ProdiResponse> {
-  try {
-    return await fetchApi<ProdiResponse>(`/api/master/prodi/slug/${slug}`);
-  } catch {
-    // Fallback jika dipanggil dengan ID UUID
-    return await fetchApi<ProdiResponse>(`/api/master/prodi/${slug}`);
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      slug.trim(),
+    );
+  if (isUuid) {
+    return await fetchApi<ProdiResponse>(`/api/master/prodi/${slug.trim()}`);
   }
+  return await fetchApi<ProdiResponse>(
+    `/api/master/prodi/slug/${encodeURIComponent(slug.trim())}`,
+  );
 }
 
 /**

@@ -8,11 +8,12 @@ use crate::{
     modules::{
         kelulusan::{
             dto::{
-                ApprovalSidangRequest, CekKelulusanCalonResponse, DaftarUlangInfoResponse,
-                DrafKelulusanResponse, EksporSiakadItemDto, GenerateNimResponse,
-                HasilKelulusanResponse, MahasiswaDaftarUlangDto, ProsesRankingRequest,
-                TagihanDaftarUlangDto, UpdateRumusRequest, UpdateStatusKandidatRequest,
-                UploadBerkasDaftarUlangRequest, VerifikasiBerkasDaftarUlangRequest,
+                ApprovalSidangRequest, CekKelulusanCalonResponse, CekKelulusanPublikResponse,
+                DaftarUlangInfoResponse, DrafKelulusanResponse, EksporSiakadItemDto,
+                GenerateNimResponse, HasilKelulusanResponse, MahasiswaDaftarUlangDto,
+                ProsesRankingRequest, TagihanDaftarUlangDto, UpdateRumusRequest,
+                UpdateStatusKandidatRequest, UploadBerkasDaftarUlangRequest,
+                VerifikasiBerkasDaftarUlangRequest,
             },
             model::{BerkasDaftarUlang, HasilKelulusan, RumusPenilaianJalur, SidangKelulusan},
             pdf::{LoaPdfData, generate_loa_pdf},
@@ -66,6 +67,31 @@ pub fn format_nim_resmi(tahun: i32, jenjang: &str, kode_prodi: &str, sequence: i
 
 pub fn format_nomor_loa(tahun: i32, sequence: i32) -> String {
     format!("SK/PMB-UPT/{}/{:04}", tahun, sequence)
+}
+
+pub fn mask_nama(nama: &str) -> String {
+    let clean = nama.trim();
+    if clean.is_empty() {
+        return "Calon Mahasiswa".to_string();
+    }
+    clean
+        .split_whitespace()
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                Some(first) => {
+                    let rest_count = chars.count();
+                    if rest_count > 0 {
+                        format!("{}{}", first, "*".repeat(rest_count))
+                    } else {
+                        first.to_string()
+                    }
+                }
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 // ==============================================================================
@@ -525,14 +551,14 @@ impl KelulusanService {
             .unwrap_or_else(|| ("Calon Mahasiswa".to_string(),));
 
         let jalur_row =
-            sqlx::query_as::<_, (String,)>("SELECT nama FROM jalur_masuk WHERE id = $1")
+            sqlx::query_as::<_, (String,)>("SELECT nama_jalur FROM jalur_masuk WHERE id = $1")
                 .bind(pendaftar.jalur_id)
                 .fetch_optional(self.repo.pool())
                 .await?
                 .unwrap_or_else(|| ("Jalur Reguler".to_string(),));
 
         let gelombang_row =
-            sqlx::query_as::<_, (String,)>("SELECT nama FROM gelombang WHERE id = $1")
+            sqlx::query_as::<_, (String,)>("SELECT nama_gelombang FROM gelombang WHERE id = $1")
                 .bind(pendaftar.gelombang_id)
                 .fetch_optional(self.repo.pool())
                 .await?
@@ -663,6 +689,96 @@ impl KelulusanService {
         })
     }
 
+    pub async fn get_cek_kelulusan_publik(
+        &self,
+        nomor_pendaftaran: &str,
+    ) -> Result<CekKelulusanPublikResponse, AppError> {
+        let clean_nomor = nomor_pendaftaran.trim();
+        if clean_nomor.is_empty() {
+            return Err(AppError::BadRequest(
+                "Nomor pendaftaran wajib diisi".to_string(),
+            ));
+        }
+
+        let row = self
+            .repo
+            .find_publik_by_nomor_pendaftaran(clean_nomor)
+            .await?
+            .ok_or_else(|| {
+                AppError::NotFound(format!(
+                    "Nomor pendaftaran '{}' tidak ditemukan dalam sistem seleksi resmi PMB.",
+                    clean_nomor
+                ))
+            })?;
+
+        let now = Utc::now();
+        let is_pengumuman_buka = row.is_published
+            && match row.tgl_pengumuman {
+                Some(tgl) => now >= tgl,
+                None => true,
+            };
+
+        let masked_name = mask_nama(&row.nama_lengkap);
+
+        if !is_pengumuman_buka {
+            let pesan = if let Some(tgl) = row.tgl_pengumuman {
+                format!(
+                    "Pengumuman hasil seleksi resmi untuk pendaftaran ini akan dirilis pada {}.",
+                    tgl.format("%d %B %Y jam %H:%M WIB")
+                )
+            } else {
+                "Pengumuman hasil seleksi kelulusan untuk pendaftaran ini belum dirilis secara resmi oleh panitia PMB.".to_string()
+            };
+
+            return Ok(CekKelulusanPublikResponse {
+                nomor_pendaftaran: row.nomor_pendaftaran,
+                nama_lengkap: masked_name,
+                jalur_nama: row.jalur_nama,
+                gelombang_nama: row.gelombang_nama,
+                status_kelulusan: "BELUM_DIPUTUSKAN".to_string(),
+                prodi_diterima: None,
+                jenjang_diterima: None,
+                fakultas_diterima: None,
+                is_pengumuman_buka: false,
+                tgl_pengumuman: row.tgl_pengumuman,
+                pesan,
+            });
+        }
+
+        let pesan = match row.status_kelulusan.as_str() {
+            "LULUS_PILIHAN_1" | "LULUS_PILIHAN_2" => {
+                "Selamat! Anda dinyatakan LULUS seleksi penerimaan mahasiswa baru Universitas Pignatelli Triputra. Silakan login ke Portal Calon Mahasiswa untuk melihat SK, mengunduh Letter of Acceptance (LoA), dan melanjutkan proses registrasi ulang."
+                    .to_string()
+            }
+            "CADANGAN" => {
+                "Anda berstatus CADANGAN pada seleksi penerimaan mahasiswa baru Universitas Pignatelli Triputra. Panitia PMB akan menginformasikan jika terdapat kuota yang tersedia."
+                    .to_string()
+            }
+            "TIDAK_LULUS" => {
+                "Terima kasih atas partisipasi Anda dalam seleksi PMB Universitas Pignatelli Triputra. Mohon maaf, Anda belum memenuhi kualifikasi seleksi pada jalur ini."
+                    .to_string()
+            }
+            _ => {
+                "Status seleksi pendaftaran Anda masih dalam tahap evaluasi oleh panitia PMB."
+                    .to_string()
+            }
+        };
+
+        Ok(CekKelulusanPublikResponse {
+            nomor_pendaftaran: row.nomor_pendaftaran,
+            nama_lengkap: masked_name,
+            jalur_nama: row.jalur_nama,
+            gelombang_nama: row.gelombang_nama,
+            status_kelulusan: row.status_kelulusan,
+            prodi_diterima: row.nama_prodi,
+            jenjang_diterima: row.jenjang,
+            fakultas_diterima: row.fakultas,
+            is_pengumuman_buka: true,
+            tgl_pengumuman: row.tgl_pengumuman,
+            pesan,
+        })
+    }
+
     async fn ensure_pengumuman_buka(&self, hasil: &HasilKelulusan) -> Result<(), AppError> {
         if !hasil.is_published {
             return Err(AppError::Forbidden(
@@ -724,7 +840,7 @@ impl KelulusanService {
         };
 
         let jalur_row =
-            sqlx::query_as::<_, (String,)>("SELECT nama FROM jalur_masuk WHERE id = $1")
+            sqlx::query_as::<_, (String,)>("SELECT nama_jalur FROM jalur_masuk WHERE id = $1")
                 .bind(pendaftar.jalur_id)
                 .fetch_optional(self.repo.pool())
                 .await?

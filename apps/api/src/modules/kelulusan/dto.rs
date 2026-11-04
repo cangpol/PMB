@@ -50,6 +50,27 @@ pub struct CekKelulusanCalonResponse {
     pub pesan: String,
 }
 
+#[derive(Debug, Clone, Deserialize, ToSchema, Validate)]
+pub struct CekKelulusanPublikQuery {
+    #[validate(length(min = 3, message = "Nomor pendaftaran minimal 3 karakter"))]
+    pub nomor_pendaftaran: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct CekKelulusanPublikResponse {
+    pub nomor_pendaftaran: String,
+    pub nama_lengkap: String,
+    pub jalur_nama: String,
+    pub gelombang_nama: String,
+    pub status_kelulusan: String,
+    pub prodi_diterima: Option<String>,
+    pub jenjang_diterima: Option<String>,
+    pub fakultas_diterima: Option<String>,
+    pub is_pengumuman_buka: bool,
+    pub tgl_pengumuman: Option<DateTime<Utc>>,
+    pub pesan: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, Validate)]
 pub struct UpdateRumusRequest {
     #[validate(range(min = 0.0, max = 100.0))]

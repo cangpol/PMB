@@ -751,6 +751,122 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
     }
 
+    // 10. Seeding Formulir Pendaftaran & Sidang Kelulusan Resmi Demo [CONTOH]
+    println!("[10/10] Melakukan seeding Formulir Pendaftaran & Sidang Kelulusan Demo [CONTOH]...");
+    let calon_user_id = sqlx::query_scalar::<_, Uuid>(
+        "SELECT id FROM users WHERE email = 'calon@triputra.id' LIMIT 1",
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let prodi_if_id = sqlx::query_scalar::<_, Uuid>(
+        "SELECT id FROM program_studi WHERE kode_prodi = 'IF' LIMIT 1",
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let prodi_si_id = sqlx::query_scalar::<_, Uuid>(
+        "SELECT id FROM program_studi WHERE kode_prodi = 'SI' LIMIT 1",
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let jalur_demo_id = jalur_ids[0]; // Jalur Reguler
+
+    let pendaftar_id = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        INSERT INTO pendaftar (
+            user_id, nomor_pendaftaran, jalur_id, gelombang_id, status_pendaftaran,
+            nik, tempat_lahir, tgl_lahir, jenis_kelamin, agama,
+            alamat_lengkap, nama_ortu, no_hp_ortu, asal_sekolah, jurusan_sekolah,
+            nilai_rapor_avg, prodi_pilihan_1, prodi_pilihan_2
+        )
+        VALUES (
+            $1, 'PMB-2026-0001', $2, $3, 'LULUS',
+            '3374010101990001', 'Semarang', '2005-08-17', 'L', 'Katolik',
+            'Jl. Triputra No. 1, Semarang', 'Budi Santoso', '081234567890', 'SMA Sedes Sapientiae Semarang', 'IPA',
+            87.5, $4, $5
+        )
+        ON CONFLICT (user_id) DO UPDATE SET
+            nomor_pendaftaran = 'PMB-2026-0001',
+            status_pendaftaran = 'LULUS',
+            prodi_pilihan_1 = EXCLUDED.prodi_pilihan_1,
+            prodi_pilihan_2 = EXCLUDED.prodi_pilihan_2
+        RETURNING id;
+        "#,
+    )
+    .bind(calon_user_id)
+    .bind(jalur_demo_id)
+    .bind(gelombang_id)
+    .bind(prodi_if_id)
+    .bind(prodi_si_id)
+    .fetch_one(&pool)
+    .await?;
+
+    let sidang_row = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        INSERT INTO sidang_kelulusan (
+            gelombang_id, nama_sidang, nomor_sk, tanggal_sidang, tgl_pengumuman,
+            status_sidang, total_peserta, total_lulus, total_cadangan, total_tidak_lulus, catatan_sidang
+        )
+        SELECT 
+            $1, '[CONTOH] Sidang Pleno Kelulusan Gelombang I', 'SK/PMB-UPT/2026/0001',
+            CURRENT_DATE - INTERVAL '2 days', NOW() - INTERVAL '1 day',
+            'DIPUBLIKASIKAN', 1, 1, 0, 0, 'Sidang pleno kelulusan seleksi penerimaan mahasiswa baru resmi disetujui dan dipublikasikan.'
+        WHERE NOT EXISTS (
+            SELECT 1 FROM sidang_kelulusan WHERE nomor_sk = 'SK/PMB-UPT/2026/0001'
+        )
+        RETURNING id;
+        "#,
+    )
+    .bind(gelombang_id)
+    .fetch_optional(&pool)
+    .await?;
+
+    let sidang_id =
+        match sidang_row {
+            Some(id) => id,
+            None => sqlx::query_scalar::<_, Uuid>(
+                "SELECT id FROM sidang_kelulusan WHERE nomor_sk = 'SK/PMB-UPT/2026/0001' LIMIT 1",
+            )
+            .fetch_one(&pool)
+            .await?,
+        };
+
+    sqlx::query(
+        r#"
+        INSERT INTO hasil_kelulusan (
+            pendaftar_id, sidang_id, status_kelulusan, prodi_diterima_id, pilihan_ke,
+            ranking, skor_cbt, nilai_rapor, nilai_prestasi, skor_akhir,
+            nim_resmi, nomor_surat_loa, tanggal_sk, is_published, status_daftar_ulang,
+            catatan_sidang
+        )
+        VALUES (
+            $1, $2, 'LULUS_PILIHAN_1', $3, 1,
+            1, 85.0, 87.5, 80.0, 85.5,
+            '261010001', 'SK/PMB-UPT/2026/0001', CURRENT_DATE - INTERVAL '2 days', TRUE, 'TAGIHAN_TERBIT',
+            'Selamat! Anda diterima pada program studi S1 Informatika jalur Reguler.'
+        )
+        ON CONFLICT (pendaftar_id) DO UPDATE SET
+            sidang_id = EXCLUDED.sidang_id,
+            status_kelulusan = EXCLUDED.status_kelulusan,
+            prodi_diterima_id = EXCLUDED.prodi_diterima_id,
+            pilihan_ke = EXCLUDED.pilihan_ke,
+            ranking = EXCLUDED.ranking,
+            skor_akhir = EXCLUDED.skor_akhir,
+            nim_resmi = EXCLUDED.nim_resmi,
+            nomor_surat_loa = EXCLUDED.nomor_surat_loa,
+            tanggal_sk = EXCLUDED.tanggal_sk,
+            is_published = TRUE,
+            status_daftar_ulang = EXCLUDED.status_daftar_ulang;
+        "#,
+    )
+    .bind(pendaftar_id)
+    .bind(sidang_id)
+    .bind(prodi_if_id)
+    .execute(&pool)
+    .await?;
+
     println!("========================================================");
     println!("  [SUKSES] Seeding database selesai secara idempoten!   ");
     println!("  Akun Default:");

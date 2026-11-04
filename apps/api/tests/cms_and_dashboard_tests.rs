@@ -519,7 +519,7 @@ fn test_slugify_titles() {
 
 #[test]
 fn test_dashboard_percentage_and_funnel_math() {
-    let counts = vec![("TERVERIFIKASI", 40), ("SUBMITTED", 30), ("DRAFT", 30)];
+    let counts = [("TERVERIFIKASI", 40), ("SUBMITTED", 30), ("DRAFT", 30)];
     let total: i64 = counts.iter().map(|(_, c)| *c).sum();
     assert_eq!(total, 100);
 

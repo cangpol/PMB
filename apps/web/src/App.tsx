@@ -59,6 +59,11 @@ const PengumumanDetailPage = lazy(() =>
     default: m.PengumumanDetailPage,
   })),
 );
+const CekKelulusanPublikPage = lazy(() =>
+  import("./pages/public/CekKelulusanPublikPage").then((m) => ({
+    default: m.CekKelulusanPublikPage,
+  })),
+);
 const FaqPage = lazy(() =>
   import("./pages/public/FaqPage").then((m) => ({ default: m.FaqPage })),
 );
@@ -353,7 +358,7 @@ export const App: React.FC = () => {
                   />
                   <Route
                     path="/cek-kelulusan"
-                    element={<HasilKelulusanPage />}
+                    element={<CekKelulusanPublikPage />}
                   />
                   <Route path="/faq" element={<FaqPage />} />
                   <Route path="/kontak" element={<KontakPage />} />

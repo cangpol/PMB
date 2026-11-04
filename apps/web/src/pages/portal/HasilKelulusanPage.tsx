@@ -44,18 +44,27 @@ export const HasilKelulusanPage: React.FC = () => {
   const [data, setData] = useState<CekKelulusanResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
+  const [hasNoForm, setHasNoForm] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   const loadHasil = async () => {
     setIsLoading(true);
     setIsError(false);
+    setHasNoForm(false);
     try {
       const res = await fetchApi<CekKelulusanResponse>("/api/kelulusan/cek");
       setData(res);
     } catch (err: unknown) {
-      const e = err as { pesan?: string };
-      setErrorMessage(e.pesan || "Gagal memuat pengumuman kelulusan.");
-      setIsError(true);
+      const e = err as { kode?: string; pesan?: string };
+      if (
+        e.kode === "DATA_TIDAK_DITEMUKAN" ||
+        (e.pesan && e.pesan.toLowerCase().includes("formulir"))
+      ) {
+        setHasNoForm(true);
+      } else {
+        setErrorMessage(e.pesan || "Gagal memuat pengumuman kelulusan.");
+        setIsError(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -129,6 +138,33 @@ export const HasilKelulusanPage: React.FC = () => {
           message={errorMessage}
           onRetry={loadHasil}
         />
+      )}
+
+      {/* State Belum Ada Formulir Pendaftaran */}
+      {!isLoading && hasNoForm && (
+        <Card className="p-8 sm:p-12 text-center border-biru-200 bg-putih rounded-3xl shadow-sm space-y-5 max-w-xl mx-auto">
+          <div className="w-16 h-16 rounded-full bg-biru-100 flex items-center justify-center mx-auto text-biru-900">
+            <AlertCircle className="w-8 h-8 text-biru-700" />
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-biru-950 font-serif">
+              Belum Ada Formulir Pendaftaran
+            </h2>
+            <p className="text-sm text-biru-800 mt-2 leading-relaxed">
+              Akun Anda belum memiliki berkas formulir pendaftaran PMB yang terdaftar. Silakan lengkapi formulir pendaftaran untuk mengikuti seleksi penerimaan mahasiswa baru.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Button
+              variant="primary"
+              onClick={() => navigate("/portal/pendaftaran")}
+              className="gap-2 mx-auto"
+            >
+              <span>Isi Formulir Pendaftaran</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </Card>
       )}
 
       {/* Pengumuman Belum Buka / Belum Diputuskan */}

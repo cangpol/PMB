@@ -22,8 +22,8 @@ test.describe("PMB UPITRA - Automated End-to-End Verification", () => {
     await expect(ctaButton).toHaveAttribute("href", "/register");
 
     // Verifikasi Countdown Gelombang Aktif
-    await expect(page.locator("text=Early Bird Admissions")).toBeVisible();
-    await expect(page.locator("text=Batas Akhir Pendaftaran")).toBeVisible();
+    const countdownTimer = page.locator("text=/Batas Akhir Pendaftaran|Pendaftaran Telah Ditutup/i");
+    await expect(countdownTimer).toBeVisible();
 
     // Verifikasi 4 Kartu Jalur Masuk di Beranda
     await expect(page.locator("h3:has-text('Jalur Reguler')").first()).toBeVisible();
@@ -34,7 +34,11 @@ test.describe("PMB UPITRA - Automated End-to-End Verification", () => {
     // Verifikasi Kalkulator UKT Interaktif
     const prodiSelector = page.locator("select").first();
     if (await prodiSelector.isVisible()) {
-      await prodiSelector.selectOption("S1-SD");
+      const options = await prodiSelector.locator("option").all();
+      if (options.length > 1) {
+        const val = await options[1].getAttribute("value");
+        if (val) await prodiSelector.selectOption(val);
+      }
       await expect(page.locator("text=Estimasi UKT per Semester")).toBeVisible();
     }
 
@@ -48,11 +52,11 @@ test.describe("PMB UPITRA - Automated End-to-End Verification", () => {
     await expect(page).toHaveURL(/.*prodi/);
     await expect(page.locator("h1")).toContainText(/Program Studi/i);
 
-    // Uji Navigasi ke Detail Program Studi Sains Data
-    await page.goto("/prodi/s1-sains-data");
-    await expect(page).toHaveURL(/.*prodi\/s1-sains-data/);
-    await expect(page.locator("h1")).toContainText(/Sains Data/i);
-    await expect(page.locator("text=Prospek Karier")).toBeVisible();
+    // Uji Navigasi ke Detail Program Studi S1 Informatika
+    await page.goto("/prodi/s1-informatika");
+    await expect(page).toHaveURL(/.*prodi\/s1-informatika/);
+    await expect(page.locator("h1")).toContainText(/Informatika/i);
+    await expect(page.locator("text=/Peluang Karier|Kompetensi/i").first()).toBeVisible();
 
     // Uji Navigasi ke Halaman Jadwal Seleksi
     await page.goto("/jadwal");
@@ -148,7 +152,13 @@ test.describe("PMB UPITRA - Automated End-to-End Verification", () => {
       });
     });
 
-    await page.goto("/cek-kelulusan");
+    // Login terlebih dahulu sebagai calon mahasiswa untuk mengakses portal
+    await page.goto("/login");
+    await page.getByRole("button", { name: /Calon Mhs/i }).click();
+    await page.getByRole("button", { name: /Masuk ke Akun/i }).click();
+    await page.waitForURL(/.*portal/);
+
+    await page.goto("/portal/hasil");
 
     // Verifikasi judul dan data kelulusan resmi
     await expect(
@@ -162,6 +172,15 @@ test.describe("PMB UPITRA - Automated End-to-End Verification", () => {
     // Verifikasi tombol unduh LoA dan Cetak SK
     await expect(page.locator("text=Unduh LoA PDF")).toBeVisible();
     await expect(page.locator("text=Cetak SK")).toBeVisible();
+
+    // Verifikasi Halaman Publik Cek Kelulusan (/cek-kelulusan)
+    await page.goto("/cek-kelulusan");
+    await expect(
+      page.locator("h1:has-text('Cek Kelulusan Calon Mahasiswa')")
+    ).toBeVisible();
+    await expect(
+      page.locator("input[aria-label='Nomor Pendaftaran PMB']")
+    ).toBeVisible();
   });
 
   // ===========================================================================

@@ -17,10 +17,11 @@ use crate::{
     modules::{
         kelulusan::{
             dto::{
-                ApprovalSidangRequest, CekKelulusanCalonResponse, DaftarUlangInfoResponse,
-                DrafKelulusanResponse, EksporSiakadItemDto, GenerateNimResponse,
-                HasilKelulusanResponse, MahasiswaDaftarUlangDto, ProsesRankingRequest,
-                UpdateRumusRequest, UpdateStatusKandidatRequest, UploadBerkasDaftarUlangRequest,
+                ApprovalSidangRequest, CekKelulusanCalonResponse, CekKelulusanPublikQuery,
+                CekKelulusanPublikResponse, DaftarUlangInfoResponse, DrafKelulusanResponse,
+                EksporSiakadItemDto, GenerateNimResponse, HasilKelulusanResponse,
+                MahasiswaDaftarUlangDto, ProsesRankingRequest, UpdateRumusRequest,
+                UpdateStatusKandidatRequest, UploadBerkasDaftarUlangRequest,
                 VerifikasiBerkasDaftarUlangRequest,
             },
             model::{BerkasDaftarUlang, RumusPenilaianJalur, SidangKelulusan},
@@ -36,6 +37,7 @@ use crate::{
 #[derive(OpenApi)]
 #[openapi(
     paths(
+        get_cek_kelulusan_publik_handler,
         get_cek_kelulusan_calon_handler,
         download_loa_pdf_handler,
         get_daftar_ulang_info_handler,
@@ -59,6 +61,7 @@ use crate::{
     components(schemas(
         HasilKelulusanResponse,
         CekKelulusanCalonResponse,
+        CekKelulusanPublikResponse,
         DaftarUlangInfoResponse,
         MahasiswaDaftarUlangDto,
         DrafKelulusanResponse,
@@ -80,6 +83,8 @@ pub struct KelulusanApiDoc;
 
 pub fn kelulusan_router() -> Router<AppState> {
     Router::new()
+        // Cek Kelulusan Publik (Terbuka untuk umum tanpa auth)
+        .route("/publik", get(get_cek_kelulusan_publik_handler))
         // Portal Calon Mahasiswa (IDOR-safe: strictly auth_user.user_id)
         .route("/cek", get(get_cek_kelulusan_calon_handler))
         .route("/my-status", get(get_my_kelulusan_handler))
@@ -138,8 +143,35 @@ fn create_service(state: &AppState) -> KelulusanService {
 }
 
 // =========================================================================
-// 1. HANDLER CALON MAHASISWA
+// 1. HANDLER CALON MAHASISWA & PUBLIK
 // =========================================================================
+
+#[utoipa::path(
+    get,
+    path = "/api/kelulusan/publik",
+    tag = "Kelulusan Portal",
+    params(
+        ("nomor_pendaftaran" = String, Query, description = "Nomor Pendaftaran PMB (misal: PMB-2026-0001)")
+    ),
+    responses(
+        (status = 200, description = "Status kelulusan publik calon mahasiswa", body = CekKelulusanPublikResponse),
+        (status = 404, description = "Nomor pendaftaran tidak ditemukan", body = ApiErrorResponse),
+        (status = 400, description = "Parameter pencarian tidak valid", body = ApiErrorResponse)
+    )
+)]
+pub async fn get_cek_kelulusan_publik_handler(
+    State(state): State<AppState>,
+    Query(query): Query<CekKelulusanPublikQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    query
+        .validate()
+        .map_err(|e| AppError::BadRequest(e.to_string()))?;
+    let service = create_service(&state);
+    let res = service
+        .get_cek_kelulusan_publik(&query.nomor_pendaftaran)
+        .await?;
+    Ok(Json(res))
+}
 
 #[utoipa::path(
     get,
