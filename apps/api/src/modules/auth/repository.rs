@@ -181,12 +181,25 @@ impl UserRepository {
         Ok(())
     }
 
-    pub async fn list_users(&self) -> Result<Vec<User>, AppError> {
+    pub async fn list_users(
+        &self,
+        cari: Option<&str>,
+        role: Option<&str>,
+    ) -> Result<Vec<User>, AppError> {
+        let pola = cari
+            .map(|c| c.trim())
+            .filter(|c| !c.is_empty())
+            .map(|c| format!("%{}%", c.replace('%', "\\%").replace('_', "\\_")));
         let users = sqlx::query_as::<_, User>(
-            "SELECT id, email, password_hash, role, nama_lengkap, no_hp, is_active, 
-                    is_email_verified, failed_login_attempts, locked_until, created_at, updated_at 
-             FROM users ORDER BY created_at DESC LIMIT 100",
+            "SELECT id, email, password_hash, role, nama_lengkap, no_hp, is_active,
+                    is_email_verified, failed_login_attempts, locked_until, created_at, updated_at
+             FROM users
+             WHERE ($1::text IS NULL OR email ILIKE $1 OR nama_lengkap ILIKE $1)
+               AND ($2::text IS NULL OR role = $2)
+             ORDER BY created_at DESC LIMIT 200",
         )
+        .bind(pola)
+        .bind(role.filter(|r| !r.is_empty()))
         .fetch_all(&self.pool)
         .await?;
 
@@ -207,5 +220,27 @@ impl UserRepository {
         .await?;
 
         Ok(user)
+    }
+
+    /// Ubah peran banyak pengguna sekaligus. Super admin dan akun operator tidak pernah diubah.
+    pub async fn update_role_massal(
+        &self,
+        user_ids: &[Uuid],
+        new_role: &str,
+        operator_id: Uuid,
+    ) -> Result<Vec<User>, AppError> {
+        let users = sqlx::query_as::<_, User>(
+            "UPDATE users
+             SET role = $1, updated_at = NOW()
+             WHERE id = ANY($2) AND id <> $3 AND role <> 'super_admin'
+             RETURNING id, email, password_hash, role, nama_lengkap, no_hp, is_active,
+                       is_email_verified, failed_login_attempts, locked_until, created_at, updated_at",
+        )
+        .bind(new_role)
+        .bind(user_ids)
+        .bind(operator_id)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(users)
     }
 }

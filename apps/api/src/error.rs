@@ -22,6 +22,8 @@ pub enum AppError {
     NotFound(String),
     Conflict(String),
     TooManyRequests(String),
+    /// Calon belum memverifikasi email dengan kode (403, kode EMAIL_BELUM_TERVERIFIKASI)
+    EmailBelumTerverifikasi,
     Internal(String),
 }
 
@@ -35,6 +37,7 @@ impl std::fmt::Display for AppError {
             Self::NotFound(msg) => write!(f, "Not Found: {msg}"),
             Self::Conflict(msg) => write!(f, "Conflict: {msg}"),
             Self::TooManyRequests(msg) => write!(f, "Too Many Requests: {msg}"),
+            Self::EmailBelumTerverifikasi => write!(f, "Forbidden: email belum terverifikasi"),
             Self::Internal(msg) => write!(f, "Internal Server Error: {msg}"),
         }
     }
@@ -85,6 +88,13 @@ impl IntoResponse for AppError {
                 StatusCode::TOO_MANY_REQUESTS,
                 "TERLALU_BANYAK_PERMINTAAN".to_string(),
                 msg,
+                vec![],
+            ),
+            Self::EmailBelumTerverifikasi => (
+                StatusCode::FORBIDDEN,
+                "EMAIL_BELUM_TERVERIFIKASI".to_string(),
+                "Verifikasi email Anda terlebih dahulu dengan kode yang dikirim ke email."
+                    .to_string(),
                 vec![],
             ),
             Self::Internal(msg) => {

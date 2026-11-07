@@ -1,3 +1,4 @@
+use chrono::Datelike;
 use uuid::Uuid;
 
 use crate::{
@@ -257,6 +258,31 @@ impl RplService {
             return Err(AppError::BadRequest(
                 "Minimal satu mata kuliah harus diajukan untuk rekognisi RPL".to_string(),
             ));
+        }
+
+        // URL unduh hanya untuk tampilan; jangan simpan URL presign yang akan kedaluwarsa
+        let mut req = req;
+        for b in req.berkas_pendukung.iter_mut() {
+            b.url_unduh = None;
+        }
+
+        // Berkas wajib berasal dari presign milik pemohon ini (cegah IDOR / path liar)
+        let prefix = prefix_berkas_rpl(pendaftar_id);
+        if let Some(b) = req
+            .berkas_pendukung
+            .iter()
+            .find(|b| !b.file_key.starts_with(&prefix))
+        {
+            return Err(AppError::BadRequest(format!(
+                "Dokumen \"{}\" belum diunggah dengan benar. Unggah ulang filenya.",
+                b.nama_file
+            )));
+        }
+        if !req.is_draft {
+            let masalah = validasi_pengajuan_rpl(&req);
+            if !masalah.is_empty() {
+                return Err(AppError::Validation(masalah));
+            }
         }
 
         let permohonan = self.repo.get_or_create_permohonan(pendaftar_id).await?;
@@ -588,5 +614,152 @@ impl RplService {
     ) -> Result<String, AppError> {
         let laporan = self.get_laporan_rpl(auth_user, permohonan_id).await?;
         Ok(to_csv_laporan_rpl(&laporan))
+    }
+}
+
+/// Awalan kunci objek dokumen portofolio RPL milik seorang pendaftar.
+pub fn prefix_berkas_rpl(pendaftar_id: Uuid) -> String {
+    format!("rpl/{pendaftar_id}/")
+}
+
+/// Kelengkapan minimum saat permohonan RPL diajukan (bukan draf).
+pub fn validasi_pengajuan_rpl(
+    req: &crate::modules::rpl::dto::SubmitRplPermohonanRequest,
+) -> Vec<String> {
+    let mut m = Vec::new();
+    let tahun_ini = chrono::Utc::now().year();
+    if !matches!(req.tipe_rpl.as_str(), "TIPE_A" | "TIPE_B") {
+        m.push("tipe_rpl: pilih TIPE_A atau TIPE_B".to_string());
+    }
+    if req.riwayat_pendidikan.is_empty() {
+        m.push("riwayat_pendidikan: isi minimal satu riwayat pendidikan".to_string());
+    }
+    for (i, r) in req.riwayat_pendidikan.iter().enumerate() {
+        let n = i + 1;
+        if r.nama_institusi.trim().len() < 3 {
+            m.push(format!(
+                "riwayat_pendidikan {n}: nama institusi wajib diisi"
+            ));
+        }
+        if !(1950..=tahun_ini).contains(&r.tahun_lulus) {
+            m.push(format!("riwayat_pendidikan {n}: tahun lulus tidak valid"));
+        }
+        if let Some(ipk) = r.ipk_nilai {
+            if !(0.0..=100.0).contains(&ipk) {
+                m.push(format!("riwayat_pendidikan {n}: IPK/nilai tidak valid"));
+            }
+        }
+    }
+    if req.tipe_rpl == "TIPE_A" && req.pengalaman_kerja.is_empty() {
+        m.push("pengalaman_kerja: RPL Tipe A wajib mencantumkan pengalaman kerja".to_string());
+    }
+    for (i, k) in req.pengalaman_kerja.iter().enumerate() {
+        let n = i + 1;
+        if k.nama_perusahaan.trim().len() < 2 || k.jabatan.trim().len() < 2 {
+            m.push(format!(
+                "pengalaman_kerja {n}: perusahaan dan jabatan wajib diisi"
+            ));
+        }
+        let tgl = |s: &str| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok();
+        match (
+            tgl(&k.tanggal_mulai),
+            k.tanggal_selesai.as_deref().and_then(tgl),
+        ) {
+            (None, _) => m.push(format!("pengalaman_kerja {n}: tanggal mulai tidak valid")),
+            (Some(_), None) if !k.masih_bekerja => m.push(format!(
+                "pengalaman_kerja {n}: isi tanggal selesai atau centang masih bekerja"
+            )),
+            (Some(a), Some(b)) if !k.masih_bekerja && b < a => m.push(format!(
+                "pengalaman_kerja {n}: tanggal selesai sebelum tanggal mulai"
+            )),
+            _ => {}
+        }
+    }
+    if req.berkas_pendukung.is_empty() {
+        m.push("berkas_pendukung: unggah minimal satu dokumen portofolio".to_string());
+    }
+    m
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::modules::rpl::dto::{MatakuliahDiajukanInput, SubmitRplPermohonanRequest};
+    use crate::modules::rpl::model::{BerkasRplItem, PengalamanKerjaItem, RiwayatPendidikanItem};
+
+    fn req_lengkap() -> SubmitRplPermohonanRequest {
+        SubmitRplPermohonanRequest {
+            tipe_rpl: "TIPE_A".to_string(),
+            riwayat_pendidikan: vec![RiwayatPendidikanItem {
+                jenjang: "SMA".to_string(),
+                nama_institusi: "SMAN 1 Klaten".to_string(),
+                program_studi: "IPA".to_string(),
+                tahun_lulus: 2015,
+                ipk_nilai: None,
+                nomor_ijazah: None,
+            }],
+            pengalaman_kerja: vec![PengalamanKerjaItem {
+                nama_perusahaan: "PT Maju".to_string(),
+                jabatan: "Programmer".to_string(),
+                deskripsi_pekerjaan: "Membangun aplikasi".to_string(),
+                tanggal_mulai: "2016-01-01".to_string(),
+                tanggal_selesai: None,
+                masih_bekerja: true,
+            }],
+            berkas_pendukung: vec![BerkasRplItem {
+                jenis_dokumen: "IJAZAH".to_string(),
+                nama_file: "ijazah.pdf".to_string(),
+                file_key: "rpl/x/a.pdf".to_string(),
+                mime_type: "application/pdf".to_string(),
+                ukuran_bytes: 1000,
+                keterangan: None,
+                url_unduh: None,
+            }],
+            mata_kuliah_list: vec![MatakuliahDiajukanInput {
+                mata_kuliah_id: Uuid::new_v4(),
+                keterangan_pemohon: "Pengalaman kerja".to_string(),
+            }],
+            is_draft: false,
+        }
+    }
+
+    #[test]
+    fn pengajuan_lengkap_lolos_validasi() {
+        assert!(validasi_pengajuan_rpl(&req_lengkap()).is_empty());
+    }
+
+    #[test]
+    fn pengajuan_tanpa_portofolio_dan_tanggal_selesai_ditolak() {
+        let mut r = req_lengkap();
+        r.berkas_pendukung.clear();
+        r.pengalaman_kerja[0].masih_bekerja = false;
+        let m = validasi_pengajuan_rpl(&r);
+        assert!(m.iter().any(|x| x.starts_with("berkas_pendukung")));
+        assert!(m.iter().any(|x| x.contains("tanggal selesai")));
+    }
+
+    #[test]
+    fn tipe_a_wajib_pengalaman_kerja() {
+        let mut r = req_lengkap();
+        r.pengalaman_kerja.clear();
+        assert!(
+            validasi_pengajuan_rpl(&r)
+                .iter()
+                .any(|x| x.starts_with("pengalaman_kerja"))
+        );
+        r.tipe_rpl = "TIPE_B".to_string();
+        assert!(validasi_pengajuan_rpl(&r).is_empty());
+    }
+
+    #[test]
+    fn data_lama_tetap_terbaca() {
+        // Bentuk lama (jurusan/ipk, instansi/posisi) tetap bisa dibaca dari JSONB
+        let edu: RiwayatPendidikanItem = serde_json::from_value(serde_json::json!({
+            "jenjang": "S1", "nama_institusi": "Univ", "jurusan": "TI",
+            "tahun_lulus": 2010, "ipk": 3.2
+        }))
+        .unwrap();
+        assert_eq!(edu.program_studi, "TI");
+        assert_eq!(edu.ipk_nilai, Some(3.2));
     }
 }

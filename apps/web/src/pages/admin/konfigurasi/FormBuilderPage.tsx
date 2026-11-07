@@ -24,6 +24,7 @@ import {
   type DefinisiFieldItem,
 } from "../../../components/form/DynamicFormRenderer";
 import { useToast } from "@/components/ui/useToast";
+import { useDialog } from "@/components/ui/useDialog";
 
 interface DefinisiBerkasItem {
   id: string;
@@ -32,6 +33,8 @@ interface DefinisiBerkasItem {
   nama: string;
   deskripsi?: string | null;
   wajib: boolean;
+  /** Berkas khusus prodi (null = semua prodi) */
+  prodi_id?: string | null;
   tipe_file: string;
   ukuran_maks_kb: number;
   urutan: number;
@@ -51,6 +54,7 @@ interface DefinisiLangkahItem {
 }
 
 export const FormBuilderPage: React.FC = () => {
+  const dialog = useDialog();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"fields" | "berkas" | "langkah">(
     "fields",
@@ -91,9 +95,20 @@ export const FormBuilderPage: React.FC = () => {
     nama: "",
     deskripsi: "",
     wajib: true,
+    prodi_id: "",
     tipe_file: "image/jpeg,image/png,application/pdf",
     ukuran_maks_mb: "3",
   });
+  const [prodiList, setProdiList] = useState<
+    { id: string; nama_prodi: string; jenjang: string }[]
+  >([]);
+
+  useEffect(() => {
+    fetch("/api/master/prodi")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setProdiList)
+      .catch(() => setProdiList([]));
+  }, []);
 
   // Drag and Drop reordering state
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -251,7 +266,14 @@ export const FormBuilderPage: React.FC = () => {
   };
 
   const handleDeleteField = async (id: string) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus field ini?")) return;
+    const ya = await dialog.konfirmasi({
+      judul: "Hapus field formulir?",
+      deskripsi:
+        "Field ini akan dihapus dari formulir pendaftaran dan tidak dapat dikembalikan.",
+      nada: "bahaya",
+      labelYa: "Ya, Hapus",
+    });
+    if (!ya) return;
     try {
       const res = await fetch(
         `/api/pendaftaran/admin/form-builder/fields/${id}`,
@@ -340,6 +362,7 @@ export const FormBuilderPage: React.FC = () => {
       nama: "",
       deskripsi: "",
       wajib: true,
+      prodi_id: "",
       tipe_file: "image/jpeg,image/png,application/pdf",
       ukuran_maks_mb: "3",
     });
@@ -353,6 +376,7 @@ export const FormBuilderPage: React.FC = () => {
       nama: item.nama,
       deskripsi: item.deskripsi || "",
       wajib: item.wajib,
+      prodi_id: item.prodi_id || "",
       tipe_file: item.tipe_file,
       ukuran_maks_mb: String((item.ukuran_maks_kb / 1024).toFixed(0)),
     });
@@ -375,6 +399,7 @@ export const FormBuilderPage: React.FC = () => {
               nama: berkasFormData.nama,
               deskripsi: berkasFormData.deskripsi || null,
               wajib: berkasFormData.wajib,
+              prodi_id: berkasFormData.prodi_id || null,
               tipe_file: berkasFormData.tipe_file,
               ukuran_maks_kb: kb,
               urutan: editingBerkas.urutan,
@@ -397,6 +422,7 @@ export const FormBuilderPage: React.FC = () => {
             nama: berkasFormData.nama,
             deskripsi: berkasFormData.deskripsi || null,
             wajib: berkasFormData.wajib,
+            prodi_id: berkasFormData.prodi_id || null,
             tipe_file: berkasFormData.tipe_file,
             ukuran_maks_kb: kb,
             urutan: berkasList.length + 1,
@@ -422,8 +448,14 @@ export const FormBuilderPage: React.FC = () => {
   };
 
   const handleDeleteBerkas = async (id: string) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus syarat berkas ini?"))
-      return;
+    const ya = await dialog.konfirmasi({
+      judul: "Hapus syarat berkas?",
+      deskripsi:
+        "Syarat berkas ini akan dihapus dan tidak lagi diminta dari calon mahasiswa.",
+      nada: "bahaya",
+      labelYa: "Ya, Hapus",
+    });
+    if (!ya) return;
     try {
       const res = await fetch(
         `/api/pendaftaran/admin/form-builder/berkas/${id}`,
@@ -724,6 +756,13 @@ export const FormBuilderPage: React.FC = () => {
                       <span className="font-mono text-xs font-bold bg-biru-50 text-biru-900 px-2 py-0.5 rounded">
                         {item.kode_berkas}
                       </span>
+                      {item.prodi_id && (
+                        <span className="text-[10px] bg-biru-100 text-biru-900 font-bold px-2 py-0.5 rounded-full">
+                          Khusus{" "}
+                          {prodiList.find((p) => p.id === item.prodi_id)
+                            ?.nama_prodi ?? "prodi"}
+                        </span>
+                      )}
                       {item.wajib ? (
                         <span className="text-[10px] bg-biru-900 text-putih font-bold px-2 py-0.5 rounded-full">
                           Wajib
@@ -1218,6 +1257,38 @@ export const FormBuilderPage: React.FC = () => {
                 >
                   Wajib Diunggah untuk Memenuhi Syarat Pendaftaran
                 </label>
+              </div>
+
+              <div className="space-y-1">
+                <label
+                  htmlFor="prodi_berkas"
+                  className="text-xs font-semibold text-biru-900"
+                >
+                  Berlaku untuk program studi
+                </label>
+                <select
+                  id="prodi_berkas"
+                  value={berkasFormData.prodi_id}
+                  onChange={(e) =>
+                    setBerkasFormData({
+                      ...berkasFormData,
+                      prodi_id: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-biru-200 rounded-xl text-xs"
+                >
+                  <option value="">Semua program studi</option>
+                  {prodiList.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      Khusus {p.jenjang} {p.nama_prodi}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-biru-700">
+                  Contoh: surat bebas buta warna khusus Fisioterapi, surat sehat
+                  khusus D3 Keperawatan. Berkas ditampilkan bila calon memilih
+                  prodi tersebut sebagai pilihan 1 atau 2.
+                </p>
               </div>
 
               <div className="flex justify-end gap-2 pt-4 border-t border-biru-100">

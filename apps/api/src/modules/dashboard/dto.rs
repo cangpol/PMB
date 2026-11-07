@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
@@ -109,4 +110,31 @@ pub struct ExecutiveDashboardResponse {
     pub distribusi_jalur: Vec<DistribusiJalurStat>,
     pub status_pendaftaran: Vec<StatusPendaftaranStat>,
     pub funnel_tahapan: Vec<FunnelStat>,
+}
+
+/// Satu antrean pekerjaan yang menunggu pemeriksaan panitia.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, ToSchema)]
+pub struct AntreanItem {
+    /// Jumlah berkas/bukti yang menunggu diperiksa.
+    pub menunggu: i64,
+    /// Jumlah calon yang berkasnya menunggu (satu calon bisa punya beberapa berkas).
+    pub calon: i64,
+    /// Waktu unggah paling lama yang masih menunggu (untuk menandai antrean yang tertahan).
+    pub terlama_sejak: Option<DateTime<Utc>>,
+}
+
+/// Ringkasan semua antrean pemeriksaan untuk penanda/notifikasi di panel admin.
+/// Antrean yang bukan wewenang peran pemanggil dikembalikan kosong (0).
+#[derive(Debug, Clone, Default, Serialize, Deserialize, ToSchema)]
+pub struct AntreanVerifikasiResponse {
+    /// Berkas persyaratan pendaftaran (Verifikasi Berkas PMB).
+    pub berkas: AntreanItem,
+    /// Bukti pembayaran formulir dan daftar ulang (Verifikasi Bukti Bayar).
+    pub bukti_bayar: AntreanItem,
+    /// Berkas daftar ulang (Verifikasi Daftar Ulang).
+    pub daftar_ulang: AntreanItem,
+    /// Hasil CBT di bawah passing grade yang menunggu keputusan admin (ujian ulang / setujui).
+    pub cbt_keputusan: AntreanItem,
+    /// Jumlah seluruh berkas/bukti/keputusan yang menunggu.
+    pub total: i64,
 }

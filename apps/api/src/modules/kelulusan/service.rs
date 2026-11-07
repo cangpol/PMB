@@ -8,11 +8,13 @@ use crate::{
     modules::{
         kelulusan::{
             dto::{
-                ApprovalSidangRequest, CekKelulusanCalonResponse, CekKelulusanPublikResponse,
+                ApprovalSidangRequest, ArahkanPilihan2Request, ArahkanPilihan2Response,
+                CekKelulusanCalonResponse, CekKelulusanPublikResponse, ContohNimItem,
                 DaftarUlangInfoResponse, DrafKelulusanResponse, EksporSiakadItemDto,
-                GenerateNimResponse, HasilKelulusanResponse, MahasiswaDaftarUlangDto,
-                ProsesRankingRequest, TagihanDaftarUlangDto, UpdateRumusRequest,
-                UpdateStatusKandidatRequest, UploadBerkasDaftarUlangRequest,
+                GenerateNimResponse, HasilCbtCalon, HasilKelulusanResponse, LingkupNimInfo,
+                MahasiswaDaftarUlangDto, PratinjauRumusNimResponse, ProsesRankingRequest,
+                RumusNimResponse, SimpanRumusNimRequest, TagihanDaftarUlangDto, TokenNimInfo,
+                UpdateRumusRequest, UpdateStatusKandidatRequest, UploadBerkasDaftarUlangRequest,
                 VerifikasiBerkasDaftarUlangRequest,
             },
             model::{BerkasDaftarUlang, HasilKelulusan, RumusPenilaianJalur, SidangKelulusan},
@@ -344,7 +346,7 @@ impl KelulusanService {
         // I. Catat Audit Log
         self.repo
             .insert_audit_log(
-                Uuid::nil(),
+                None,
                 Some(sidang.id),
                 None,
                 "DRAFT_GENERATED",
@@ -423,7 +425,7 @@ impl KelulusanService {
 
         self.repo
             .insert_audit_log(
-                Uuid::nil(),
+                None,
                 Some(sidang_id),
                 Some("DRAFT"),
                 "DISETUJUI",
@@ -464,10 +466,18 @@ impl KelulusanService {
         self.repo
             .update_sidang_status(sidang_id, "DIPUBLIKASIKAN", None, None, None)
             .await?;
+        // Status pendaftar ikut berubah hanya bila tanggal pengumuman sudah tiba;
+        // bila belum, sinkronisasi terjadi saat calon membuka portal setelah tanggal itu.
+        crate::modules::pendaftaran::alur::sinkron_status_kelulusan(
+            self.repo.pool(),
+            None,
+            Some(sidang_id),
+        )
+        .await?;
 
         self.repo
             .insert_audit_log(
-                Uuid::nil(),
+                None,
                 Some(sidang_id),
                 Some("DISETUJUI"),
                 "DIPUBLIKASIKAN",
@@ -511,7 +521,7 @@ impl KelulusanService {
 
         self.repo
             .insert_audit_log(
-                req.pendaftar_id,
+                Some(req.pendaftar_id),
                 hasil_lama.sidang_id,
                 Some(&hasil_lama.status_kelulusan),
                 &req.status_baru,
@@ -523,7 +533,128 @@ impl KelulusanService {
             )
             .await?;
 
+        if hasil_lama.prodi_diterima_id != req.prodi_diterima_id {
+            self.repo
+                .batalkan_tagihan_daftar_ulang_basi(req.pendaftar_id)
+                .await?;
+        }
+
+        crate::modules::pendaftaran::alur::sinkron_status_kelulusan(
+            self.repo.pool(),
+            Some(req.pendaftar_id),
+            None,
+        )
+        .await?;
+
         Ok(res)
+    }
+
+    /// Calon tidak diterima di pilihan 1 (tidak lulus / cadangan): admin mengarahkan ke
+    /// program studi pilihan ke-2 sebagai alternatif. Hasil menjadi LULUS_PILIHAN_2 lengkap
+    /// dengan nomor LoA; calon langsung melihatnya bila hasil sudah dipublikasikan.
+    pub async fn arahkan_ke_pilihan_2(
+        &self,
+        req: ArahkanPilihan2Request,
+        actor_id: Uuid,
+        actor_name: &str,
+    ) -> Result<ArahkanPilihan2Response, AppError> {
+        let pendaftar = self
+            .pendaftar_repo
+            .find_by_id(req.pendaftar_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Pendaftar tidak ditemukan".to_string()))?;
+        let prodi2_id = pendaftar.prodi_pilihan_2.ok_or_else(|| {
+            AppError::BadRequest(
+                "Calon ini tidak memiliki pilihan program studi kedua untuk dialihkan".to_string(),
+            )
+        })?;
+        let hasil = self
+            .repo
+            .find_by_pendaftar_id(req.pendaftar_id)
+            .await?
+            .ok_or_else(|| {
+                AppError::NotFound(
+                    "Data kelulusan calon belum ada. Jalankan proses ranking terlebih dahulu"
+                        .to_string(),
+                )
+            })?;
+        match hasil.status_kelulusan.as_str() {
+            "TIDAK_LULUS" | "CADANGAN" => {}
+            "LULUS_PILIHAN_2" => {
+                return Err(AppError::Conflict(
+                    "Calon sudah diterima di program studi pilihan kedua".to_string(),
+                ));
+            }
+            _ => {
+                return Err(AppError::Conflict(
+                    "Calon sudah diterima di pilihan pertama; pengalihan tidak diperlukan"
+                        .to_string(),
+                ));
+            }
+        }
+        if self
+            .repo
+            .ada_pembayaran_daftar_ulang_berjalan(req.pendaftar_id)
+            .await?
+        {
+            return Err(AppError::Conflict(
+                "Calon sudah mengirim/menyelesaikan pembayaran daftar ulang; pengalihan prodi tidak dapat dilakukan"
+                    .to_string(),
+            ));
+        }
+        let prodi2 = self
+            .master_repo
+            .get_prodi_by_id(prodi2_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Program studi pilihan 2 tidak ditemukan".into()))?;
+
+        let baru = self
+            .repo
+            .update_kandidat_status(
+                req.pendaftar_id,
+                "LULUS_PILIHAN_2",
+                Some(prodi2_id),
+                Some(&req.catatan),
+            )
+            .await?;
+        // Biaya daftar ulang mengikuti prodi baru
+        self.repo
+            .batalkan_tagihan_daftar_ulang_basi(req.pendaftar_id)
+            .await?;
+        self.repo
+            .insert_audit_log(
+                Some(req.pendaftar_id),
+                hasil.sidang_id,
+                Some(&hasil.status_kelulusan),
+                "LULUS_PILIHAN_2",
+                hasil.prodi_diterima_id,
+                Some(prodi2_id),
+                Some(actor_id),
+                actor_name,
+                Some(&format!("Diarahkan ke pilihan 2: {}", req.catatan)),
+            )
+            .await?;
+        crate::modules::pendaftaran::alur::sinkron_status_kelulusan(
+            self.repo.pool(),
+            Some(req.pendaftar_id),
+            None,
+        )
+        .await?;
+
+        let tampil = baru.is_published;
+        Ok(ArahkanPilihan2Response {
+            pesan: if tampil {
+                "Calon diarahkan ke program studi pilihan kedua dan hasilnya sudah dapat dilihat calon."
+                    .to_string()
+            } else {
+                "Calon diarahkan ke program studi pilihan kedua. Hasil tampil ke calon setelah sidang dipublikasikan."
+                    .to_string()
+            },
+            prodi_baru: format!("{} {}", prodi2.jenjang, prodi2.nama_prodi),
+            status_kelulusan: baru.status_kelulusan,
+            nomor_surat_loa: baru.nomor_surat_loa,
+            sudah_tampil_ke_calon: tampil,
+        })
     }
 
     // =========================================================================
@@ -542,7 +673,29 @@ impl KelulusanService {
                 AppError::NotFound("Belum ada formulir pendaftaran untuk akun Anda".to_string())
             })?;
 
+        // Calon yang lulus CBT tetapi belum punya hasil kelulusan (data lama): terbitkan LoA
+        crate::modules::kelulusan::repository::terbitkan_kelulusan_dari_cbt(
+            self.repo.pool(),
+            Some(pendaftar.id),
+        )
+        .await?;
         let hasil = self.repo.find_by_pendaftar_id(pendaftar.id).await?;
+
+        // Hasil CBT terbaru (nilai di atas passing grade atau disetujui panitia = memenuhi)
+        let hasil_cbt = sqlx::query_as::<_, HasilCbtCalon>(
+            "SELECT h.nilai_akhir, h.jumlah_benar, h.jumlah_salah, h.jumlah_kosong,
+                    pu.passing_grade, h.is_lulus AS memenuhi_passing_grade,
+                    h.disetujui_admin, h.waktu_submit
+             FROM hasil_ujian h
+             JOIN peserta_sesi ps ON ps.id = h.peserta_sesi_id
+             JOIN sesi_ujian s ON s.id = ps.sesi_id
+             JOIN paket_ujian pu ON pu.id = s.paket_id
+             WHERE h.pendaftar_id = $1
+             ORDER BY h.waktu_submit DESC LIMIT 1",
+        )
+        .bind(pendaftar.id)
+        .fetch_optional(self.repo.pool())
+        .await?;
 
         let user = sqlx::query_as::<_, (String,)>("SELECT nama_lengkap FROM users WHERE id = $1")
             .bind(user_id)
@@ -586,6 +739,7 @@ impl KelulusanService {
                 status_daftar_ulang: "BELUM_DAFTAR_ULANG".to_string(),
                 pesan: "Hasil seleksi pendaftaran Anda belum diputuskan oleh panitia PMB."
                     .to_string(),
+                hasil_cbt: hasil_cbt.clone(),
             });
         }
 
@@ -636,6 +790,7 @@ impl KelulusanService {
                 is_pengumuman_buka: false,
                 status_daftar_ulang: h.status_daftar_ulang,
                 pesan,
+                hasil_cbt: hasil_cbt.clone(),
             });
         }
 
@@ -686,6 +841,7 @@ impl KelulusanService {
             is_pengumuman_buka: true,
             status_daftar_ulang: h.status_daftar_ulang,
             pesan,
+            hasil_cbt,
         })
     }
 
@@ -846,6 +1002,45 @@ impl KelulusanService {
                 .await?
                 .unwrap_or_else(|| ("Jalur Reguler PMB".to_string(),));
 
+        // Jadwal & kanal pembayaran daftar ulang untuk dicantumkan di surat
+        let prodi_diterima = hasil.prodi_diterima_id.unwrap_or(pendaftar.prodi_pilihan_1);
+        let rincian = rincian_biaya_daftar_ulang(
+            self.repo.pool(),
+            prodi_diterima,
+            pendaftar.jalur_id,
+            pendaftar.gelombang_id,
+        )
+        .await?;
+        let jatuh_tempo_tagihan: Option<chrono::DateTime<Utc>> = sqlx::query_scalar(
+            "SELECT tgl_jatuh_tempo FROM tagihan
+             WHERE pendaftar_id = $1 AND jenis_tagihan = 'DAFTAR_ULANG_UKT' AND status <> 'BATAL'
+             ORDER BY tgl_terbit DESC LIMIT 1",
+        )
+        .bind(pendaftar.id)
+        .fetch_optional(self.repo.pool())
+        .await?;
+        let batas_bayar = match jatuh_tempo_tagihan {
+            Some(t) => t,
+            None => batas_daftar_ulang(self.repo.pool(), pendaftar.gelombang_id).await?,
+        };
+        let rekening: Vec<(String, Option<String>, String)> = sqlx::query_as(
+            "SELECT jenis, nomor, atas_nama FROM rekening_pembayaran WHERE is_active = TRUE",
+        )
+        .fetch_all(self.repo.pool())
+        .await?;
+        let va_mandiri = rekening
+            .iter()
+            .find(|r| r.0 == "VA_MANDIRI")
+            .and_then(|r| r.1.clone().map(|no| (no, r.2.clone())));
+        let ada_qris = rekening.iter().any(|r| r.0 == "QRIS");
+        let nomor_registrasi = Some(
+            crate::modules::kelulusan::bukti_bayar::ensure_nomor_registrasi(
+                self.repo.pool(),
+                pendaftar.id,
+            )
+            .await?,
+        );
+
         let loa_data = LoaPdfData {
             nomor_surat_loa: hasil
                 .nomor_surat_loa
@@ -874,11 +1069,24 @@ impl KelulusanService {
             pilihan_ke: hasil.pilihan_ke.unwrap_or(1),
             skor_akhir: hasil.skor_akhir,
             ranking: hasil.ranking.unwrap_or(1),
-            tgl_batas_daftar_ulang: "15 Agustus 2026".to_string(),
+            tgl_batas_daftar_ulang: {
+                let wib = chrono::FixedOffset::east_opt(7 * 3600).expect("offset WIB valid");
+                batas_bayar
+                    .with_timezone(&wib)
+                    .format("%d-%m-%Y %H:%M")
+                    .to_string()
+            },
             verifikasi_url: format!(
                 "https://pmb.pignatelli.ac.id/verifikasi-loa/{}",
                 pendaftar.id
             ),
+            rincian_biaya: rincian
+                .into_iter()
+                .map(|r| (r.komponen, r.nominal))
+                .collect(),
+            va_mandiri,
+            ada_qris,
+            nomor_registrasi,
         };
 
         Ok(generate_loa_pdf(&loa_data))
@@ -929,110 +1137,111 @@ impl KelulusanService {
             None
         };
 
-        // Cari atau buatkan tagihan daftar ulang
-        let tagihan_row = sqlx::query(
-            "SELECT id, nomor_tagihan, nominal_asli, nominal_akhir, diskon_voucher, status
-             FROM tagihan 
-             WHERE pendaftar_id = $1 AND jenis_tagihan = 'DAFTAR_ULANG_UKT'
-             ORDER BY tgl_terbit DESC LIMIT 1",
+        crate::modules::pendaftaran::alur::sinkron_status_kelulusan(
+            self.repo.pool(),
+            Some(pendaftar.id),
+            None,
         )
-        .bind(pendaftar.id)
-        .fetch_optional(self.repo.pool())
         .await?;
 
-        let tagihan_dto = if let Some(r) = tagihan_row {
-            use sqlx::Row;
-            let status: String = r.get("status");
-            // Cari transaksi jika ada
-            let tagihan_id: Uuid = r.get("id");
-            let trx = sqlx::query(
-                "SELECT va_number, payment_url, payment_method FROM transaksi_pembayaran
-                 WHERE tagihan_id = $1 ORDER BY created_at DESC LIMIT 1",
+        let prodi_diterima = hasil.prodi_diterima_id.unwrap_or(pendaftar.prodi_pilihan_1);
+        let rincian = rincian_biaya_daftar_ulang(
+            self.repo.pool(),
+            prodi_diterima,
+            pendaftar.jalur_id,
+            pendaftar.gelombang_id,
+        )
+        .await?;
+        let va_mandiri: Option<String> = sqlx::query_scalar(
+            "SELECT nomor FROM rekening_pembayaran
+             WHERE jenis = 'VA_MANDIRI' AND is_active = TRUE ORDER BY created_at ASC LIMIT 1",
+        )
+        .fetch_optional(self.repo.pool())
+        .await?
+        .flatten();
+
+        // Cari atau buatkan tagihan daftar ulang (sekali, idempoten per pendaftar)
+        let tagihan_row: Option<BarisTagihanDu> =
+            sqlx::query_as(
+                "SELECT id, nomor_tagihan, nominal_asli, nominal_akhir, diskon_voucher, status, tgl_jatuh_tempo
+                 FROM tagihan
+                 WHERE pendaftar_id = $1 AND jenis_tagihan = 'DAFTAR_ULANG_UKT' AND status <> 'BATAL'
+                 ORDER BY tgl_terbit DESC LIMIT 1",
             )
-            .bind(tagihan_id)
+            .bind(pendaftar.id)
             .fetch_optional(self.repo.pool())
             .await?;
 
-            let (va, url, method) = if let Some(t) = trx {
-                (
-                    t.get::<Option<String>, _>("va_number"),
-                    t.get::<Option<String>, _>("payment_url"),
-                    t.get::<String, _>("payment_method"),
-                )
-            } else {
-                (
-                    Some("880812345678".to_string()),
-                    Some("/portal/pembayaran".to_string()),
-                    "VIRTUAL_ACCOUNT".to_string(),
-                )
-            };
+        let tagihan_row = match tagihan_row {
+            Some(t) => t,
+            None => {
+                let nominal: i64 = rincian.iter().map(|r| r.nominal).sum();
+                let jatuh_tempo =
+                    batas_daftar_ulang(self.repo.pool(), pendaftar.gelombang_id).await?;
+                let no_tagihan =
+                    format!("INV-DU-{}", pendaftar.nomor_pendaftaran.replace("PMB-", ""));
+                let t: BarisTagihanDu =
+                    sqlx::query_as(
+                        "INSERT INTO tagihan (
+                            nomor_tagihan, pendaftar_id, jenis_tagihan, nominal_asli, diskon_voucher,
+                            nominal_akhir, status, tgl_jatuh_tempo, catatan
+                        ) VALUES ($1, $2, 'DAFTAR_ULANG_UKT', $3, 0, $3, 'MENUNGGU_PEMBAYARAN', $4,
+                                  'Biaya daftar ulang mahasiswa baru')
+                        ON CONFLICT (nomor_tagihan) DO UPDATE SET
+                            -- tagihan yang sebelumnya dibatalkan (mis. prodi berubah) terbit ulang
+                            nominal_asli = CASE WHEN tagihan.status = 'BATAL'
+                                THEN EXCLUDED.nominal_asli ELSE tagihan.nominal_asli END,
+                            nominal_akhir = CASE WHEN tagihan.status = 'BATAL'
+                                THEN EXCLUDED.nominal_akhir ELSE tagihan.nominal_akhir END,
+                            tgl_jatuh_tempo = CASE WHEN tagihan.status = 'BATAL'
+                                THEN EXCLUDED.tgl_jatuh_tempo ELSE tagihan.tgl_jatuh_tempo END,
+                            status = CASE WHEN tagihan.status = 'BATAL'
+                                THEN 'MENUNGGU_PEMBAYARAN' ELSE tagihan.status END,
+                            updated_at = NOW()
+                        RETURNING id, nomor_tagihan, nominal_asli, nominal_akhir, diskon_voucher, status, tgl_jatuh_tempo",
+                    )
+                    .bind(&no_tagihan)
+                    .bind(pendaftar.id)
+                    .bind(nominal)
+                    .bind(jatuh_tempo)
+                    .fetch_one(self.repo.pool())
+                    .await?;
 
-            Some(TagihanDaftarUlangDto {
-                id: tagihan_id,
-                nomor_tagihan: r.get("nomor_tagihan"),
-                nominal_asli: r.get("nominal_asli"),
-                nominal_akhir: r.get("nominal_akhir"),
-                diskon: r.get("diskon_voucher"),
-                status,
-                metode_pembayaran: method,
-                payment_url: url,
-                va_number: va,
-            })
-        } else if hasil.status_kelulusan.starts_with("LULUS") {
-            // Auto generate tagihan daftar ulang (UKT Semester 1) jika belum ada
-            let no_tagihan = format!(
-                "INV-DU-{}-{}",
-                pendaftar.nomor_pendaftaran.replace("PMB-", ""),
-                Utc::now().timestamp() % 10000
-            );
-            let nominal = 5_000_000i64; // Biaya UKT PMB 2026
-
-            let t = sqlx::query_as::<_, (Uuid, String, i64, i64, i64, String)>(
-                "INSERT INTO tagihan (
-                    nomor_tagihan, pendaftar_id, jenis_tagihan, nominal_asli, diskon_voucher,
-                    nominal_akhir, status, tgl_jatuh_tempo, catatan
-                ) VALUES ($1, $2, 'DAFTAR_ULANG_UKT', $3, 0, $3, 'MENUNGGU_PEMBAYARAN', NOW() + INTERVAL '14 days', 'Biaya Registrasi Ulang & UKT Semester 1')
-                RETURNING id, nomor_tagihan, nominal_asli, diskon_voucher, nominal_akhir, status"
-            )
-            .bind(&no_tagihan)
-            .bind(pendaftar.id)
-            .bind(nominal)
-            .fetch_one(self.repo.pool())
-            .await?;
-
-            let _ = self
-                .repo
-                .update_status_daftar_ulang(pendaftar.id, "TAGIHAN_TERBIT")
-                .await;
-
-            Some(TagihanDaftarUlangDto {
-                id: t.0,
-                nomor_tagihan: t.1.clone(),
-                nominal_asli: t.2,
-                nominal_akhir: t.4,
-                diskon: t.3,
-                status: t.5,
-                metode_pembayaran: "MOCK_GATEWAY".to_string(),
-                payment_url: Some(format!("/portal/pembayaran?invoice={}", t.1)),
-                va_number: Some("880812345678".to_string()),
-            })
-        } else {
-            None
+                let _ = self
+                    .repo
+                    .update_status_daftar_ulang(pendaftar.id, "TAGIHAN_TERBIT")
+                    .await;
+                t
+            }
         };
+
+        let tagihan_dto = Some(TagihanDaftarUlangDto {
+            id: tagihan_row.0,
+            nomor_tagihan: tagihan_row.1,
+            nominal_asli: tagihan_row.2,
+            nominal_akhir: tagihan_row.3,
+            diskon: tagihan_row.4,
+            status: tagihan_row.5,
+            metode_pembayaran: "TRANSFER_VA_MANDIRI_ATAU_QRIS".to_string(),
+            payment_url: None,
+            va_number: va_mandiri,
+            tgl_jatuh_tempo: Some(tagihan_row.6),
+            rincian,
+        });
 
         // Ambil daftar berkas daftar ulang yang telah diunggah
         let berkas_list = self.repo.list_berkas_daftar_ulang(pendaftar.id).await?;
 
         // Nomor registrasi daftar ulang (dibuat sekali) & status bukti bayar terakhir
-        let nomor_registrasi =
-            crate::modules::kelulusan::bukti_bayar::ensure_nomor_registrasi(
-                self.repo.pool(),
-                pendaftar.id,
-            )
-            .await?;
+        let nomor_registrasi = crate::modules::kelulusan::bukti_bayar::ensure_nomor_registrasi(
+            self.repo.pool(),
+            pendaftar.id,
+        )
+        .await?;
         let bukti_terakhir: Option<(String, Option<String>)> = sqlx::query_as(
-            "SELECT status, catatan FROM bukti_bayar_daftar_ulang
-             WHERE pendaftar_id = $1 ORDER BY created_at DESC LIMIT 1",
+            "SELECT status, catatan FROM bukti_pembayaran
+             WHERE pendaftar_id = $1 AND jenis_tagihan = 'DAFTAR_ULANG_UKT'
+             ORDER BY created_at DESC LIMIT 1",
         )
         .bind(pendaftar.id)
         .fetch_optional(self.repo.pool())
@@ -1093,6 +1302,15 @@ impl KelulusanService {
                     .to_string(),
             ));
         }
+        crate::modules::pendaftaran::alur::pastikan_status(
+            &pendaftar.status_pendaftaran,
+            &[crate::modules::pendaftaran::alur::status::DAFTAR_ULANG_LUNAS],
+            "Berkas registrasi ulang dapat diunggah setelah pembayaran daftar ulang disetujui admin PMB.",
+        )?;
+        let prefix = format!("daftar_ulang/{}/", pendaftar.id);
+        if !req.file_key.starts_with(&prefix) || req.file_key.contains("..") {
+            return Err(AppError::BadRequest("Kunci berkas tidak valid".to_string()));
+        }
 
         let b = self
             .repo
@@ -1146,10 +1364,32 @@ impl KelulusanService {
         }
 
         if all_valid {
-            let _ = self
-                .repo
+            self.repo
                 .update_status_daftar_ulang(b.pendaftar_id, "BERKAS_LENGKAP")
+                .await?;
+
+            // Registrasi ulang tuntas (bayar disetujui + berkas lengkap) -> NIM terbit
+            let status_p: Option<String> =
+                sqlx::query_scalar("SELECT status_pendaftaran FROM pendaftar WHERE id = $1")
+                    .bind(b.pendaftar_id)
+                    .fetch_optional(self.repo.pool())
+                    .await?;
+            if status_p.as_deref()
+                == Some(crate::modules::pendaftaran::alur::status::DAFTAR_ULANG_LUNAS)
+            {
+                let nim = self.generate_nim_resmi_pendaftar(b.pendaftar_id).await?;
+                crate::modules::pendaftaran::alur::kirim_notifikasi(
+                    self.repo.pool(),
+                    b.pendaftar_id,
+                    "Selamat! NIM Resmi Anda Telah Terbit",
+                    &format!(
+                        "Registrasi ulang Anda telah selesai. NIM resmi Anda: {}. Selamat bergabung di Universitas Pignatelli Triputra.",
+                        nim.nim_resmi
+                    ),
+                    "NIM_TERBIT",
+                )
                 .await;
+            }
         }
 
         Ok(b)
@@ -1182,6 +1422,18 @@ impl KelulusanService {
                 "NIM hanya dapat diterbitkan untuk calon yang dinyatakan LULUS".to_string(),
             ));
         }
+        // NIM hanya untuk yang sudah menuntaskan registrasi ulang (bayar disetujui + berkas lengkap)
+        if hasil.nim_resmi.is_none()
+            && !matches!(
+                hasil.status_daftar_ulang.as_str(),
+                "BERKAS_LENGKAP" | "TERDAFTAR_SEBAGAI_MAHASISWA"
+            )
+        {
+            return Err(AppError::Conflict(
+                "NIM baru dapat diterbitkan setelah pembayaran daftar ulang disetujui dan seluruh berkas registrasi ulang valid"
+                    .to_string(),
+            ));
+        }
 
         let prodi_id = hasil
             .prodi_diterima_id
@@ -1206,14 +1458,48 @@ impl KelulusanService {
             });
         }
 
-        // AMAN DARI DUPLIKASI KONKUREN:
-        // Gunakan INSERT ON CONFLICT DO UPDATE RETURNING last_number
-        let tahun = 2026;
-        let sequence = self.repo.get_next_nim_counter(tahun, prodi_id).await?;
-
-        let nim = format_nim_resmi(tahun, &prodi.jenjang, &prodi.kode_prodi, sequence);
+        // Rumus NIM diatur admin (templat + lingkup nomor urut). Nomor urut diambil atomik;
+        // bila rumus yang diubah menghasilkan NIM yang sudah pernah terbit, ambil nomor berikutnya.
+        let tahun = {
+            use chrono::Datelike;
+            Utc::now().year()
+        };
+        let (template, lingkup, _, _) = self.repo.get_pengaturan_nim().await?;
+        let kunci = crate::modules::kelulusan::nim::kunci_pencacah(&lingkup, tahun, prodi_id);
+        let mut nim = String::new();
+        for _ in 0..20 {
+            let urut = self.repo.nomor_urut_berikutnya(&kunci).await?;
+            let calon = crate::modules::kelulusan::nim::render(
+                &template,
+                &crate::modules::kelulusan::nim::KonteksNim {
+                    tahun,
+                    jenjang: prodi.jenjang.clone(),
+                    kode_prodi: prodi.kode_prodi.clone(),
+                    kode_fakultas: prodi.kode_fakultas.clone(),
+                    urut,
+                },
+            )
+            .map_err(|e| AppError::BadRequest(format!("Rumus NIM tidak dapat diterapkan: {e}")))?;
+            if !self.repo.nim_sudah_dipakai(&calon).await? {
+                nim = calon;
+                break;
+            }
+        }
+        if nim.is_empty() {
+            return Err(AppError::Conflict(
+                "Tidak dapat membentuk NIM unik dengan rumus saat ini. Periksa rumus NIM di pengaturan."
+                    .to_string(),
+            ));
+        }
 
         self.repo.update_nim_resmi(pendaftar_id, &nim).await?;
+        sqlx::query(
+            "UPDATE pendaftar SET status_pendaftaran = $1, updated_at = NOW() WHERE id = $2",
+        )
+        .bind(crate::modules::pendaftaran::alur::status::TERDAFTAR)
+        .bind(pendaftar_id)
+        .execute(self.repo.pool())
+        .await?;
 
         // Ambil nama mahasiswa
         let user = sqlx::query_as::<_, (String,)>("SELECT nama_lengkap FROM users WHERE id = $1")
@@ -1231,6 +1517,119 @@ impl KelulusanService {
             status_daftar_ulang: "TERDAFTAR_SEBAGAI_MAHASISWA".to_string(),
             pesan: "NIM resmi berhasil diterbitkan secara otomatis".to_string(),
         })
+    }
+
+    // =========================================================================
+    // 7b. RUMUS PENOMORAN NIM (diatur admin / super admin)
+    // =========================================================================
+
+    /// Panjang kode prodi dan kode fakultas terpanjang pada data saat ini (batas validasi rumus).
+    async fn panjang_kode_maks(&self) -> Result<(usize, usize), AppError> {
+        let semua = self.master_repo.get_all_prodi().await?;
+        let mp = semua.iter().map(|p| p.kode_prodi.chars().count()).max();
+        let mf = semua.iter().map(|p| p.kode_fakultas.chars().count()).max();
+        Ok((mp.unwrap_or(10), mf.unwrap_or(5)))
+    }
+
+    pub async fn get_rumus_nim(&self) -> Result<RumusNimResponse, AppError> {
+        use crate::modules::kelulusan::nim;
+        let (template, lingkup, oleh, pada) = self.repo.get_pengaturan_nim().await?;
+        Ok(RumusNimResponse {
+            template,
+            lingkup_urut: lingkup,
+            template_bawaan: nim::TEMPLATE_BAWAAN.to_string(),
+            diperbarui_oleh: oleh,
+            diperbarui_pada: Some(pada),
+            token: nim::TOKEN
+                .iter()
+                .map(|(t, k, c)| TokenNimInfo {
+                    token: t.to_string(),
+                    keterangan: k.to_string(),
+                    contoh: c.to_string(),
+                })
+                .collect(),
+            lingkup_pilihan: nim::LINGKUP
+                .iter()
+                .map(|(k, ket)| LingkupNimInfo {
+                    kode: k.to_string(),
+                    keterangan: ket.to_string(),
+                })
+                .collect(),
+            panjang_maks: nim::PANJANG_MAKS as i32,
+        })
+    }
+
+    /// Validasi rumus dan tampilkan contoh NIM per prodi tanpa menyimpan apa pun.
+    pub async fn pratinjau_rumus_nim(
+        &self,
+        template: &str,
+        lingkup: &str,
+    ) -> Result<PratinjauRumusNimResponse, AppError> {
+        use crate::modules::kelulusan::nim;
+        let template = template.trim();
+        let gagal = |pesan: String| PratinjauRumusNimResponse {
+            valid: false,
+            pesan: Some(pesan),
+            contoh: Vec::new(),
+        };
+        if !nim::lingkup_valid(lingkup) {
+            return Ok(gagal("Lingkup nomor urut tidak dikenal".to_string()));
+        }
+        let (mp, mf) = self.panjang_kode_maks().await?;
+        if let Err(e) = nim::validasi(template, mp, mf) {
+            return Ok(gagal(e));
+        }
+        let tahun = {
+            use chrono::Datelike;
+            Utc::now().year()
+        };
+        let mut contoh = Vec::new();
+        for p in self.master_repo.get_all_prodi().await?.into_iter().take(10) {
+            let kunci = nim::kunci_pencacah(lingkup, tahun, p.id);
+            let urut = self.repo.nomor_urut_terakhir(&kunci).await? + 1;
+            match nim::render(
+                template,
+                &nim::KonteksNim {
+                    tahun,
+                    jenjang: p.jenjang.clone(),
+                    kode_prodi: p.kode_prodi.clone(),
+                    kode_fakultas: p.kode_fakultas.clone(),
+                    urut,
+                },
+            ) {
+                Ok(nim) => contoh.push(ContohNimItem {
+                    prodi: format!("{} {}", p.jenjang, p.nama_prodi),
+                    kode_prodi: p.kode_prodi,
+                    nim,
+                }),
+                Err(e) => return Ok(gagal(e)),
+            }
+        }
+        Ok(PratinjauRumusNimResponse {
+            valid: true,
+            pesan: None,
+            contoh,
+        })
+    }
+
+    pub async fn simpan_rumus_nim(
+        &self,
+        req: SimpanRumusNimRequest,
+        actor_id: Uuid,
+    ) -> Result<RumusNimResponse, AppError> {
+        use crate::modules::kelulusan::nim;
+        let template = req.template.trim().to_string();
+        if !nim::lingkup_valid(&req.lingkup_urut) {
+            return Err(AppError::BadRequest(
+                "Lingkup nomor urut tidak dikenal".to_string(),
+            ));
+        }
+        let (mp, mf) = self.panjang_kode_maks().await?;
+        nim::validasi(&template, mp, mf).map_err(AppError::BadRequest)?;
+        self.repo
+            .simpan_pengaturan_nim(&template, &req.lingkup_urut, actor_id)
+            .await?;
+        self.get_rumus_nim().await
     }
 
     // =========================================================================
@@ -1410,6 +1809,79 @@ impl KelulusanService {
 // ==============================================================================
 // Unit Test Logika Bisnis Seleksi Kelulusan, Ranking & Concurrency-Safe NIM
 // ==============================================================================
+/// (id, nomor_tagihan, nominal_asli, nominal_akhir, diskon, status, tgl_jatuh_tempo)
+type BarisTagihanDu = (Uuid, String, i64, i64, i64, String, chrono::DateTime<Utc>);
+
+// =========================================================================
+// HELPER BIAYA DAFTAR ULANG (dipakai halaman daftar ulang & surat penerimaan)
+// =========================================================================
+
+/// Rincian biaya daftar ulang dari matriks biaya (prodi x jalur x gelombang).
+/// Bila matriks belum diisi, memakai UKT pokok prodi sebagai satu-satunya komponen.
+pub(crate) async fn rincian_biaya_daftar_ulang(
+    pool: &sqlx::PgPool,
+    prodi_id: Uuid,
+    jalur_id: Uuid,
+    gelombang_id: Uuid,
+) -> Result<Vec<crate::modules::kelulusan::dto::RincianBiayaDto>, AppError> {
+    use crate::modules::kelulusan::dto::RincianBiayaDto;
+
+    let rows: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT k.nama_komponen, m.nominal
+         FROM matriks_biaya m
+         JOIN komponen_biaya k ON k.id = m.komponen_id
+         WHERE m.prodi_id = $1 AND m.jalur_id = $2 AND m.gelombang_id = $3
+           AND k.is_active = TRUE AND m.nominal > 0
+         ORDER BY k.kode_komponen ASC",
+    )
+    .bind(prodi_id)
+    .bind(jalur_id)
+    .bind(gelombang_id)
+    .fetch_all(pool)
+    .await?;
+
+    if !rows.is_empty() {
+        return Ok(rows
+            .into_iter()
+            .map(|(komponen, nominal)| RincianBiayaDto { komponen, nominal })
+            .collect());
+    }
+
+    let ukt: Option<i64> =
+        sqlx::query_scalar("SELECT ukt_nominal FROM program_studi WHERE id = $1")
+            .bind(prodi_id)
+            .fetch_optional(pool)
+            .await?;
+    let ukt = ukt.ok_or_else(|| {
+        AppError::Internal("Biaya daftar ulang untuk program studi ini belum diatur".to_string())
+    })?;
+    Ok(vec![RincianBiayaDto {
+        komponen: "UKT Semester 1".to_string(),
+        nominal: ukt,
+    }])
+}
+
+/// Batas bayar daftar ulang: tanggal batas gelombang (akhir hari WIB), atau 14 hari dari sekarang.
+pub(crate) async fn batas_daftar_ulang(
+    pool: &sqlx::PgPool,
+    gelombang_id: Uuid,
+) -> Result<chrono::DateTime<Utc>, AppError> {
+    let tgl: Option<chrono::NaiveDate> =
+        sqlx::query_scalar("SELECT tgl_batas_daftar_ulang FROM gelombang WHERE id = $1")
+            .bind(gelombang_id)
+            .fetch_optional(pool)
+            .await?
+            .flatten();
+
+    let batas = tgl
+        .and_then(|d| d.and_hms_opt(23, 59, 59))
+        // 23:59:59 WIB = 16:59:59 UTC
+        .map(|dt| dt.and_utc() - chrono::Duration::hours(7))
+        .filter(|t| *t > Utc::now())
+        .unwrap_or_else(|| Utc::now() + chrono::Duration::days(14));
+    Ok(batas)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

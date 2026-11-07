@@ -10,6 +10,7 @@ import {
 } from "../../components/common";
 import { SeoHead } from "../../components/common/SeoHead";
 import type { components } from "../../types/api";
+import { useToast } from "@/components/ui/useToast";
 
 type CmsPost = components["schemas"]["CmsPostResponse"];
 
@@ -36,6 +37,7 @@ const FALLBACK_POSTS: Record<string, Partial<CmsPost>> = {
 };
 
 export const PengumumanDetailPage: React.FC = () => {
+  const { toast } = useToast();
   const { slug } = useParams<{ slug: string }>();
 
   const {
@@ -70,7 +72,11 @@ export const PengumumanDetailPage: React.FC = () => {
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert("Tautan artikel berhasil disalin ke clipboard!");
+      toast({
+        variant: "success",
+        title: "Tautan disalin",
+        description: "Tautan artikel berhasil disalin ke clipboard.",
+      });
     }
   };
 

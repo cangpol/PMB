@@ -18,11 +18,14 @@ use crate::{
     modules::{
         cbt::{
             dto::{
-                AssignPesertaRequest, AutosaveJawabanRequest, LaporPelanggaranRequest, AutosaveJawabanResponse,
-                CreatePaketRequest, CreateSesiRequest, CreateSoalRequest, ErrorBarisImport,
-                ImportSoalResultResponse, LiveMonitorStreamResponse, LivePesertaStatusItem,
-                MulaiUjianCbtResponse, PresensiCheckInRequest, PresensiCheckInResponse,
-                SesiCalonInfoResponse, SoalCbtPesertaResponse, SoalOpsiDto, SubmitUjianResponse,
+                AksiHasilCbtResponse, AssignPesertaRequest, AutosaveJawabanRequest,
+                AutosaveJawabanResponse, CreatePaketRequest, CreateSesiRequest, CreateSoalRequest,
+                ErrorBarisImport, HasilCbtAdminItem, HasilCbtAdminResponse, HasilCbtQuery,
+                ImportSoalResultResponse, LaporPelanggaranRequest, LiveMonitorStreamResponse,
+                LivePesertaStatusItem, MulaiUjianCbtResponse, PresensiCheckInRequest,
+                PresensiCheckInResponse, RiwayatCbtItem, SesiCalonInfoResponse,
+                SetujuiHasilCbtRequest, SoalCbtPesertaResponse, SoalOpsiDto, SubmitUjianResponse,
+                UjianUlangCbtRequest,
             },
             model::{BankSoal, PaketUjian, SesiUjian},
             repository::CbtRepository,
@@ -37,6 +40,11 @@ use crate::{
 #[openapi(
     paths(
         get_my_sesi_handler,
+        get_riwayat_handler,
+        lanjut_setelah_cbt_handler,
+        list_hasil_admin_handler,
+        setujui_hasil_handler,
+        ujian_ulang_handler,
         mulai_ujian_handler,
         autosave_jawaban_handler,
         submit_ujian_handler,
@@ -54,6 +62,12 @@ use crate::{
         SoalOpsiDto,
         SoalCbtPesertaResponse,
         SesiCalonInfoResponse,
+        RiwayatCbtItem,
+        HasilCbtAdminItem,
+        HasilCbtAdminResponse,
+        SetujuiHasilCbtRequest,
+        UjianUlangCbtRequest,
+        AksiHasilCbtResponse,
         MulaiUjianCbtResponse,
         AutosaveJawabanRequest,
         AutosaveJawabanResponse,
@@ -80,9 +94,12 @@ pub fn cbt_router() -> Router<AppState> {
     Router::new()
         // Jalur Calon Mahasiswa
         .route("/my-sesi", get(get_my_sesi_handler))
+        .route("/riwayat", get(get_riwayat_handler))
+        .route("/sesi-tersedia", get(get_sesi_tersedia_handler))
         .route("/mulai", post(mulai_ujian_handler))
         .route("/autosave", post(autosave_jawaban_handler))
         .route("/submit", post(submit_ujian_handler))
+        .route("/lanjut", post(lanjut_setelah_cbt_handler))
         .route("/pelanggaran", post(lapor_pelanggaran_handler))
         // Jalur Presensi & Pengawas
         .route("/admin/presensi/check-in", post(check_in_presensi_handler))
@@ -90,6 +107,9 @@ pub fn cbt_router() -> Router<AppState> {
             "/admin/sesi/{id}/live-stream",
             get(live_stream_sesi_handler),
         )
+        .route("/admin/hasil", get(list_hasil_admin_handler))
+        .route("/admin/hasil/{id}/setujui", post(setujui_hasil_handler))
+        .route("/admin/hasil/{id}/ujian-ulang", post(ujian_ulang_handler))
         .route("/admin/sesi/{id}/snapshot", get(get_sesi_snapshot_handler))
         .route("/admin/sesi/{id}/peserta", get(get_sesi_snapshot_handler))
         // Jalur Bank Soal & Pengaturan CBT
@@ -134,9 +154,65 @@ pub async fn get_my_sesi_handler(
             AppError::NotFound("Belum ada formulir pendaftaran untuk akun ini".to_string())
         })?;
 
+    let boleh_ujian = crate::modules::pendaftaran::alur::status::BOLEH_UJIAN
+        .contains(&pendaftar.status_pendaftaran.as_str());
     let service = CbtService::new(CbtRepository::new(state.db.clone()));
-    let res = service.get_my_sesi_info(pendaftar.id).await?;
+    let res = service.get_my_sesi_info(pendaftar.id, boleh_ujian).await?;
     Ok(Json(res))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/cbt/riwayat",
+    tag = "CBT Calon",
+    responses(
+        (status = 200, description = "Riwayat pengerjaan CBT calon, terbaru di atas", body = [RiwayatCbtItem]),
+        (status = 401, description = "Belum login", body = ApiErrorResponse)
+    )
+)]
+pub async fn get_riwayat_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let pendaftar = PendaftaranRepository::new(state.db.clone())
+        .find_by_user_id(auth_user.user_id)
+        .await?;
+    let Some(pendaftar) = pendaftar else {
+        return Ok(Json(Vec::new()));
+    };
+    let repo = CbtRepository::new(state.db.clone());
+    Ok(Json(repo.list_riwayat_pendaftar(pendaftar.id).await?))
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct SesiTersediaQuery {
+    pub gelombang_id: Option<Uuid>,
+    pub jalur_id: Option<Uuid>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/cbt/sesi-tersedia",
+    tag = "CBT Calon",
+    params(
+        ("gelombang_id" = Option<Uuid>, Query, description = "Filter gelombang calon"),
+        ("jalur_id" = Option<Uuid>, Query, description = "Filter jalur calon")
+    ),
+    responses(
+        (status = 200, description = "Sesi CBT yang dapat dipilih sebagai jadwal seleksi", body = [crate::modules::cbt::dto::SesiTersediaItem])
+    )
+)]
+pub async fn get_sesi_tersedia_handler(
+    _auth_user: AuthUser,
+    State(state): State<AppState>,
+    Query(q): Query<SesiTersediaQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let service = CbtService::new(CbtRepository::new(state.db.clone()));
+    Ok(Json(
+        service
+            .list_sesi_tersedia(q.gelombang_id, q.jalur_id)
+            .await?,
+    ))
 }
 
 #[utoipa::path(
@@ -160,6 +236,13 @@ pub async fn mulai_ujian_handler(
         .ok_or_else(|| {
             AppError::NotFound("Belum ada formulir pendaftaran untuk akun ini".to_string())
         })?;
+
+    // Gerbang alur: CBT hanya setelah seluruh berkas diverifikasi admin
+    crate::modules::pendaftaran::alur::pastikan_status(
+        &pendaftar.status_pendaftaran,
+        crate::modules::pendaftaran::alur::status::BOLEH_UJIAN,
+        "Ujian CBT dapat diikuti setelah seluruh berkas pendaftaran Anda diverifikasi admin PMB.",
+    )?;
 
     let service = CbtService::new(CbtRepository::new(state.db.clone()));
     let res = service.mulai_ujian_calon(pendaftar.id, None, None).await?;
@@ -232,6 +315,31 @@ pub async fn submit_ujian_handler(
     Ok(Json(res))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/cbt/lanjut",
+    tag = "CBT Calon",
+    responses(
+        (status = 200, description = "Tahap berikutnya (pengumuman) dibuka", body = AksiHasilCbtResponse),
+        (status = 409, description = "Belum memenuhi passing grade / belum selesai ujian", body = ApiErrorResponse)
+    )
+)]
+pub async fn lanjut_setelah_cbt_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let pendaftar = PendaftaranRepository::new(state.db.clone())
+        .find_by_user_id(auth_user.user_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Data pendaftar tidak ditemukan".to_string()))?;
+    CbtRepository::new(state.db.clone())
+        .lanjut_setelah_cbt(pendaftar.id)
+        .await?;
+    Ok(Json(AksiHasilCbtResponse {
+        pesan: "Tahap berikutnya telah dibuka: menunggu pengumuman hasil seleksi.".to_string(),
+    }))
+}
+
 // =========================================================================
 // 2. ENDPOINTS PENGAWAS: PRESENSI & MONITOR REAL-TIME (SSE)
 // =========================================================================
@@ -257,6 +365,7 @@ pub async fn check_in_presensi_handler(
             "Hanya pengawas ujian atau admin yang dapat mencatat presensi".to_string(),
         ));
     }
+    crate::modules::fitur::pastikan_pengawas_boleh(&state.db, &auth_user).await?;
 
     let service = CbtService::new(CbtRepository::new(state.db.clone()));
     let res = service.check_in_presensi(auth_user.user_id, req).await?;
@@ -273,6 +382,7 @@ pub async fn live_stream_sesi_handler(
             "Hanya pengawas ujian atau admin yang dapat memonitor sesi live".to_string(),
         ));
     }
+    crate::modules::fitur::pastikan_pengawas_boleh(&state.db, &auth_user).await?;
 
     let service = CbtService::new(CbtRepository::new(state.db.clone()));
     let stream = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
@@ -316,6 +426,7 @@ pub async fn get_sesi_snapshot_handler(
             "Hanya pengawas ujian atau admin yang dapat melihat rekap sesi".to_string(),
         ));
     }
+    crate::modules::fitur::pastikan_pengawas_boleh(&state.db, &auth_user).await?;
 
     let service = CbtService::new(CbtRepository::new(state.db.clone()));
     let snapshot = service.get_live_monitor_data(id).await?;
@@ -360,6 +471,7 @@ pub async fn list_bank_soal_handler(
             "Hanya admin PMB yang dapat mengelola bank soal".to_string(),
         ));
     }
+    crate::modules::fitur::pastikan_pengawas_boleh(&state.db, &auth_user).await?;
 
     let page = filter.page.unwrap_or(1).max(1);
     let limit = filter.limit.unwrap_or(20).clamp(1, 100);
@@ -466,6 +578,7 @@ pub async fn list_paket_handler(
     if !auth_user.has_any_role(&["admin_pmb", "super_admin", "pengawas_ujian"]) {
         return Err(AppError::Forbidden("Akses ditolak".to_string()));
     }
+    crate::modules::fitur::pastikan_pengawas_boleh(&state.db, &auth_user).await?;
 
     let repo = CbtRepository::new(state.db.clone());
     let items = repo.list_paket().await?;
@@ -510,6 +623,7 @@ pub async fn list_sesi_handler(
     if !auth_user.has_any_role(&["admin_pmb", "super_admin", "pengawas_ujian"]) {
         return Err(AppError::Forbidden("Akses ditolak".to_string()));
     }
+    crate::modules::fitur::pastikan_pengawas_boleh(&state.db, &auth_user).await?;
 
     let repo = CbtRepository::new(state.db.clone());
     let items = repo.list_sesi().await?;
@@ -560,6 +674,7 @@ pub async fn assign_peserta_handler(
     if !auth_user.has_any_role(&["admin_pmb", "super_admin", "pengawas_ujian"]) {
         return Err(AppError::Forbidden("Akses ditolak".to_string()));
     }
+    crate::modules::fitur::pastikan_pengawas_boleh(&state.db, &auth_user).await?;
 
     let repo = CbtRepository::new(state.db.clone());
     let assigned = repo.assign_peserta_to_sesi(id, &req.pendaftar_ids).await?;
@@ -568,4 +683,114 @@ pub async fn assign_peserta_handler(
         "assigned_count": assigned,
         "pesan": format!("{} peserta berhasil dialokasikan ke sesi ujian", assigned)
     })))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/cbt/admin/hasil",
+    tag = "CBT Pengawas",
+    params(HasilCbtQuery),
+    responses(
+        (status = 200, description = "Rekap hasil pengerjaan CBT semua sesi", body = HasilCbtAdminResponse),
+        (status = 403, description = "Akses ditolak", body = ApiErrorResponse)
+    )
+)]
+pub async fn list_hasil_admin_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Query(q): Query<HasilCbtQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    if !auth_user.has_any_role(&["admin_pmb", "super_admin"]) {
+        return Err(AppError::Forbidden(
+            "Hanya admin PMB yang dapat melihat rekap hasil CBT".to_string(),
+        ));
+    }
+    let service = CbtService::new(CbtRepository::new(state.db.clone()));
+    Ok(Json(service.hasil_admin(q.q.as_deref(), q.sesi_id).await?))
+}
+
+fn wajib_admin(u: &AuthUser) -> Result<(), AppError> {
+    if !u.has_any_role(&["admin_pmb", "super_admin"]) {
+        return Err(AppError::Forbidden(
+            "Hanya admin PMB yang dapat mengubah hasil CBT".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/cbt/admin/hasil/{id}/setujui",
+    tag = "CBT Pengawas",
+    params(("id" = Uuid, Path, description = "ID peserta sesi")),
+    request_body = SetujuiHasilCbtRequest,
+    responses(
+        (status = 200, description = "Hasil CBT disetujui admin", body = AksiHasilCbtResponse),
+        (status = 409, description = "Tidak dapat disetujui", body = ApiErrorResponse)
+    )
+)]
+pub async fn setujui_hasil_handler(
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+    State(state): State<AppState>,
+    ValidatedJson(req): ValidatedJson<SetujuiHasilCbtRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    wajib_admin(&auth_user)?;
+    let repo = CbtRepository::new(state.db.clone());
+    let (pendaftar_id, nilai, sebelumnya_lulus) = repo
+        .setujui_hasil(id, auth_user.user_id, req.alasan.as_deref())
+        .await?;
+    let _ = crate::security::record_audit_log(
+        &state.db,
+        Some(auth_user.user_id),
+        "CBT_SETUJUI_HASIL",
+        "hasil_ujian",
+        Some(pendaftar_id),
+        Some(serde_json::json!({ "nilai_akhir": nilai, "is_lulus": sebelumnya_lulus })),
+        Some(serde_json::json!({ "is_lulus": true, "alasan": req.alasan })),
+    )
+    .await;
+    Ok(Json(AksiHasilCbtResponse {
+        pesan: if sebelumnya_lulus {
+            "Hasil CBT yang lulus ditandai disetujui admin.".to_string()
+        } else {
+            "Hasil CBT disetujui. Peserta dapat melanjutkan proses seleksi.".to_string()
+        },
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/cbt/admin/hasil/{id}/ujian-ulang",
+    tag = "CBT Pengawas",
+    params(("id" = Uuid, Path, description = "ID peserta sesi")),
+    request_body = UjianUlangCbtRequest,
+    responses(
+        (status = 200, description = "Peserta diizinkan mengulang CBT", body = AksiHasilCbtResponse),
+        (status = 400, description = "Jadwal sesi tujuan sudah berakhir", body = ApiErrorResponse),
+        (status = 409, description = "Tidak dapat diulang", body = ApiErrorResponse)
+    )
+)]
+pub async fn ujian_ulang_handler(
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+    State(state): State<AppState>,
+    ValidatedJson(req): ValidatedJson<UjianUlangCbtRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    wajib_admin(&auth_user)?;
+    let repo = CbtRepository::new(state.db.clone());
+    let (pendaftar_id, lama) = repo.izinkan_ujian_ulang(id, req.sesi_id).await?;
+    let _ = crate::security::record_audit_log(
+        &state.db,
+        Some(auth_user.user_id),
+        "CBT_UJIAN_ULANG",
+        "peserta_sesi",
+        Some(pendaftar_id),
+        Some(lama),
+        Some(serde_json::json!({ "alasan": req.alasan, "sesi_baru": req.sesi_id })),
+    )
+    .await;
+    Ok(Json(AksiHasilCbtResponse {
+        pesan: "Peserta diizinkan mengikuti ujian CBT kembali.".to_string(),
+    }))
 }

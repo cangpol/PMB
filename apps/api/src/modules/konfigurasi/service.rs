@@ -901,9 +901,16 @@ impl KonfigurasiService {
     pub async fn create_voucher(
         &self,
         operator: &AuthUser,
-        req: CreateVoucherRequest,
+        mut req: CreateVoucherRequest,
     ) -> Result<VoucherDetailResponse, AppError> {
         let kode_upper = req.kode_voucher.trim().to_uppercase();
+        if !kode_voucher_valid(&kode_upper) {
+            return Err(AppError::BadRequest(
+                "Kode voucher hanya boleh berisi huruf, angka, dan tanda hubung (-), tanpa spasi"
+                    .to_string(),
+            ));
+        }
+        req.kode_voucher = kode_upper.clone();
         if self.repo.find_voucher_by_kode(&kode_upper).await?.is_some() {
             return Err(AppError::Conflict(format!(
                 "Kode voucher '{}' sudah terdaftar",
@@ -911,6 +918,11 @@ impl KonfigurasiService {
             )));
         }
 
+        if !matches!(req.tipe_diskon.as_str(), "PERCENT" | "NOMINAL") {
+            return Err(AppError::BadRequest(
+                "Jenis diskon harus PERCENT (persentase) atau NOMINAL (rupiah)".to_string(),
+            ));
+        }
         if req.tipe_diskon == "PERCENT" && (req.nilai_diskon < 1 || req.nilai_diskon > 100) {
             return Err(AppError::BadRequest(
                 "Nilai diskon persen harus antara 1% sampai 100%".to_string(),
@@ -952,6 +964,11 @@ impl KonfigurasiService {
         id: Uuid,
         req: UpdateVoucherRequest,
     ) -> Result<VoucherDetailResponse, AppError> {
+        if !matches!(req.tipe_diskon.as_str(), "PERCENT" | "NOMINAL") {
+            return Err(AppError::BadRequest(
+                "Jenis diskon harus PERCENT (persentase) atau NOMINAL (rupiah)".to_string(),
+            ));
+        }
         if req.tipe_diskon == "PERCENT" && (req.nilai_diskon < 1 || req.nilai_diskon > 100) {
             return Err(AppError::BadRequest(
                 "Nilai diskon persen harus antara 1% sampai 100%".to_string(),
@@ -1049,5 +1066,27 @@ impl KonfigurasiService {
             deskripsi: item.deskripsi,
             updated_at: item.updated_at,
         })
+    }
+}
+
+/// Kode voucher yang mudah diketik calon: huruf besar, angka, dan tanda hubung.
+pub fn kode_voucher_valid(kode: &str) -> bool {
+    (3..=50).contains(&kode.len())
+        && kode
+            .chars()
+            .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '-')
+}
+
+#[cfg(test)]
+mod tests_voucher {
+    use super::kode_voucher_valid;
+
+    #[test]
+    fn kode_voucher_hanya_huruf_angka_tanda_hubung() {
+        assert!(kode_voucher_valid("HEMAT50"));
+        assert!(kode_voucher_valid("EARLY-BIRD-2027"));
+        assert!(!kode_voucher_valid("[CONTOH] TRIPUTRA50"));
+        assert!(!kode_voucher_valid("HE MAT"));
+        assert!(!kode_voucher_valid("AB"));
     }
 }

@@ -68,6 +68,8 @@ pub struct JalurResponse {
     pub deskripsi: String,
     pub biaya_formulir: i64,
     pub is_active: bool,
+    /// `CBT`, `BERKAS`, `CAMPURAN`, atau `RPL` (CBT/CAMPURAN wajib memilih sesi CBT)
+    pub tipe_seleksi: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

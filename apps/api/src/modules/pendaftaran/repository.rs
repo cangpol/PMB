@@ -5,7 +5,8 @@ use crate::{
     error::AppError,
     modules::pendaftaran::{
         dto::{
-            BerkasCalonItem, BerkasDetailItem, DashboardSummaryResponse, PendaftaranOfflineRequest,
+            BerkasCalonItem, BerkasCalonRingkasan, BerkasDetailItem, DashboardSummaryResponse,
+            PendaftaranOfflineRequest,
         },
         model::{
             BerkasPendaftar, DefinisiBerkas, DefinisiField, DefinisiLangkah, Pendaftar,
@@ -62,7 +63,8 @@ impl PendaftaranRepository {
     }
 
     pub async fn get_next_sequence(&self) -> Result<i64, AppError> {
-        let row: (i64,) = sqlx::query_as("SELECT COALESCE(COUNT(*), 0) + 1 FROM pendaftar")
+        // SEQUENCE: aman dari bentrok saat ada baris terhapus / pengiriman bersamaan
+        let row: (i64,) = sqlx::query_as("SELECT nextval('seq_nomor_pendaftaran')")
             .fetch_one(&self.pool)
             .await?;
         Ok(row.0)
@@ -499,6 +501,22 @@ impl PendaftaranRepository {
         Ok(b)
     }
 
+    /// Atur cakupan prodi berkas (NULL = semua prodi).
+    pub async fn set_prodi_definisi_berkas(
+        &self,
+        id: Uuid,
+        prodi_id: Option<Uuid>,
+    ) -> Result<DefinisiBerkas, AppError> {
+        let b = sqlx::query_as::<_, DefinisiBerkas>(
+            "UPDATE definisi_berkas SET prodi_id = $1, updated_at = NOW() WHERE id = $2 RETURNING *",
+        )
+        .bind(prodi_id)
+        .bind(id)
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(b)
+    }
+
     pub async fn delete_definisi_berkas(&self, id: Uuid) -> Result<(), AppError> {
         sqlx::query("DELETE FROM definisi_berkas WHERE id = $1")
             .bind(id)
@@ -591,12 +609,36 @@ impl PendaftaranRepository {
         Ok(list)
     }
 
+    /// Definisi berkas aktif yang berlaku untuk pendaftar: umum, khusus jalurnya,
+    /// dan khusus prodi pilihannya (mis. bebas buta warna untuk Fisioterapi).
+    pub async fn list_definisi_berkas_pendaftar(
+        &self,
+        jalur_id: Uuid,
+        prodi_ids: &[Uuid],
+    ) -> Result<Vec<DefinisiBerkas>, AppError> {
+        let list = sqlx::query_as::<_, DefinisiBerkas>(
+            "SELECT * FROM definisi_berkas
+             WHERE is_active = TRUE
+               AND (jalur_id IS NULL OR jalur_id = $1)
+               AND (prodi_id IS NULL OR prodi_id = ANY($2))
+             ORDER BY urutan ASC, created_at ASC",
+        )
+        .bind(jalur_id)
+        .bind(prodi_ids)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(list)
+    }
+
     pub async fn get_calon_berkas_list(
         &self,
         pendaftar_id: Uuid,
-        jalur_id: Option<Uuid>,
+        jalur_id: Uuid,
+        prodi_ids: &[Uuid],
     ) -> Result<Vec<BerkasCalonItem>, AppError> {
-        let definisi_list = self.list_definisi_berkas(jalur_id).await?;
+        let definisi_list = self
+            .list_definisi_berkas_pendaftar(jalur_id, prodi_ids)
+            .await?;
         let uploaded_list = self.get_berkas_by_pendaftar(pendaftar_id).await?;
 
         let mut items = Vec::new();
@@ -656,6 +698,7 @@ impl PendaftaranRepository {
         &self,
         status_filter: Option<&str>,
         search: Option<&str>,
+        pendaftar_id: Option<Uuid>,
     ) -> Result<Vec<BerkasDetailItem>, AppError> {
         let mut builder = sqlx::QueryBuilder::new(
             "SELECT b.id, b.pendaftar_id, p.nomor_pendaftaran, u.nama_lengkap, u.email,
@@ -671,6 +714,11 @@ impl PendaftaranRepository {
              LEFT JOIN definisi_berkas db ON b.definisi_berkas_id = db.id
              WHERE 1=1",
         );
+
+        if let Some(pid) = pendaftar_id {
+            builder.push(" AND b.pendaftar_id = ");
+            builder.push_bind(pid);
+        }
 
         if let Some(status) = status_filter {
             if !status.is_empty() && status != "SEMUA" {
@@ -702,32 +750,119 @@ impl PendaftaranRepository {
         Ok(items)
     }
 
+    /// Daftar calon beserta ringkasan berkasnya (unggahan terbaru tiap jenis).
+    /// `status`: PENDING (ada yang menunggu), INVALID (ada yang ditolak),
+    /// VALID (semua sah), selain itu semua. Yang perlu diperiksa tampil paling atas.
+    pub async fn list_berkas_per_calon(
+        &self,
+        status: Option<&str>,
+        search: Option<&str>,
+    ) -> Result<Vec<BerkasCalonRingkasan>, AppError> {
+        let mut builder = sqlx::QueryBuilder::new(
+            "WITH terbaru AS (
+                 SELECT DISTINCT ON (pendaftar_id, jenis_berkas)
+                        pendaftar_id, status_verifikasi, uploaded_at
+                 FROM berkas_pendaftar
+                 ORDER BY pendaftar_id, jenis_berkas, uploaded_at DESC
+             ), ringkas AS (
+                 SELECT pendaftar_id,
+                        COUNT(*)::bigint AS total,
+                        (COUNT(*) FILTER (WHERE status_verifikasi = 'PENDING'))::bigint AS menunggu,
+                        (COUNT(*) FILTER (WHERE status_verifikasi = 'VALID'))::bigint AS valid,
+                        (COUNT(*) FILTER (WHERE status_verifikasi = 'INVALID'))::bigint AS ditolak,
+                        MIN(uploaded_at) FILTER (WHERE status_verifikasi = 'PENDING') AS menunggu_sejak,
+                        MAX(uploaded_at) AS terakhir_unggah
+                 FROM terbaru GROUP BY pendaftar_id
+             )
+             SELECT r.pendaftar_id, p.nomor_pendaftaran, u.nama_lengkap, u.email,
+                    j.nama_jalur, ps.nama_prodi, p.status_pendaftaran,
+                    r.total, r.menunggu, r.valid, r.ditolak, r.menunggu_sejak, r.terakhir_unggah
+             FROM ringkas r
+             JOIN pendaftar p ON p.id = r.pendaftar_id
+             JOIN users u ON u.id = p.user_id
+             JOIN jalur_masuk j ON j.id = p.jalur_id
+             LEFT JOIN program_studi ps ON ps.id = p.prodi_pilihan_1
+             WHERE 1=1",
+        );
+        match status {
+            Some("PENDING") => {
+                builder.push(" AND r.menunggu > 0");
+            }
+            Some("INVALID") => {
+                builder.push(" AND r.ditolak > 0");
+            }
+            Some("VALID") => {
+                builder.push(" AND r.menunggu = 0 AND r.ditolak = 0 AND r.valid > 0");
+            }
+            _ => {}
+        }
+        if let Some(s) = search.map(str::trim).filter(|s| !s.is_empty()) {
+            let pola = format!("%{s}%");
+            builder.push(" AND (p.nomor_pendaftaran ILIKE ");
+            builder.push_bind(pola.clone());
+            builder.push(" OR u.nama_lengkap ILIKE ");
+            builder.push_bind(pola.clone());
+            builder.push(" OR u.email ILIKE ");
+            builder.push_bind(pola);
+            builder.push(")");
+        }
+        builder.push(
+            " ORDER BY (r.menunggu > 0) DESC, r.menunggu_sejak ASC NULLS LAST, r.terakhir_unggah DESC
+              LIMIT 200",
+        );
+        Ok(builder
+            .build_query_as::<BerkasCalonRingkasan>()
+            .fetch_all(&self.pool)
+            .await?)
+    }
+
+    /// Sahkan unggahan terbaru tiap jenis berkas calon yang masih menunggu.
+    /// Berkas yang sudah sah/ditolak dan unggahan lama yang sudah diganti tidak disentuh.
+    pub async fn sahkan_semua_berkas_menunggu(
+        &self,
+        pendaftar_id: Uuid,
+        verified_by: Uuid,
+    ) -> Result<i64, AppError> {
+        let hasil = sqlx::query(
+            "UPDATE berkas_pendaftar
+             SET status_verifikasi = 'VALID', catatan = NULL, verified_at = NOW(), verified_by = $2
+             WHERE status_verifikasi = 'PENDING'
+               AND id IN (SELECT DISTINCT ON (jenis_berkas) id
+                          FROM berkas_pendaftar
+                          WHERE pendaftar_id = $1
+                          ORDER BY jenis_berkas, uploaded_at DESC)",
+        )
+        .bind(pendaftar_id)
+        .bind(verified_by)
+        .execute(&self.pool)
+        .await?;
+        Ok(hasil.rows_affected() as i64)
+    }
+
+    /// Perbarui status verifikasi satu berkas; mengembalikan `pendaftar_id` pemilik berkas.
     pub async fn update_verifikasi_berkas(
         &self,
         berkas_id: Uuid,
         status: &str,
         catatan: Option<&str>,
         verified_by: Option<Uuid>,
-    ) -> Result<(), AppError> {
-        let res = sqlx::query(
+    ) -> Result<Uuid, AppError> {
+        let pendaftar_id: Option<Uuid> = sqlx::query_scalar(
             "UPDATE berkas_pendaftar
              SET status_verifikasi = $1, catatan = $2, verified_at = NOW(), verified_by = $3
-             WHERE id = $4",
+             WHERE id = $4
+             RETURNING pendaftar_id",
         )
         .bind(status)
         .bind(catatan)
         .bind(verified_by)
         .bind(berkas_id)
-        .execute(&self.pool)
+        .fetch_optional(&self.pool)
         .await?;
 
-        if res.rows_affected() == 0 {
-            return Err(AppError::NotFound(
-                "Dokumen berkas pendaftaran tidak ditemukan".to_string(),
-            ));
-        }
-
-        Ok(())
+        pendaftar_id.ok_or_else(|| {
+            AppError::NotFound("Dokumen berkas pendaftaran tidak ditemukan".to_string())
+        })
     }
 
     // ==========================================
@@ -877,7 +1012,7 @@ impl PendaftaranRepository {
 
     pub async fn check_gelombang_active(&self, gelombang_id: Uuid) -> Result<bool, AppError> {
         let active: Option<bool> = sqlx::query_scalar(
-            "SELECT (status = 'BUKA' AND CURRENT_DATE >= tgl_mulai AND CURRENT_DATE <= tgl_selesai)
+            "SELECT (status = 'DIBUKA' AND CURRENT_DATE >= tgl_mulai AND CURRENT_DATE <= tgl_selesai)
              FROM gelombang WHERE id = $1",
         )
         .bind(gelombang_id)
@@ -936,7 +1071,7 @@ impl PendaftaranRepository {
 
     pub async fn get_prodi_nama(&self, prodi_id: Uuid) -> Result<String, AppError> {
         let nama: Option<String> =
-            sqlx::query_scalar("SELECT nama FROM program_studi WHERE id = $1")
+            sqlx::query_scalar("SELECT nama_prodi FROM program_studi WHERE id = $1")
                 .bind(prodi_id)
                 .fetch_optional(&self.pool)
                 .await?;
@@ -944,18 +1079,20 @@ impl PendaftaranRepository {
     }
 
     pub async fn get_jalur_nama(&self, jalur_id: Uuid) -> Result<String, AppError> {
-        let nama: Option<String> = sqlx::query_scalar("SELECT nama FROM jalur_masuk WHERE id = $1")
-            .bind(jalur_id)
-            .fetch_optional(&self.pool)
-            .await?;
+        let nama: Option<String> =
+            sqlx::query_scalar("SELECT nama_jalur FROM jalur_masuk WHERE id = $1")
+                .bind(jalur_id)
+                .fetch_optional(&self.pool)
+                .await?;
         Ok(nama.unwrap_or_else(|| "Jalur PMB".to_string()))
     }
 
     pub async fn get_gelombang_nama(&self, gelombang_id: Uuid) -> Result<String, AppError> {
-        let nama: Option<String> = sqlx::query_scalar("SELECT nama FROM gelombang WHERE id = $1")
-            .bind(gelombang_id)
-            .fetch_optional(&self.pool)
-            .await?;
+        let nama: Option<String> =
+            sqlx::query_scalar("SELECT nama_gelombang FROM gelombang WHERE id = $1")
+                .bind(gelombang_id)
+                .fetch_optional(&self.pool)
+                .await?;
         Ok(nama.unwrap_or_else(|| "Gelombang PMB".to_string()))
     }
 
@@ -975,8 +1112,8 @@ impl PendaftaranRepository {
                 nama_ortu, no_hp_ortu, asal_sekolah, jurusan_sekolah, nilai_rapor_avg, data_formulir, channel
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, 'DRAFT',
-                '0000000000000000', 'Surakarta', '2007-01-01', 'L', 'Katolik',
-                'Jl. Mayor Sunaryo No. 37', 'Orang Tua', '081234567890', 'SMA', 'Umum', 0.0, '{}'::jsonb, 'online'
+                -- Identitas diisi kemudian dari formulir biodata; jangan pakai data karangan
+                '', '', '1900-01-01', 'L', '', '', '', '', '', '', 0.0, '{}'::jsonb, 'online'
             )
             ON CONFLICT (user_id) DO UPDATE SET
                 jalur_id = EXCLUDED.jalur_id,
@@ -1007,10 +1144,11 @@ impl PendaftaranRepository {
         nomor_pendaftaran: &str,
         req: &PendaftaranOfflineRequest,
     ) -> Result<Pendaftar, AppError> {
+        // Bayar tunai di loket = pembayaran formulir langsung disetujui admin (alur v2)
         let status = if req.lunas_loket {
-            "SUBMITTED"
+            crate::modules::pendaftaran::alur::status::PEMBAYARAN_DISETUJUI
         } else {
-            "DRAFT"
+            crate::modules::pendaftaran::alur::status::DRAFT
         };
         let p = sqlx::query_as::<_, Pendaftar>(
             "INSERT INTO pendaftar (
@@ -1069,7 +1207,8 @@ impl PendaftaranRepository {
         admin_id: Uuid,
         nominal: i64,
     ) -> Result<String, AppError> {
-        let seq: (i64,) = sqlx::query_as("SELECT COALESCE(COUNT(*), 0) + 1 FROM pembayaran")
+        // Satu sequence dengan tagihan online agar nomor INV tidak pernah bentrok
+        let seq: (i64,) = sqlx::query_as("SELECT nextval('seq_nomor_tagihan')")
             .fetch_one(&self.pool)
             .await?;
         let nomor_tagihan = format!("INV-2026-{:05}", seq.0);
@@ -1084,6 +1223,20 @@ impl PendaftaranRepository {
         .bind(&nomor_tagihan)
         .bind(nominal)
         .bind(admin_id)
+        .execute(&self.pool)
+        .await?;
+
+        // Catat juga di tabel tagihan (sumber laporan keuangan alur v2)
+        sqlx::query(
+            "INSERT INTO tagihan (
+                nomor_tagihan, pendaftar_id, jenis_tagihan, nominal_asli, diskon_voucher,
+                nominal_akhir, status, tgl_jatuh_tempo, lunas_at, catatan
+            ) VALUES ($1, $2, 'FORMULIR', $3, 0, $3, 'LUNAS', NOW(), NOW(), 'Dibayar tunai di loket PMB')
+            ON CONFLICT (nomor_tagihan) DO NOTHING",
+        )
+        .bind(&nomor_tagihan)
+        .bind(pendaftar_id)
+        .bind(nominal)
         .execute(&self.pool)
         .await?;
 
@@ -1114,6 +1267,11 @@ impl PendaftaranRepository {
                 nim_resmi: None,
                 bisa_cetak_bukti: false,
                 bisa_cetak_kartu: false,
+                prodi_diterima_nama: None,
+                tgl_daftar: None,
+                berkas: None,
+                cbt: None,
+                biaya: Vec::new(),
             });
         };
 
@@ -1127,9 +1285,9 @@ impl PendaftaranRepository {
 
         // Cek Pembayaran
         let bayar_row: Option<(String, String, i64)> = sqlx::query_as(
-            "SELECT nomor_tagihan, status_pembayaran, nominal_akhir FROM pembayaran
+            "SELECT nomor_tagihan, status, nominal_akhir FROM tagihan
              WHERE pendaftar_id = $1 AND jenis_tagihan = 'FORMULIR'
-             ORDER BY created_at DESC LIMIT 1",
+             ORDER BY tgl_terbit DESC LIMIT 1",
         )
         .bind(pendaftar.id)
         .fetch_optional(&self.pool)
@@ -1141,51 +1299,65 @@ impl PendaftaranRepository {
         };
 
         // Cek Jadwal Ujian
-        let ujian_row: Option<(String, chrono::DateTime<chrono::Utc>, String)> = sqlx::query_as(
-            "SELECT u.judul, s.jadwal_mulai, s.ruangan
-             FROM sesi_ujian s
-             JOIN ujian_cbt u ON s.ujian_id = u.id
-             JOIN peserta_ujian pu ON pu.sesi_id = s.id
-             WHERE pu.pendaftar_id = $1
-             LIMIT 1",
-        )
-        .bind(pendaftar.id)
-        .fetch_optional(&self.pool)
-        .await
-        .ok()
-        .flatten();
+        let ujian_row: Option<(String, chrono::DateTime<chrono::Utc>, String, String)> =
+            sqlx::query_as(
+                "SELECT s.nama_sesi, s.jadwal_mulai, s.ruang, s.mode
+                 FROM pendaftar p
+                 JOIN sesi_ujian s ON s.id = p.sesi_ujian_id
+                 WHERE p.id = $1",
+            )
+            .bind(pendaftar.id)
+            .fetch_optional(&self.pool)
+            .await?;
 
         let (jadwal_ujian, lokasi_ujian) = match ujian_row {
-            Some((judul, jadwal, ruang)) => (
+            Some((nama, jadwal, ruang, mode)) => (
                 Some(format!(
                     "{} - {}",
-                    judul,
-                    jadwal.format("%d %b %Y %H:%M WIB")
+                    nama,
+                    format_wib(jadwal, "%d %b %Y %H:%M WIB")
                 )),
-                Some(ruang),
+                Some(if mode == "ONLINE" {
+                    "Online (dari rumah)".to_string()
+                } else {
+                    ruang
+                }),
             ),
-            None => (
-                Some("Ujian CBT Online / Sesuai Jadwal Gelombang".to_string()),
-                Some("Laboratorium Komputer Kampus UPT".to_string()),
-            ),
-        };
-
-        // Status Kelulusan & NIM
-        let kelulusan_row: Option<(String, Option<String>)> =
-            sqlx::query_as("SELECT status, nim FROM hasil_seleksi WHERE pendaftar_id = $1 LIMIT 1")
-                .bind(pendaftar.id)
-                .fetch_optional(&self.pool)
-                .await
-                .ok()
-                .flatten();
-
-        let (pengumuman_status, nim_resmi) = match kelulusan_row {
-            Some((st, nim)) => (Some(st), nim),
             None => (None, None),
         };
 
+        // Hasil kelulusan tampil begitu sidang dipublikasikan dan jadwal pengumuman tiba
+        // (sama dengan aturan halaman Pengumuman Kelulusan). Tidak bergantung pada status
+        // pendaftaran agar tidak ada selisih antara dashboard dan halaman hasil.
+        let kelulusan_row: Option<(String, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT hk.status_kelulusan, hk.nim_resmi, ps.nama_prodi
+             FROM hasil_kelulusan hk
+             LEFT JOIN program_studi ps ON ps.id = hk.prodi_diterima_id
+             LEFT JOIN sidang_kelulusan sd ON sd.id = hk.sidang_id
+             WHERE hk.pendaftar_id = $1 AND hk.is_published = TRUE
+               AND (sd.tgl_pengumuman IS NULL OR sd.tgl_pengumuman <= NOW())",
+        )
+        .bind(pendaftar.id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let (pengumuman_status, nim_resmi, prodi_diterima_nama) = match kelulusan_row {
+            Some((st, nim, prodi)) => {
+                let st = if st.starts_with("LULUS") {
+                    "LULUS".to_string()
+                } else {
+                    st
+                };
+                (Some(st), nim, prodi)
+            }
+            None => (None, None, None),
+        };
+
         let bisa_cetak_bukti = pendaftar.status_pendaftaran != "DRAFT";
-        let bisa_cetak_kartu = tagihan_lunas || pendaftar.channel == "offline";
+        // Kartu peserta terbit setelah berkas diverifikasi (alur v2), sama dengan gerbang cetak PDF
+        let bisa_cetak_kartu =
+            crate::modules::pendaftaran::alur::peringkat(&pendaftar.status_pendaftaran) >= 5
+                || pendaftar.channel == "offline";
 
         Ok(DashboardSummaryResponse {
             pendaftar_id: Some(pendaftar.id),
@@ -1204,6 +1376,11 @@ impl PendaftaranRepository {
             nim_resmi,
             bisa_cetak_bukti,
             bisa_cetak_kartu,
+            prodi_diterima_nama,
+            tgl_daftar: Some(pendaftar.created_at),
+            berkas: None,
+            cbt: None,
+            biaya: Vec::new(),
         })
     }
 
@@ -1286,29 +1463,43 @@ impl PendaftaranRepository {
         &self,
         pendaftar_id: Uuid,
     ) -> Result<Option<JadwalUjianPdfData>, AppError> {
-        let row: Option<(String, String, chrono::DateTime<chrono::Utc>, String)> = sqlx::query_as(
-            "SELECT pu.nomor_peserta, u.judul, s.jadwal_mulai, s.ruangan
-             FROM sesi_ujian s
-             JOIN ujian_cbt u ON s.ujian_id = u.id
-             JOIN peserta_ujian pu ON pu.sesi_id = s.id
-             WHERE pu.pendaftar_id = $1
-             LIMIT 1",
+        let row: Option<(
+            String,
+            String,
+            chrono::DateTime<chrono::Utc>,
+            String,
+            String,
+        )> = sqlx::query_as(
+            "SELECT ps.nomor_peserta, s.nama_sesi, s.jadwal_mulai, s.ruang, s.mode
+                 FROM peserta_sesi ps
+                 JOIN sesi_ujian s ON s.id = ps.sesi_id
+                 WHERE ps.pendaftar_id = $1
+                 ORDER BY s.jadwal_mulai DESC
+                 LIMIT 1",
         )
         .bind(pendaftar_id)
         .fetch_optional(&self.pool)
-        .await
-        .ok()
-        .flatten();
+        .await?;
 
         Ok(row.map(
-            |(nomor_peserta, nama_ujian, jadwal_mulai, lokasi_ruang)| JadwalUjianPdfData {
+            |(nomor_peserta, nama_ujian, jadwal_mulai, ruang, mode)| JadwalUjianPdfData {
                 nomor_peserta,
                 nama_ujian,
-                tanggal_ujian: jadwal_mulai.format("%d-%m-%Y").to_string(),
-                waktu_ujian: jadwal_mulai.format("%H:%M WIB").to_string(),
-                lokasi_ruang,
-                link_ujian: None,
+                tanggal_ujian: format_wib(jadwal_mulai, "%d-%m-%Y"),
+                waktu_ujian: format_wib(jadwal_mulai, "%H:%M WIB"),
+                link_ujian: (mode == "ONLINE").then(|| "Portal PMB > Ujian CBT".to_string()),
+                lokasi_ruang: if mode == "ONLINE" {
+                    "Online (dari rumah)".to_string()
+                } else {
+                    ruang
+                },
             },
         ))
     }
+}
+
+/// Format waktu UTC ke WIB (UTC+7) untuk tampilan dokumen calon.
+fn format_wib(t: chrono::DateTime<chrono::Utc>, fmt: &str) -> String {
+    let wib = chrono::FixedOffset::east_opt(7 * 3600).expect("offset WIB valid");
+    t.with_timezone(&wib).format(fmt).to_string()
 }

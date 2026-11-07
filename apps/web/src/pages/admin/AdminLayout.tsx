@@ -3,9 +3,20 @@ import { Outlet, useLocation } from "react-router-dom";
 import { AdminSidebar } from "../../components/admin/AdminSidebar";
 import { AdminTopbar } from "../../components/admin/AdminTopbar";
 import { CommandPalette } from "../../components/admin/CommandPalette";
+import {
+  useAntreanVerifikasi,
+  useNotifikasiAntrean,
+} from "@/hooks/useAntreanVerifikasi";
 
 export const AdminLayout: React.FC = () => {
   const location = useLocation();
+
+  // Notifikasi berkas/bukti baru + penanda di judul tab; segarkan tiap pindah halaman
+  useNotifikasiAntrean();
+  const { refetch: segarkanAntrean } = useAntreanVerifikasi();
+  useEffect(() => {
+    void segarkanAntrean();
+  }, [location.pathname, segarkanAntrean]);
 
   // 1. State Collapsed Rail untuk Desktop/Tablet
   const [collapsed, setCollapsed] = useState<boolean>(() => {

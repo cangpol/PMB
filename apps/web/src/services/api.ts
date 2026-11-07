@@ -1,6 +1,8 @@
 // API Client & Service PMB Universitas Pignatelli Triputra
 // Contract-First Architecture
 
+import { EVENT_SESI_BERAKHIR } from "./sesiEvent";
+
 export interface ApiError {
   kode: string;
   pesan: string;
@@ -26,6 +28,11 @@ export async function fetchApi<T>(
   });
 
   if (!response.ok) {
+    // Sesi habis/dicabut: kembalikan ke login. Endpoint /api/auth/* dikecualikan
+    // karena 401 di sana berarti kredensial salah atau memang belum login.
+    if (response.status === 401 && !endpoint.includes("/api/auth/")) {
+      window.dispatchEvent(new Event(EVENT_SESI_BERAKHIR));
+    }
     let errorData: ApiError;
     try {
       errorData = await response.json();

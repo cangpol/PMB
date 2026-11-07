@@ -942,6 +942,11 @@ pub async fn update_pengaturan_handler(
     State(state): State<AppState>,
     ValidatedJson(req): ValidatedJson<UpdatePengaturanRequest>,
 ) -> Result<impl IntoResponse, AppError> {
+    if req.kunci == crate::modules::fitur::KUNCI_PENGAWAS_CBT {
+        return Err(AppError::Forbidden(
+            "Sakelar fitur ini hanya dapat diubah Super Admin lewat menu Fitur Sistem".to_string(),
+        ));
+    }
     let service = KonfigurasiService::new(KonfigurasiRepository::new(state.db.clone()));
     let item = service.update_pengaturan(&admin.0, req).await?;
     Ok(Json(item))

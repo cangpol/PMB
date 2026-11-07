@@ -229,11 +229,13 @@ export const JadwalSeleksiPage: React.FC = () => {
             </div>
             <div className="p-4 rounded-xl bg-putih border border-biru-200 space-y-1">
               <strong className="text-biru-950 block font-bold text-sm">
-                2. Sesi Ujian Fleksibel
+                2. Pilih Jadwal Saat Mengisi Formulir
               </strong>
               <p>
-                Setelah tagihan formulir lunas, calon dapat memilih jadwal ujian
-                CBT online yang tersedia di dasbor peserta.
+                Jadwal (sesi) CBT dipilih saat mengisi formulir pendaftaran.
+                Ujian dapat diikuti setelah pembayaran formulir disetujui dan
+                seluruh berkas diverifikasi admin PMB. Sesi online dikerjakan
+                dari rumah; sesi luring di lab kampus dengan presensi pengawas.
               </p>
             </div>
             <div className="p-4 rounded-xl bg-putih border border-biru-200 space-y-1">

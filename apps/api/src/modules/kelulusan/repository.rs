@@ -280,7 +280,7 @@ impl KelulusanRepository {
                 p.nomor_pendaftaran,
                 u.nama_lengkap,
                 p.jalur_id,
-                j.nama as jalur_nama,
+                j.nama_jalur as jalur_nama,
                 p.gelombang_id,
                 p.prodi_pilihan_1 as prodi_pilihan_1_id,
                 pr1.nama_prodi as prodi_pilihan_1_nama,
@@ -301,7 +301,9 @@ impl KelulusanRepository {
                  WHERE pendaftar_id = p.id 
                  ORDER BY waktu_submit DESC LIMIT 1
              ) hu ON TRUE
-             WHERE p.status_pendaftaran != 'DRAFT'
+             -- Hanya calon yang sudah menuntaskan seleksi (CBT selesai / berkas terverifikasi
+             -- untuk jalur tanpa CBT) atau yang sudah punya hasil (proses ulang ranking).
+             WHERE p.status_pendaftaran IN ('MENUNGGU_PENGUMUMAN', 'LULUS', 'CADANGAN', 'TIDAK_LULUS')
                AND ($1::uuid IS NULL OR p.gelombang_id = $1)
              ORDER BY p.created_at ASC",
         )
@@ -425,7 +427,7 @@ impl KelulusanRepository {
                 p.nomor_pendaftaran,
                 u.nama_lengkap,
                 p.jalur_id,
-                j.nama as jalur_nama,
+                j.nama_jalur as jalur_nama,
                 p.prodi_pilihan_1 as prodi_pilihan_1_id,
                 pr1.nama_prodi as prodi_pilihan_1_nama,
                 p.prodi_pilihan_2 as prodi_pilihan_2_id,
@@ -491,7 +493,17 @@ impl KelulusanRepository {
     ) -> Result<HasilKelulusan, AppError> {
         let h = sqlx::query_as::<_, HasilKelulusan>(
             "UPDATE hasil_kelulusan
-             SET status_kelulusan = $1, prodi_diterima_id = $2, catatan_sidang = $3, updated_at = NOW()
+             SET status_kelulusan = $1, prodi_diterima_id = $2, catatan_sidang = $3,
+                 pilihan_ke = CASE $1 WHEN 'LULUS_PILIHAN_1' THEN 1
+                                      WHEN 'LULUS_PILIHAN_2' THEN 2 ELSE pilihan_ke END,
+                 -- berubah menjadi LULUS: pastikan ada nomor LoA & tanggal SK
+                 nomor_surat_loa = CASE WHEN $1 LIKE 'LULUS%' THEN COALESCE(nomor_surat_loa,
+                        'LOA/PMB-UPT/' || EXTRACT(YEAR FROM NOW())::int || '/'
+                        || LPAD(nextval('seq_nomor_loa_cbt')::text, 4, '0'))
+                     ELSE nomor_surat_loa END,
+                 tanggal_sk = CASE WHEN $1 LIKE 'LULUS%' THEN COALESCE(tanggal_sk, CURRENT_DATE)
+                     ELSE tanggal_sk END,
+                 updated_at = NOW()
              WHERE pendaftar_id = $4
              RETURNING id, pendaftar_id, sidang_id, status_kelulusan, prodi_diterima_id, pilihan_ke,
                        ranking, skor_cbt, nilai_rapor, nilai_prestasi, skor_akhir,
@@ -527,7 +539,7 @@ impl KelulusanRepository {
 
     pub async fn insert_audit_log(
         &self,
-        pendaftar_id: Uuid,
+        pendaftar_id: Option<Uuid>,
         sidang_id: Option<Uuid>,
         status_lama: Option<&str>,
         status_baru: &str,
@@ -781,7 +793,7 @@ impl KelulusanRepository {
                 prd.kode_prodi as kode_prodi,
                 prd.nama_prodi as nama_prodi,
                 prd.jenjang,
-                j.nama as jalur_masuk,
+                j.nama_jalur as jalur_masuk,
                 '2026' as tahun_masuk,
                 h.skor_akhir,
                 h.updated_at::text as tanggal_daftar_ulang
@@ -960,4 +972,176 @@ pub struct PublikKelulusanRow {
     pub fakultas: Option<String>,
     pub is_published: bool,
     pub tgl_pengumuman: Option<DateTime<Utc>>,
+}
+
+impl KelulusanRepository {
+    /// (template, lingkup_urut, diperbarui_oleh (nama), diperbarui_pada)
+    pub async fn get_pengaturan_nim(
+        &self,
+    ) -> Result<(String, String, Option<String>, DateTime<Utc>), AppError> {
+        let row: Option<(String, String, Option<String>, DateTime<Utc>)> = sqlx::query_as(
+            "SELECT n.template, n.lingkup_urut, u.nama_lengkap, n.updated_at
+             FROM pengaturan_nim n LEFT JOIN users u ON u.id = n.updated_by
+             WHERE n.id = 1",
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(row.unwrap_or_else(|| {
+            (
+                crate::modules::kelulusan::nim::TEMPLATE_BAWAAN.to_string(),
+                "PER_PRODI_TAHUN".to_string(),
+                None,
+                Utc::now(),
+            )
+        }))
+    }
+
+    pub async fn simpan_pengaturan_nim(
+        &self,
+        template: &str,
+        lingkup: &str,
+        user_id: Uuid,
+    ) -> Result<(), AppError> {
+        sqlx::query(
+            "INSERT INTO pengaturan_nim (id, template, lingkup_urut, updated_by, updated_at)
+             VALUES (1, $1, $2, $3, NOW())
+             ON CONFLICT (id) DO UPDATE
+             SET template = EXCLUDED.template, lingkup_urut = EXCLUDED.lingkup_urut,
+                 updated_by = EXCLUDED.updated_by, updated_at = NOW()",
+        )
+        .bind(template)
+        .bind(lingkup)
+        .bind(user_id)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    /// Ambil nomor urut berikutnya (atomik, aman dari duplikasi konkuren).
+    pub async fn nomor_urut_berikutnya(&self, kunci: &str) -> Result<i64, AppError> {
+        let row: (i32,) = sqlx::query_as(
+            "INSERT INTO nim_counter_umum (kunci, last_number, updated_at)
+             VALUES ($1, 1, NOW())
+             ON CONFLICT (kunci) DO UPDATE
+             SET last_number = nim_counter_umum.last_number + 1, updated_at = NOW()
+             RETURNING last_number",
+        )
+        .bind(kunci)
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(row.0 as i64)
+    }
+
+    /// Nomor urut terakhir yang terpakai (tanpa menaikkan) untuk pratinjau.
+    pub async fn nomor_urut_terakhir(&self, kunci: &str) -> Result<i64, AppError> {
+        let n: Option<i32> =
+            sqlx::query_scalar("SELECT last_number FROM nim_counter_umum WHERE kunci = $1")
+                .bind(kunci)
+                .fetch_optional(&self.pool)
+                .await?;
+        Ok(n.unwrap_or(0) as i64)
+    }
+
+    pub async fn nim_sudah_dipakai(&self, nim: &str) -> Result<bool, AppError> {
+        let ada: Option<i32> =
+            sqlx::query_scalar("SELECT 1 FROM hasil_kelulusan WHERE nim_resmi = $1")
+                .bind(nim)
+                .fetch_optional(&self.pool)
+                .await?;
+        Ok(ada.is_some())
+    }
+}
+
+impl KelulusanRepository {
+    /// Ada bukti bayar daftar ulang yang sedang diperiksa atau sudah disetujui?
+    pub async fn ada_pembayaran_daftar_ulang_berjalan(
+        &self,
+        pendaftar_id: Uuid,
+    ) -> Result<bool, AppError> {
+        let ada: Option<i32> = sqlx::query_scalar(
+            "SELECT 1 FROM bukti_pembayaran
+             WHERE pendaftar_id = $1 AND jenis_tagihan = 'DAFTAR_ULANG_UKT'
+               AND status IN ('PENDING', 'DISETUJUI') LIMIT 1",
+        )
+        .bind(pendaftar_id)
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(ada.is_some())
+    }
+
+    /// Prodi diterima berubah: batalkan tagihan daftar ulang yang belum dibayar agar terbit
+    /// ulang dengan biaya prodi baru saat calon membuka menu Daftar Ulang.
+    pub async fn batalkan_tagihan_daftar_ulang_basi(
+        &self,
+        pendaftar_id: Uuid,
+    ) -> Result<u64, AppError> {
+        let res = sqlx::query(
+            "UPDATE tagihan SET status = 'BATAL', updated_at = NOW()
+             WHERE pendaftar_id = $1 AND jenis_tagihan = 'DAFTAR_ULANG_UKT'
+               AND status = 'MENUNGGU_PEMBAYARAN'
+               AND NOT EXISTS (
+                   SELECT 1 FROM bukti_pembayaran b
+                   WHERE b.tagihan_id = tagihan.id AND b.status IN ('PENDING', 'DISETUJUI'))",
+        )
+        .bind(pendaftar_id)
+        .execute(&self.pool)
+        .await?;
+        if res.rows_affected() > 0 {
+            sqlx::query(
+                "UPDATE hasil_kelulusan SET status_daftar_ulang = 'BELUM_DAFTAR_ULANG',
+                        updated_at = NOW()
+                 WHERE pendaftar_id = $1 AND status_daftar_ulang = 'TAGIHAN_TERBIT'",
+            )
+            .bind(pendaftar_id)
+            .execute(&self.pool)
+            .await?;
+        }
+        Ok(res.rows_affected())
+    }
+}
+
+/// Terbitkan hasil kelulusan (LoA) otomatis untuk calon yang LULUS CBT (memenuhi passing grade
+/// atau disetujui admin), sudah melewati tahap CBT (`MENUNGGU_PENGUMUMAN`), dan belum punya
+/// hasil kelulusan. Hasil yang sudah ada (mis. dari ranking/sidang) tidak pernah ditimpa.
+/// Prodi diterima = pilihan 1. Setelah terbit, status pendaftaran ikut menjadi LULUS sehingga
+/// halaman kelulusan menampilkan LoA dan membuka tahap daftar ulang. Idempoten.
+/// `pendaftar_id = None` memproses semua calon yang memenuhi syarat (dipakai saat server mulai).
+pub async fn terbitkan_kelulusan_dari_cbt(
+    pool: &PgPool,
+    pendaftar_id: Option<Uuid>,
+) -> Result<u64, AppError> {
+    let res = sqlx::query(
+        "WITH calon AS (
+            SELECT p.id, p.prodi_pilihan_1, hu.nilai_akhir
+            FROM pendaftar p
+            JOIN LATERAL (
+                SELECT nilai_akhir, is_lulus FROM hasil_ujian
+                WHERE pendaftar_id = p.id ORDER BY waktu_submit DESC LIMIT 1
+            ) hu ON hu.is_lulus = TRUE
+            WHERE p.status_pendaftaran = 'MENUNGGU_PENGUMUMAN'
+              AND NOT EXISTS (SELECT 1 FROM hasil_kelulusan hk WHERE hk.pendaftar_id = p.id)
+              AND ($1::uuid IS NULL OR p.id = $1)
+            ORDER BY p.created_at
+        )
+        INSERT INTO hasil_kelulusan (
+            pendaftar_id, sidang_id, status_kelulusan, prodi_diterima_id, pilihan_ke,
+            ranking, skor_cbt, nilai_rapor, nilai_prestasi, skor_akhir,
+            nomor_surat_loa, tanggal_sk, is_published, status_daftar_ulang
+        )
+        SELECT c.id, NULL, 'LULUS_PILIHAN_1', c.prodi_pilihan_1, 1,
+               0, c.nilai_akhir, 0, 0, c.nilai_akhir,
+               'LOA/PMB-UPT/' || EXTRACT(YEAR FROM NOW())::int || '/'
+                   || LPAD(nextval('seq_nomor_loa_cbt')::text, 4, '0'),
+               CURRENT_DATE, TRUE, 'BELUM_DAFTAR_ULANG'
+        FROM calon c
+        ON CONFLICT (pendaftar_id) DO NOTHING",
+    )
+    .bind(pendaftar_id)
+    .execute(pool)
+    .await?;
+    if res.rows_affected() > 0 {
+        crate::modules::pendaftaran::alur::sinkron_status_kelulusan(pool, pendaftar_id, None)
+            .await?;
+    }
+    Ok(res.rows_affected())
 }

@@ -2,6 +2,7 @@ pub mod bukti_bayar;
 pub mod dto;
 pub mod handler;
 pub mod model;
+pub mod nim;
 pub mod pdf;
 pub mod repository;
 pub mod service;

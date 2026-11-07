@@ -20,7 +20,7 @@ const FALLBACK_FAQS = [
     kategori: "Pendaftaran",
     pertanyaan: "Bagaimana alur pendaftaran mahasiswa baru di UPITRA?",
     jawaban:
-      "Alur pendaftaran terdiri dari 5 langkah mudah: (1) Buat akun di portal PMB, (2) Bayar biaya formulir via Virtual Account atau QRIS, (3) Isi biodata dan unggah dokumen pendukung, (4) Ikuti ujian CBT potensi akademik online, dan (5) Pantau pengumuman kelulusan resmi.",
+      "Alur pendaftaran terdiri dari 9 langkah: (1) buat akun PMB dengan email di pmb.upitra.ac.id, (2) login lalu pilih jalur masuk dan program studi, (3) isi formulir (data diri, data sekolah, data orang tua, jadwal seleksi), (4) bayar biaya formulir via VA Mandiri atau QRIS lalu unggah bukti bayar untuk disetujui admin PMB, (5) unggah berkas persyaratan, (6) ikuti ujian CBT sesuai jadwal yang dipilih, (7) cek pengumuman di portal PMB, (8) bayar daftar ulang sesuai surat penerimaan lalu unggah bukti bayar, dan (9) lakukan registrasi ulang untuk menerima NIM.",
   },
   {
     id: "f2",

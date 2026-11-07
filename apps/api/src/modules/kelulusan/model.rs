@@ -64,7 +64,8 @@ pub struct SidangKelulusan {
 #[derive(Clone, Debug, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct AuditKelulusan {
     pub id: Uuid,
-    pub pendaftar_id: Uuid,
+    /// NULL untuk audit tingkat sidang (draf/approve/publish), terisi untuk audit per calon.
+    pub pendaftar_id: Option<Uuid>,
     pub sidang_id: Option<Uuid>,
     pub status_lama: Option<String>,
     pub status_baru: String,

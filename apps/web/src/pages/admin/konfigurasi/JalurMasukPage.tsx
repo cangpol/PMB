@@ -40,8 +40,10 @@ import type {
   CreateJalurKonfigurasiRequest,
   UpdateJalurKonfigurasiRequest,
 } from "@/types";
+import { useDialog } from "@/components/ui/useDialog";
 
 export const JalurMasukPage: React.FC = () => {
+  const dialog = useDialog();
   const [jalurList, setJalurList] = useState<JalurDetailResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -159,9 +161,19 @@ export const JalurMasukPage: React.FC = () => {
       await deleteJalur(deleteTarget.id);
       setDeleteTarget(null);
       await fetchJalurData();
+      void dialog.hasil({
+        nada: "sukses",
+        judul: "Jalur masuk dihapus",
+        deskripsi: "Jalur masuk berhasil dihapus.",
+        autoTutupMs: 2000,
+      });
     } catch (err: unknown) {
       const e = err as { pesan?: string };
-      alert(e.pesan || "Gagal menghapus jalur masuk");
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Penghapusan gagal",
+        deskripsi: e.pesan || "Gagal menghapus jalur masuk",
+      });
     } finally {
       setIsSubmitting(false);
     }

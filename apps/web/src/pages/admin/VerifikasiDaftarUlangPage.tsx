@@ -9,7 +9,8 @@ import {
   ErrorState,
 } from "../../components/common";
 import { fetchApi } from "../../services/api";
-import { BuktiBayarAdminPanel } from "../../components/admin/BuktiBayarAdminPanel";
+import { useDialog } from "@/components/ui/useDialog";
+import { BuktiPembayaranAdminPanel } from "../../components/admin/BuktiPembayaranAdminPanel";
 
 interface BerkasDaftarUlang {
   id: string;
@@ -40,6 +41,7 @@ interface MahasiswaDaftarUlangItem {
 }
 
 export const VerifikasiDaftarUlangPage: React.FC = () => {
+  const dialog = useDialog();
   const [items, setItems] = useState<MahasiswaDaftarUlangItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
@@ -98,6 +100,27 @@ export const VerifikasiDaftarUlangPage: React.FC = () => {
     berkasId: string,
     status: "VALID" | "INVALID",
   ) => {
+    const berkas = berkasList.find((b) => b.id === berkasId);
+    const namaBerkas = berkas?.jenis_berkas.replace(/_/g, " ") ?? "Berkas";
+    let catatan = catatanVerifikasi.trim();
+    if (status === "INVALID" && !catatan) {
+      const alasan = await dialog.masukkanAlasan({
+        judul: "Tolak berkas daftar ulang?",
+        deskripsi: (
+          <>
+            <strong className="text-biru-950">{namaBerkas}</strong> milik{" "}
+            {inspectStudent?.nama_lengkap ?? "calon"} akan ditolak. Alasan ini
+            dikirim ke calon agar dapat memperbaiki berkasnya.
+          </>
+        ),
+        label: "Alasan penolakan",
+        placeholder: "Contoh: scan tidak terbaca atau belum dilegalisir.",
+        labelKirim: "Tolak Berkas",
+        nada: "bahaya",
+      });
+      if (alasan === null) return;
+      catatan = alasan;
+    }
     try {
       await fetchApi(
         `/api/kelulusan/admin/daftar-ulang/verifikasi/${berkasId}`,
@@ -105,10 +128,7 @@ export const VerifikasiDaftarUlangPage: React.FC = () => {
           method: "POST",
           body: JSON.stringify({
             status,
-            catatan:
-              status === "INVALID"
-                ? catatanVerifikasi || "Perlu revisi berkas"
-                : null,
+            catatan: status === "INVALID" ? catatan : null,
           }),
         },
       );
@@ -119,25 +139,61 @@ export const VerifikasiDaftarUlangPage: React.FC = () => {
         ),
       );
       await loadData();
+      void dialog.hasil(
+        status === "VALID"
+          ? {
+              nada: "sukses",
+              judul: "Berkas disetujui",
+              deskripsi: `${namaBerkas} dinyatakan sah.`,
+              autoTutupMs: 2200,
+            }
+          : {
+              nada: "ditolak",
+              judul: "Berkas ditolak",
+              deskripsi: `${namaBerkas} dikembalikan ke calon untuk diperbaiki.`,
+              rincian: [`Alasan: ${catatan}`],
+              autoTutupMs: 4500,
+            },
+      );
     } catch (err: unknown) {
       const e = err as { pesan?: string };
-      alert(e.pesan || "Gagal memverifikasi berkas");
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Berkas gagal diverifikasi",
+        deskripsi: e.pesan || "Gagal memverifikasi berkas",
+      });
+    }
+  };
+
+  const lihatBerkas = async (berkasId: string) => {
+    try {
+      const res = await fetchApi<{ download_url: string }>(
+        `/api/kelulusan/admin/daftar-ulang/berkas/${berkasId}/unduh`,
+      );
+      window.open(res.download_url, "_blank", "noopener,noreferrer");
+    } catch (err: unknown) {
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Berkas tidak dapat dibuka",
+        deskripsi: (err as { pesan?: string }).pesan || "Gagal membuka berkas",
+      });
     }
   };
 
   const handleGenerateNim = async (pendaftarId: string) => {
-    if (
-      !window.confirm(
-        "Terbitkan Nomor Induk Mahasiswa (NIM) resmi untuk calon mahasiswa ini?",
-      )
-    )
-      return;
+    const ya = await dialog.konfirmasi({
+      judul: "Terbitkan NIM resmi?",
+      deskripsi:
+        "Nomor Induk Mahasiswa (NIM) resmi akan diterbitkan untuk calon mahasiswa ini dan tidak dapat diubah.",
+      nada: "sukses",
+      labelYa: "Ya, Terbitkan NIM",
+    });
+    if (!ya) return;
     try {
       const res = await fetchApi<{ nim_resmi: string }>(
         `/api/kelulusan/admin/generate-nim/${pendaftarId}`,
         { method: "POST" },
       );
-      alert(`NIM Resmi Berhasil Diterbitkan: ${res.nim_resmi}`);
       await loadData();
       if (inspectStudent?.pendaftar_id === pendaftarId) {
         setInspectStudent((prev) =>
@@ -150,9 +206,20 @@ export const VerifikasiDaftarUlangPage: React.FC = () => {
             : null,
         );
       }
+      void dialog.hasil({
+        nada: "sukses",
+        judul: "NIM berhasil diterbitkan",
+        deskripsi: "Calon kini terdaftar sebagai mahasiswa dengan NIM resmi:",
+        rincian: [res.nim_resmi],
+        labelTutup: "Selesai",
+      });
     } catch (err: unknown) {
       const e = err as { pesan?: string };
-      alert(e.pesan || "Gagal menerbitkan NIM");
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "NIM gagal diterbitkan",
+        deskripsi: e.pesan || "Gagal menerbitkan NIM",
+      });
     }
   };
 
@@ -168,7 +235,11 @@ export const VerifikasiDaftarUlangPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <BuktiBayarAdminPanel onChanged={loadData} />
+      <BuktiPembayaranAdminPanel
+        jenis="DAFTAR_ULANG_UKT"
+        judul="Verifikasi Bukti Bayar Daftar Ulang"
+        onChanged={loadData}
+      />
 
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-biru-200">
@@ -454,6 +525,13 @@ export const VerifikasiDaftarUlangPage: React.FC = () => {
                           {berkas.file_name} (
                           {Math.round(berkas.file_size_bytes / 1024)} KB)
                         </p>
+                        <button
+                          type="button"
+                          onClick={() => lihatBerkas(berkas.id)}
+                          className="text-[11px] font-semibold text-biru-800 underline"
+                        >
+                          Lihat berkas
+                        </button>
                       </div>
                       <StatusBadge
                         status={

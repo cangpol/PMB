@@ -72,6 +72,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 tracing::info!("Migrasi skema database SQLx berhasil diverifikasi/diterapkan.");
             }
+            // Pastikan tidak ada pendaftar yang tertahan di tahap bayar formulir,
+            // kapan pun datanya terbentuk.
+            match api::modules::pembayaran::repository::PembayaranRepository::new(pool.clone())
+                .rekonsiliasi_alur_pembayaran()
+                .await
+            {
+                Ok(n) => {
+                    tracing::info!("Rekonsiliasi tahap bayar formulir: {n} pendaftar dimajukan")
+                }
+                Err(e) => tracing::warn!("Rekonsiliasi tahap bayar formulir gagal: {e}"),
+            }
+            // Calon yang sudah lulus CBT tetapi belum punya LoA (data sebelum aturan ini)
+            match api::modules::kelulusan::repository::terbitkan_kelulusan_dari_cbt(&pool, None)
+                .await
+            {
+                Ok(n) => tracing::info!("LoA otomatis untuk calon lulus CBT: {n} diterbitkan"),
+                Err(e) => tracing::warn!("Penerbitan LoA otomatis gagal: {e}"),
+            }
             pool
         }
         Err(err) => {
@@ -86,10 +104,57 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // 5. Inisialisasi Session Store
-    let session_store = SessionStore::new();
+    let session_store = SessionStore::dengan_batas(
+        std::time::Duration::from_secs(config.session_idle_secs),
+        std::time::Duration::from_secs(config.session_absolute_secs),
+    );
+    // Buang sesi kedaluwarsa secara berkala agar memori tidak membengkak
+    {
+        let store = session_store.clone();
+        tokio::spawn(async move {
+            let mut tick = tokio::time::interval(std::time::Duration::from_secs(300));
+            loop {
+                tick.tick().await;
+                let n = store.purge_expired().await;
+                if n > 0 {
+                    tracing::debug!("{n} sesi kedaluwarsa dibersihkan");
+                }
+            }
+        });
+    }
 
     // 6. Siapkan Shared AppState
-    let state = AppState::new(db_pool, session_store, config.clone());
+    // Pastikan bucket penyimpanan berkas tersedia agar unggah berkas tidak gagal
+    let storage = api::security::storage::StorageService::new(
+        config.s3_endpoint.clone(),
+        config.s3_access_key.clone(),
+        config.s3_secret_key.clone(),
+        config.s3_bucket.clone(),
+    );
+    match storage.pastikan_bucket().await {
+        Ok(ket) => tracing::info!("Penyimpanan berkas {} siap: {ket}", config.s3_endpoint),
+        Err(e) => tracing::error!(
+            "Penyimpanan berkas (S3/MinIO) bermasalah: {e}. Unggah berkas calon akan gagal sampai ini diperbaiki."
+        ),
+    }
+
+    let mut state = AppState::new(db_pool, session_store, config.clone());
+    // Email nyata via SMTP bila dikonfigurasi; tanpa itu email hanya ditulis ke log
+    match &config.smtp {
+        Some(smtp) => match api::security::SmtpMailSender::new(smtp) {
+            Ok(sender) => {
+                tracing::info!("Email dikirim melalui SMTP {}:{}", smtp.host, smtp.port);
+                state = state.with_mail_sender(std::sync::Arc::new(sender));
+            }
+            Err(e) => tracing::error!("Konfigurasi SMTP tidak valid, email TIDAK terkirim: {e}"),
+        },
+        None if config.app_env == "production" => tracing::error!(
+            "SMTP belum dikonfigurasi (SMTP_HOST, SMTP_FROM): email verifikasi & notifikasi TIDAK terkirim ke calon"
+        ),
+        None => tracing::warn!(
+            "SMTP belum dikonfigurasi: email hanya ditulis ke log server (mode pengembangan)"
+        ),
+    }
 
     // 6b. Jalankan Background Worker Antrean Email
     tokio::spawn(api::modules::email_queue::start_email_worker(
@@ -127,18 +192,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // 8. Komposisi Router Modular Monolith
+    let wajib_verif = axum::middleware::from_fn_with_state(
+        state.clone(),
+        api::security::email_terverifikasi::wajib_email_terverifikasi,
+    );
     let api_router = Router::new()
         .nest("/auth", auth_router())
         .nest("/admin", admin_router())
         .nest("/admin/konfigurasi", konfigurasi_router())
         .nest("/master", master_router())
-        .nest("/pendaftaran", pendaftaran_router())
-        .nest("/pembayaran", pembayaran_router())
-        .nest("/cbt", cbt_router())
-        .nest("/kelulusan", kelulusan_router())
-        .nest("/rpl", rpl_router())
+        // Fitur PMB untuk calon: wajib email terverifikasi (kode 6 digit)
+        .nest(
+            "/pendaftaran",
+            pendaftaran_router().route_layer(wajib_verif.clone()),
+        )
+        .nest(
+            "/pembayaran",
+            pembayaran_router().route_layer(wajib_verif.clone()),
+        )
+        .nest("/cbt", cbt_router().route_layer(wajib_verif.clone()))
+        .nest(
+            "/kelulusan",
+            kelulusan_router().route_layer(wajib_verif.clone()),
+        )
+        .nest("/rpl", rpl_router().route_layer(wajib_verif))
         .nest("/cms", cms_router())
         .nest("/dashboard", dashboard_router())
+        .nest("/fitur", api::modules::fitur::fitur_router())
         .route("/me", get(me_handler))
         .route("/health", get(health_check_handler))
         .route("/health/live", get(liveness_handler))
@@ -178,8 +258,21 @@ async fn security_headers_middleware(
     req: axum::extract::Request,
     next: axum::middleware::Next,
 ) -> axum::response::Response {
+    // Data API bersifat pribadi: jangan pernah disimpan di cache browser/proxy
+    // (mencegah halaman pengguna sebelumnya muncul lagi lewat tombol Back).
+    let api = req.uri().path().starts_with("/api/");
     let mut response = next.run(req).await;
     let headers = response.headers_mut();
+    if api {
+        headers
+            .entry(header::CACHE_CONTROL)
+            .or_insert(header::HeaderValue::from_static(
+                "no-store, no-cache, must-revalidate, private",
+            ));
+        headers
+            .entry(header::PRAGMA)
+            .or_insert(header::HeaderValue::from_static("no-cache"));
+    }
     headers.insert(
         header::X_CONTENT_TYPE_OPTIONS,
         header::HeaderValue::from_static("nosniff"),

@@ -1551,6 +1551,32 @@
           "Admin"
         ],
         "operationId": "admin_list_users_handler",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Cari berdasarkan nama atau email",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "description": "Saring berdasarkan peran",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Daftar seluruh pengguna sistem PMB",
@@ -1577,6 +1603,56 @@
           },
           "403": {
             "description": "Akses ditolak - bukan admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/peran-massal": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "admin_atur_peran_massal_handler",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AturPeranMassalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Peran pengguna terpilih diperbarui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AturPeranMassalResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Peran atau daftar pengguna tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Hanya Super Admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -1990,6 +2066,36 @@
         }
       }
     },
+    "/api/auth/verify-email/kirim-ulang": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "kirim_ulang_kode_handler",
+        "responses": {
+          "200": {
+            "description": "Kode verifikasi baru dikirim ke email",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericMessageResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Terlalu sering meminta kode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cbt/admin/bank-soal": {
       "get": {
         "tags": [
@@ -2079,6 +2185,176 @@
           },
           "403": {
             "description": "Akses ditolak",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cbt/admin/hasil": {
+      "get": {
+        "tags": [
+          "CBT Pengawas"
+        ],
+        "operationId": "list_hasil_admin_handler",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Cari nama, email, atau nomor peserta",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "sesi_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rekap hasil pengerjaan CBT semua sesi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HasilCbtAdminResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Akses ditolak",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cbt/admin/hasil/{id}/setujui": {
+      "post": {
+        "tags": [
+          "CBT Pengawas"
+        ],
+        "operationId": "setujui_hasil_handler",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID peserta sesi",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetujuiHasilCbtRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Hasil CBT disetujui admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AksiHasilCbtResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Tidak dapat disetujui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cbt/admin/hasil/{id}/ujian-ulang": {
+      "post": {
+        "tags": [
+          "CBT Pengawas"
+        ],
+        "operationId": "ujian_ulang_handler",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID peserta sesi",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UjianUlangCbtRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Peserta diizinkan mengulang CBT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AksiHasilCbtResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Jadwal sesi tujuan sudah berakhir",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Tidak dapat diulang",
             "content": {
               "application/json": {
                 "schema": {
@@ -2317,6 +2593,36 @@
         }
       }
     },
+    "/api/cbt/lanjut": {
+      "post": {
+        "tags": [
+          "CBT Calon"
+        ],
+        "operationId": "lanjut_setelah_cbt_handler",
+        "responses": {
+          "200": {
+            "description": "Tahap berikutnya (pengumuman) dibuka",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AksiHasilCbtResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Belum memenuhi passing grade / belum selesai ujian",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cbt/mulai": {
       "post": {
         "tags": [
@@ -2380,6 +2686,84 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cbt/riwayat": {
+      "get": {
+        "tags": [
+          "CBT Calon"
+        ],
+        "operationId": "get_riwayat_handler",
+        "responses": {
+          "200": {
+            "description": "Riwayat pengerjaan CBT calon, terbaru di atas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RiwayatCbtItem"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Belum login",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cbt/sesi-tersedia": {
+      "get": {
+        "tags": [
+          "CBT Calon"
+        ],
+        "operationId": "get_sesi_tersedia_handler",
+        "parameters": [
+          {
+            "name": "gelombang_id",
+            "in": "query",
+            "description": "Filter gelombang calon",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "jalur_id",
+            "in": "query",
+            "description": "Filter jalur calon",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sesi CBT yang dapat dipilih sebagai jadwal seleksi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SesiTersediaItem"
+                  }
                 }
               }
             }
@@ -3362,6 +3746,51 @@
         ]
       }
     },
+    "/api/dashboard/admin/antrean": {
+      "get": {
+        "tags": [
+          "Dashboard Admin"
+        ],
+        "operationId": "get_antrean_verifikasi_handler",
+        "responses": {
+          "200": {
+            "description": "Jumlah berkas/bukti yang menunggu diperiksa panitia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AntreanVerifikasiResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Belum login",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bukan staf PMB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/dashboard/admin/export-excel": {
       "get": {
         "tags": [
@@ -3559,6 +3988,76 @@
         ]
       }
     },
+    "/api/fitur": {
+      "get": {
+        "tags": [
+          "Fitur"
+        ],
+        "operationId": "get_fitur_handler",
+        "responses": {
+          "200": {
+            "description": "Status sakelar fitur sistem",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiturResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Belum login",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/fitur/pengawas-cbt": {
+      "put": {
+        "tags": [
+          "Fitur"
+        ],
+        "operationId": "set_pengawas_cbt_handler",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AturFiturRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Sakelar pengawas CBT diperbarui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiturResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Hanya Super Admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -3619,6 +4118,56 @@
           },
           "403": {
             "description": "Akses khusus admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/kelulusan/admin/arahkan-pilihan-2": {
+      "post": {
+        "tags": [
+          "Kelulusan Admin"
+        ],
+        "operationId": "arahkan_pilihan_2_handler",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArahkanPilihan2Request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Calon diarahkan ke program studi pilihan kedua",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArahkanPilihan2Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Calon tidak punya pilihan kedua",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Status calon tidak memungkinkan pengalihan",
             "content": {
               "application/json": {
                 "schema": {
@@ -4053,6 +4602,124 @@
         }
       }
     },
+    "/api/kelulusan/admin/rumus-nim": {
+      "get": {
+        "tags": [
+          "Kelulusan Admin"
+        ],
+        "operationId": "get_rumus_nim_handler",
+        "responses": {
+          "200": {
+            "description": "Rumus penomoran NIM yang berlaku",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RumusNimResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bukan admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Kelulusan Admin"
+        ],
+        "operationId": "simpan_rumus_nim_handler",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimpanRumusNimRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Rumus NIM disimpan; berlaku untuk NIM yang terbit berikutnya",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RumusNimResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Rumus tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bukan admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/kelulusan/admin/rumus-nim/pratinjau": {
+      "post": {
+        "tags": [
+          "Kelulusan Admin"
+        ],
+        "operationId": "pratinjau_rumus_nim_handler",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimpanRumusNimRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Validasi rumus dan contoh NIM per prodi (tidak disimpan)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PratinjauRumusNimResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bukan admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/kelulusan/admin/rumus/{jalur_id}": {
       "post": {
         "tags": [
@@ -4435,6 +5102,94 @@
         }
       }
     },
+    "/api/pembayaran/admin/bukti": {
+      "get": {
+        "tags": [
+          "Pembayaran"
+        ],
+        "operationId": "list_bukti_admin_handler",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "PENDING | DISETUJUI | DITOLAK",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "jenis",
+            "in": "query",
+            "description": "FORMULIR | DAFTAR_ULANG_UKT",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Antrean bukti bayar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BuktiPembayaranItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pembayaran/admin/bukti/{id}/review": {
+      "post": {
+        "tags": [
+          "Pembayaran"
+        ],
+        "operationId": "review_bukti_handler",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID bukti pembayaran",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewBuktiRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Bukti diproses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewBuktiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bukti sudah diproses sebelumnya"
+          }
+        }
+      }
+    },
     "/api/pembayaran/admin/ekspor": {
       "get": {
         "tags": [
@@ -4704,6 +5459,78 @@
         }
       }
     },
+    "/api/pembayaran/bukti": {
+      "post": {
+        "tags": [
+          "Pembayaran"
+        ],
+        "operationId": "submit_bukti_handler",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitBuktiRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Bukti bayar terkirim, menunggu verifikasi admin"
+          },
+          "409": {
+            "description": "Masih ada bukti yang menunggu verifikasi / tahap tidak sesuai"
+          }
+        }
+      }
+    },
+    "/api/pembayaran/bukti/my": {
+      "get": {
+        "tags": [
+          "Pembayaran"
+        ],
+        "operationId": "my_bukti_handler",
+        "responses": {
+          "200": {
+            "description": "Riwayat bukti bayar milik calon",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BuktiPembayaranItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pembayaran/bukti/presign": {
+      "post": {
+        "tags": [
+          "Pembayaran"
+        ],
+        "operationId": "presign_bukti_handler",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresignBuktiRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "URL unggah bukti bayar (15 menit)"
+          }
+        }
+      }
+    },
     "/api/pembayaran/cek-voucher": {
       "post": {
         "tags": [
@@ -4831,6 +5658,29 @@
         }
       }
     },
+    "/api/pembayaran/rekening": {
+      "get": {
+        "tags": [
+          "Pembayaran"
+        ],
+        "operationId": "list_rekening_handler",
+        "responses": {
+          "200": {
+            "description": "VA Mandiri & QRIS kampus yang aktif",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RekeningPembayaran"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/pembayaran/simulasi-va-bayar/{id}": {
       "post": {
         "tags": [
@@ -4946,6 +5796,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "pendaftar_id",
+            "in": "query",
+            "description": "Hanya berkas milik calon ini",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
@@ -4957,6 +5817,59 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/BerkasDetailItem"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Hanya admin PMB yang berhak mengakses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pendaftaran/admin/berkas-per-calon": {
+      "get": {
+        "tags": [
+          "Pendaftaran Admin"
+        ],
+        "operationId": "admin_list_berkas_per_calon_handler",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "PENDING (ada yang menunggu), INVALID (ada yang ditolak), VALID (semua sah), atau kosong untuk semua",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Pencarian nama / nomor pendaftaran / email",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calon beserta ringkasan berkasnya; yang perlu diperiksa di atas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BerkasCalonRingkasan"
                   }
                 }
               }
@@ -5628,6 +6541,76 @@
         }
       }
     },
+    "/api/pendaftaran/admin/verifikasi-berkas-semua": {
+      "post": {
+        "tags": [
+          "Pendaftaran Admin"
+        ],
+        "operationId": "admin_sahkan_semua_berkas_handler",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SahkanSemuaBerkasRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Berkas yang menunggu milik calon terpilih disahkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SahkanSemuaBerkasResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Jumlah calon harus 1 sampai 100",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Hanya admin PMB yang berhak memverifikasi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pendaftaran/alur": {
+      "get": {
+        "tags": [
+          "Pendaftaran"
+        ],
+        "operationId": "get_alur_handler",
+        "responses": {
+          "200": {
+            "description": "Stepper alur PMB 9 langkah untuk calon",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlurResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/pendaftaran/berkas/konfirmasi": {
       "post": {
         "tags": [
@@ -5870,8 +6853,18 @@
           "200": {
             "description": "Finalisasi pendaftaran berhasil"
           },
-          "400": {
-            "description": "Berkas wajib belum diunggah",
+          "409": {
+            "description": "Formulir sudah dikirim / kuota sesi CBT penuh",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Sesi CBT belum dipilih",
             "content": {
               "application/json": {
                 "schema": {
@@ -6697,6 +7690,39 @@
         ]
       }
     },
+    "/api/rpl/berkas/presign": {
+      "post": {
+        "tags": [
+          "RPL"
+        ],
+        "operationId": "presign_berkas_rpl_handler",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresignBerkasRplRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "URL unggah dokumen portofolio RPL (15 menit)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresignedUploadResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Format file tidak didukung / bukan jalur RPL"
+          }
+        }
+      }
+    },
     "/api/rpl/mata-kuliah/{prodi_id}": {
       "get": {
         "tags": [
@@ -6939,6 +7965,115 @@
           }
         }
       },
+      "AksiHasilCbtResponse": {
+        "type": "object",
+        "required": [
+          "pesan"
+        ],
+        "properties": {
+          "pesan": {
+            "type": "string"
+          }
+        }
+      },
+      "AlurResponse": {
+        "type": "object",
+        "required": [
+          "status_pendaftaran",
+          "langkah",
+          "jalur_rpl"
+        ],
+        "properties": {
+          "jalur_rpl": {
+            "type": "boolean",
+            "description": "Jalur calon adalah Jalur RPL; menu Portofolio & RPL hanya terbuka bila true."
+          },
+          "langkah": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LangkahAlur"
+            }
+          },
+          "langkah_aktif": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Kode langkah pertama yang belum selesai (None bila seluruh alur tuntas)."
+          },
+          "nomor_pendaftaran": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status_pendaftaran": {
+            "type": "string"
+          }
+        }
+      },
+      "AntreanItem": {
+        "type": "object",
+        "description": "Satu antrean pekerjaan yang menunggu pemeriksaan panitia.",
+        "required": [
+          "menunggu",
+          "calon"
+        ],
+        "properties": {
+          "calon": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Jumlah calon yang berkasnya menunggu (satu calon bisa punya beberapa berkas)."
+          },
+          "menunggu": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Jumlah berkas/bukti yang menunggu diperiksa."
+          },
+          "terlama_sejak": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Waktu unggah paling lama yang masih menunggu (untuk menandai antrean yang tertahan)."
+          }
+        }
+      },
+      "AntreanVerifikasiResponse": {
+        "type": "object",
+        "description": "Ringkasan semua antrean pemeriksaan untuk penanda/notifikasi di panel admin.\nAntrean yang bukan wewenang peran pemanggil dikembalikan kosong (0).",
+        "required": [
+          "berkas",
+          "bukti_bayar",
+          "daftar_ulang",
+          "cbt_keputusan",
+          "total"
+        ],
+        "properties": {
+          "berkas": {
+            "$ref": "#/components/schemas/AntreanItem",
+            "description": "Berkas persyaratan pendaftaran (Verifikasi Berkas PMB)."
+          },
+          "bukti_bayar": {
+            "$ref": "#/components/schemas/AntreanItem",
+            "description": "Bukti pembayaran formulir dan daftar ulang (Verifikasi Bukti Bayar)."
+          },
+          "cbt_keputusan": {
+            "$ref": "#/components/schemas/AntreanItem",
+            "description": "Hasil CBT di bawah passing grade yang menunggu keputusan admin (ujian ulang / setujui)."
+          },
+          "daftar_ulang": {
+            "$ref": "#/components/schemas/AntreanItem",
+            "description": "Berkas daftar ulang (Verifikasi Daftar Ulang)."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Jumlah seluruh berkas/bukti/keputusan yang menunggu."
+          }
+        }
+      },
       "ApiErrorResponse": {
         "type": "object",
         "required": [
@@ -6969,6 +8104,52 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "ArahkanPilihan2Request": {
+        "type": "object",
+        "required": [
+          "pendaftar_id",
+          "catatan"
+        ],
+        "properties": {
+          "catatan": {
+            "type": "string"
+          },
+          "pendaftar_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ArahkanPilihan2Response": {
+        "type": "object",
+        "required": [
+          "pesan",
+          "prodi_baru",
+          "status_kelulusan",
+          "sudah_tampil_ke_calon"
+        ],
+        "properties": {
+          "nomor_surat_loa": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pesan": {
+            "type": "string"
+          },
+          "prodi_baru": {
+            "type": "string"
+          },
+          "status_kelulusan": {
+            "type": "string"
+          },
+          "sudah_tampil_ke_calon": {
+            "type": "boolean",
+            "description": "`true` bila hasil sudah langsung terlihat oleh calon di halaman kelulusan"
           }
         }
       },
@@ -7005,11 +8186,67 @@
           }
         }
       },
+      "AturFiturRequest": {
+        "type": "object",
+        "required": [
+          "aktif"
+        ],
+        "properties": {
+          "aktif": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AturPeranMassalRequest": {
+        "type": "object",
+        "required": [
+          "user_ids",
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "admin_pmb | keuangan | calon_mahasiswa | pengawas_ujian | asesor_rpl"
+          },
+          "user_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Pengguna yang dicentang (1-200)."
+          }
+        }
+      },
+      "AturPeranMassalResponse": {
+        "type": "object",
+        "required": [
+          "role",
+          "diubah",
+          "dilewati"
+        ],
+        "properties": {
+          "dilewati": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PeranDilewati"
+            }
+          },
+          "diubah": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserListItemResponse"
+            }
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
       "AuditKelulusan": {
         "type": "object",
         "required": [
           "id",
-          "pendaftar_id",
           "status_baru",
           "actor_name",
           "created_at"
@@ -7040,8 +8277,12 @@
             "format": "uuid"
           },
           "pendaftar_id": {
-            "type": "string",
-            "format": "uuid"
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "NULL untuk audit tingkat sidang (draf/approve/publish), terisi untuk audit per calon."
           },
           "prodi_baru_id": {
             "type": [
@@ -7308,6 +8549,82 @@
           }
         }
       },
+      "BerkasCalonRingkasan": {
+        "type": "object",
+        "description": "Ringkasan berkas satu calon untuk daftar verifikasi (dikelompokkan per calon).\nHanya unggahan terbaru tiap jenis berkas yang dihitung.",
+        "required": [
+          "pendaftar_id",
+          "nomor_pendaftaran",
+          "nama_lengkap",
+          "email",
+          "nama_jalur",
+          "status_pendaftaran",
+          "total",
+          "menunggu",
+          "valid",
+          "ditolak",
+          "terakhir_unggah"
+        ],
+        "properties": {
+          "ditolak": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Berkas yang ditolak (menunggu unggah ulang calon)."
+          },
+          "email": {
+            "type": "string"
+          },
+          "menunggu": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Berkas yang menunggu diperiksa."
+          },
+          "menunggu_sejak": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Unggahan paling lama yang masih menunggu diperiksa."
+          },
+          "nama_jalur": {
+            "type": "string"
+          },
+          "nama_lengkap": {
+            "type": "string"
+          },
+          "nama_prodi": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nomor_pendaftaran": {
+            "type": "string"
+          },
+          "pendaftar_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status_pendaftaran": {
+            "type": "string"
+          },
+          "terakhir_unggah": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Jumlah jenis berkas yang sudah diunggah."
+          },
+          "valid": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Berkas yang sudah disahkan."
+          }
+        }
+      },
       "BerkasDaftarUlang": {
         "type": "object",
         "required": [
@@ -7521,29 +8838,43 @@
       },
       "BerkasRplItem": {
         "type": "object",
+        "description": "Dokumen portofolio RPL yang diunggah ke object storage.",
         "required": [
-          "jenis_berkas",
-          "file_name",
-          "file_key",
-          "mime_type",
-          "file_size_bytes"
+          "jenis_dokumen",
+          "nama_file",
+          "file_key"
         ],
         "properties": {
           "file_key": {
-            "type": "string"
+            "type": "string",
+            "description": "Kunci objek hasil presign `POST /api/rpl/berkas/presign`"
           },
-          "file_name": {
-            "type": "string"
+          "jenis_dokumen": {
+            "type": "string",
+            "description": "Contoh: IJAZAH, TRANSKRIP, SERTIFIKAT, SURAT_KETERANGAN_KERJA, PORTOFOLIO, LAINNYA"
           },
-          "file_size_bytes": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "jenis_berkas": {
-            "type": "string"
+          "keterangan": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "mime_type": {
             "type": "string"
+          },
+          "nama_file": {
+            "type": "string"
+          },
+          "ukuran_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "url_unduh": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "URL unduh sementara (diisi server saat menampilkan; dikosongkan saat disimpan)"
           }
         }
       },
@@ -7585,6 +8916,124 @@
           "nominal": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "BuktiPembayaranItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "pendaftar_id",
+          "nomor_pendaftaran",
+          "nama_lengkap",
+          "jenis_tagihan",
+          "file_name",
+          "mime_type",
+          "file_size_bytes",
+          "status",
+          "created_at"
+        ],
+        "properties": {
+          "catatan": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "download_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "file_size_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "jenis_tagihan": {
+            "type": "string"
+          },
+          "metode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mime_type": {
+            "type": "string"
+          },
+          "nama_lengkap": {
+            "type": "string"
+          },
+          "nominal_dibayar": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Nominal yang diklaim calon pada bukti"
+          },
+          "nominal_tagihan": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Nominal yang harus dibayar (dari tagihan)"
+          },
+          "nomor_pendaftaran": {
+            "type": "string"
+          },
+          "nomor_registrasi": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nomor_tagihan": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pendaftar_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reviewed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string"
+          },
+          "tagihan_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "tgl_bayar": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
           }
         }
       },
@@ -7660,6 +9109,17 @@
           },
           "gelombang_nama": {
             "type": "string"
+          },
+          "hasil_cbt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HasilCbtCalon",
+                "description": "Hasil CBT terbaru calon (tampil di halaman hasil kelulusan sebelum pengumuman resmi)."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "is_pengumuman_buka": {
             "type": "boolean"
@@ -8038,6 +9498,26 @@
           }
         }
       },
+      "ContohNimItem": {
+        "type": "object",
+        "required": [
+          "prodi",
+          "kode_prodi",
+          "nim"
+        ],
+        "properties": {
+          "kode_prodi": {
+            "type": "string"
+          },
+          "nim": {
+            "type": "string",
+            "description": "Hasil bila NIM diterbitkan sekarang (memakai nomor urut berikutnya)"
+          },
+          "prodi": {
+            "type": "string"
+          }
+        }
+      },
       "CreateCmsBannerRequest": {
         "type": "object",
         "required": [
@@ -8217,6 +9697,14 @@
           },
           "nama": {
             "type": "string"
+          },
+          "prodi_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Khusus calon yang memilih prodi ini (mis. bebas buta warna untuk Fisioterapi)"
           },
           "tipe_file": {
             "type": [
@@ -8712,6 +10200,16 @@
           "kuota"
         ],
         "properties": {
+          "gelombang_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "is_dibuka_pendaftaran": {
+            "type": "boolean"
+          },
           "jadwal_mulai": {
             "type": "string",
             "format": "date-time"
@@ -8720,9 +10218,20 @@
             "type": "string",
             "format": "date-time"
           },
+          "jalur_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
           "kuota": {
             "type": "integer",
             "format": "int32"
+          },
+          "mode": {
+            "type": "string",
+            "description": "`ONLINE` (default) atau `LURING`"
           },
           "nama_sesi": {
             "type": "string"
@@ -8888,6 +10397,12 @@
               "$ref": "#/components/schemas/BerkasDaftarUlang"
             }
           },
+          "catatan_bukti_bayar": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "fakultas": {
             "type": "string"
           },
@@ -8912,12 +10427,24 @@
           "nomor_pendaftaran": {
             "type": "string"
           },
+          "nomor_registrasi": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "pendaftar_id": {
             "type": "string",
             "format": "uuid"
           },
           "prodi_diterima": {
             "type": "string"
+          },
+          "status_bukti_bayar": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "status_daftar_ulang": {
             "type": "string"
@@ -8974,14 +10501,44 @@
           "status_pendaftaran",
           "tagihan_lunas",
           "bisa_cetak_bukti",
-          "bisa_cetak_kartu"
+          "bisa_cetak_kartu",
+          "biaya"
         ],
         "properties": {
+          "berkas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RingkasanBerkasDashboard",
+                "description": "Ringkasan unggah berkas persyaratan (setelah pembayaran formulir disetujui)"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "biaya": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RingkasanBiayaItem"
+            },
+            "description": "Seluruh biaya PMB calon: formulir dan daftar ulang"
+          },
           "bisa_cetak_bukti": {
             "type": "boolean"
           },
           "bisa_cetak_kartu": {
             "type": "boolean"
+          },
+          "cbt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RingkasanCbtDashboard",
+                "description": "Ringkasan jadwal & hasil CBT (jalur dengan CBT)"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "gelombang_nama": {
             "type": [
@@ -9057,11 +10614,26 @@
               "null"
             ]
           },
+          "prodi_diterima_nama": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Program studi tempat calon diterima (setelah pengumuman)"
+          },
           "status_pendaftaran": {
             "type": "string"
           },
           "tagihan_lunas": {
             "type": "boolean"
+          },
+          "tgl_daftar": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Waktu formulir pertama kali dibuat"
           }
         }
       },
@@ -9109,6 +10681,14 @@
           },
           "nama": {
             "type": "string"
+          },
+          "prodi_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "NULL = berlaku untuk semua prodi; terisi = khusus calon yang memilih prodi ini."
           },
           "tipe_file": {
             "type": "string"
@@ -9785,6 +11365,18 @@
           }
         }
       },
+      "FiturResponse": {
+        "type": "object",
+        "required": [
+          "pengawas_cbt_aktif"
+        ],
+        "properties": {
+          "pengawas_cbt_aktif": {
+            "type": "boolean",
+            "description": "Bila `false`, akun berperan pengawas ujian tidak dapat memakai meja presensi/monitor CBT."
+          }
+        }
+      },
       "ForgotPasswordRequest": {
         "type": "object",
         "required": [
@@ -9965,6 +11557,196 @@
           }
         }
       },
+      "HasilCbtAdminItem": {
+        "type": "object",
+        "description": "Satu baris rekap hasil CBT untuk admin (semua sesi).",
+        "required": [
+          "peserta_sesi_id",
+          "pendaftar_id",
+          "nomor_peserta",
+          "nama_peserta",
+          "email",
+          "sesi_id",
+          "nama_sesi",
+          "status_ujian"
+        ],
+        "properties": {
+          "disetujui_admin": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Admin menyetujui peserta ini walau nilai di bawah passing grade"
+          },
+          "disetujui_alasan": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": "string"
+          },
+          "is_lulus": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "jumlah_benar": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "jumlah_kosong": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "jumlah_salah": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "nama_peserta": {
+            "type": "string"
+          },
+          "nama_sesi": {
+            "type": "string"
+          },
+          "nilai_akhir": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "nomor_peserta": {
+            "type": "string"
+          },
+          "pendaftar_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "peserta_sesi_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sesi_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status_ujian": {
+            "type": "string"
+          },
+          "total_dijawab": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "total_soal": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "waktu_submit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "HasilCbtAdminResponse": {
+        "type": "object",
+        "required": [
+          "total",
+          "selesai",
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HasilCbtAdminItem"
+            }
+          },
+          "rata_rata": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "selesai": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "HasilCbtCalon": {
+        "type": "object",
+        "description": "Ringkasan hasil CBT untuk calon mahasiswa.",
+        "required": [
+          "nilai_akhir",
+          "jumlah_benar",
+          "jumlah_salah",
+          "jumlah_kosong",
+          "passing_grade",
+          "memenuhi_passing_grade",
+          "disetujui_admin",
+          "waktu_submit"
+        ],
+        "properties": {
+          "disetujui_admin": {
+            "type": "boolean",
+            "description": "Hasil di bawah passing grade yang disetujui panitia."
+          },
+          "jumlah_benar": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "jumlah_kosong": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "jumlah_salah": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "memenuhi_passing_grade": {
+            "type": "boolean",
+            "description": "Memenuhi passing grade atau disetujui admin."
+          },
+          "nilai_akhir": {
+            "type": "number",
+            "format": "double"
+          },
+          "passing_grade": {
+            "type": "number",
+            "format": "double"
+          },
+          "waktu_submit": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "HasilKelulusanResponse": {
         "type": "object",
         "required": [
@@ -10062,6 +11844,38 @@
               "null"
             ],
             "format": "date"
+          }
+        }
+      },
+      "HasilSahkanCalon": {
+        "type": "object",
+        "required": [
+          "pendaftar_id",
+          "nama_lengkap",
+          "berkas_disahkan",
+          "lengkap",
+          "status_pendaftaran"
+        ],
+        "properties": {
+          "berkas_disahkan": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Jumlah berkas yang baru disahkan."
+          },
+          "lengkap": {
+            "type": "boolean",
+            "description": "Semua berkas wajib sudah diunggah. Bila false, status calon belum maju."
+          },
+          "nama_lengkap": {
+            "type": "string"
+          },
+          "pendaftar_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status_pendaftaran": {
+            "type": "string",
+            "description": "Status pendaftaran setelah pengesahan."
           }
         }
       },
@@ -10387,7 +12201,8 @@
           "nama_jalur",
           "deskripsi",
           "biaya_formulir",
-          "is_active"
+          "is_active",
+          "tipe_seleksi"
         ],
         "properties": {
           "biaya_formulir": {
@@ -10409,6 +12224,10 @@
           },
           "nama_jalur": {
             "type": "string"
+          },
+          "tipe_seleksi": {
+            "type": "string",
+            "description": "`CBT`, `BERKAS`, `CAMPURAN`, atau `RPL` (CBT/CAMPURAN wajib memilih sesi CBT)"
           }
         }
       },
@@ -10598,6 +12417,42 @@
           }
         }
       },
+      "LangkahAlur": {
+        "type": "object",
+        "required": [
+          "nomor",
+          "kode",
+          "judul",
+          "status",
+          "pesan"
+        ],
+        "properties": {
+          "aksi_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Rute portal untuk menyelesaikan langkah ini (None jika tidak ada aksi di portal)."
+          },
+          "judul": {
+            "type": "string"
+          },
+          "kode": {
+            "type": "string"
+          },
+          "nomor": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "pesan": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusLangkah"
+          }
+        }
+      },
       "LangkahProgressItem": {
         "type": "object",
         "required": [
@@ -10778,6 +12633,21 @@
           "total_sks_diakui": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "LingkupNimInfo": {
+        "type": "object",
+        "required": [
+          "kode",
+          "keterangan"
+        ],
+        "properties": {
+          "keterangan": {
+            "type": "string"
+          },
+          "kode": {
+            "type": "string"
           }
         }
       },
@@ -11790,28 +13660,33 @@
       },
       "PengalamanKerjaItem": {
         "type": "object",
+        "description": "Pengalaman kerja pemohon RPL. Tanggal dalam format YYYY-MM-DD.",
         "required": [
-          "instansi",
-          "posisi",
-          "tahun_mulai",
-          "tahun_selesai",
-          "deskripsi_tugas"
+          "nama_perusahaan",
+          "jabatan",
+          "tanggal_mulai"
         ],
         "properties": {
-          "deskripsi_tugas": {
+          "deskripsi_pekerjaan": {
             "type": "string"
           },
-          "instansi": {
+          "jabatan": {
             "type": "string"
           },
-          "posisi": {
+          "masih_bekerja": {
+            "type": "boolean"
+          },
+          "nama_perusahaan": {
             "type": "string"
           },
-          "tahun_mulai": {
+          "tanggal_mulai": {
             "type": "string"
           },
-          "tahun_selesai": {
-            "type": "string"
+          "tanggal_selesai": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -11871,6 +13746,22 @@
           },
           "status_kelayakan": {
             "type": "string"
+          }
+        }
+      },
+      "PeranDilewati": {
+        "type": "object",
+        "required": [
+          "id",
+          "alasan"
+        ],
+        "properties": {
+          "alasan": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -12023,6 +13914,30 @@
           }
         }
       },
+      "PratinjauRumusNimResponse": {
+        "type": "object",
+        "required": [
+          "valid",
+          "contoh"
+        ],
+        "properties": {
+          "contoh": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContohNimItem"
+            }
+          },
+          "pesan": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        }
+      },
       "PresensiCheckInRequest": {
         "type": "object",
         "required": [
@@ -12075,6 +13990,33 @@
           "waktu_presensi": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "PresignBerkasRplRequest": {
+        "type": "object",
+        "required": [
+          "file_name"
+        ],
+        "properties": {
+          "file_name": {
+            "type": "string"
+          }
+        }
+      },
+      "PresignBuktiRequest": {
+        "type": "object",
+        "required": [
+          "tagihan_id",
+          "file_name"
+        ],
+        "properties": {
+          "file_name": {
+            "type": "string"
+          },
+          "tagihan_id": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -12473,6 +14415,74 @@
           },
           "password": {
             "type": "string"
+          },
+          "sumber_informasi": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Dari mana calon mengetahui PMB UPITRA (kode dari `SUMBER_INFORMASI`)"
+          },
+          "sumber_informasi_lainnya": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Keterangan tambahan jika sumber = LAINNYA"
+          }
+        }
+      },
+      "RekeningPembayaran": {
+        "type": "object",
+        "required": [
+          "id",
+          "jenis",
+          "nama_bank",
+          "atas_nama",
+          "is_active"
+        ],
+        "properties": {
+          "atas_nama": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "instruksi": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "jenis": {
+            "type": "string",
+            "description": "`VA_MANDIRI` atau `QRIS`"
+          },
+          "nama_bank": {
+            "type": "string"
+          },
+          "nomor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "qris_image_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Object key gambar QRIS (dipakai admin saat menyimpan ulang tanpa unggah baru)"
+          },
+          "qris_image_url": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -12538,6 +14548,220 @@
           }
         }
       },
+      "ReviewBuktiRequest": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "catatan": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "`DISETUJUI` atau `DITOLAK`"
+          }
+        }
+      },
+      "ReviewBuktiResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "jenis_tagihan",
+          "pesan"
+        ],
+        "properties": {
+          "jenis_tagihan": {
+            "type": "string"
+          },
+          "pesan": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "RincianBiayaDto": {
+        "type": "object",
+        "description": "Satu komponen biaya daftar ulang (dari matriks biaya prodi x jalur x gelombang).",
+        "required": [
+          "komponen",
+          "nominal"
+        ],
+        "properties": {
+          "komponen": {
+            "type": "string"
+          },
+          "nominal": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RingkasanBerkasDashboard": {
+        "type": "object",
+        "description": "Jumlah berkas persyaratan per status.",
+        "required": [
+          "total_wajib",
+          "wajib_terunggah",
+          "valid",
+          "menunggu_verifikasi",
+          "ditolak"
+        ],
+        "properties": {
+          "ditolak": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "menunggu_verifikasi": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total_wajib": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "valid": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "wajib_terunggah": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RingkasanBiayaItem": {
+        "type": "object",
+        "description": "Satu pos biaya PMB calon.",
+        "required": [
+          "jenis",
+          "label",
+          "nominal",
+          "status"
+        ],
+        "properties": {
+          "jenis": {
+            "type": "string",
+            "description": "FORMULIR atau DAFTAR_ULANG"
+          },
+          "label": {
+            "type": "string"
+          },
+          "nominal": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nomor_tagihan": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "BELUM_TERBIT, MENUNGGU_PEMBAYARAN, MENUNGGU_VERIFIKASI, DITOLAK, LUNAS, KEDALUWARSA, BATAL"
+          },
+          "tgl_jatuh_tempo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "RingkasanCbtDashboard": {
+        "type": "object",
+        "description": "Jadwal dan hasil CBT calon.",
+        "required": [
+          "jumlah_pengerjaan",
+          "disetujui_admin"
+        ],
+        "properties": {
+          "disetujui_admin": {
+            "type": "boolean",
+            "description": "Hasil di bawah passing grade yang disetujui panitia"
+          },
+          "jadwal_mulai": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "jadwal_selesai": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "jumlah_pengerjaan": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "memenuhi_passing_grade": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Hasil terakhir memenuhi passing grade atau disetujui panitia (None = belum ada hasil)"
+          },
+          "mode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ONLINE atau LURING"
+          },
+          "nama_sesi": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nilai_terakhir": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Skor pengerjaan terakhir (0-100)"
+          },
+          "passing_grade": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "ruang": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status_ujian": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Status pengerjaan terakhir: MENUNGGU, SEDANG_MENGERJAKAN, SELESAI, WAKTU_HABIS"
+          },
+          "waktu_selesai_terakhir": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "RingkasanKeuanganResponse": {
         "type": "object",
         "required": [
@@ -12565,31 +14789,169 @@
           }
         }
       },
+      "RiwayatCbtItem": {
+        "type": "object",
+        "description": "Satu baris riwayat pengerjaan CBT calon (per sesi yang diikuti).",
+        "required": [
+          "peserta_sesi_id",
+          "nama_sesi",
+          "nama_paket",
+          "mode",
+          "ruang",
+          "nomor_peserta",
+          "jadwal_mulai",
+          "jadwal_selesai",
+          "status_ujian",
+          "status_presensi",
+          "passing_grade",
+          "jumlah_pelanggaran"
+        ],
+        "properties": {
+          "durasi_detik": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Lama pengerjaan dalam detik"
+          },
+          "is_lulus": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "jadwal_mulai": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "jadwal_selesai": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "jumlah_benar": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "jumlah_kosong": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "jumlah_pelanggaran": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "jumlah_salah": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "mode": {
+            "type": "string",
+            "description": "ONLINE atau LURING"
+          },
+          "nama_paket": {
+            "type": "string"
+          },
+          "nama_sesi": {
+            "type": "string"
+          },
+          "nilai_akhir": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Skor 0-100; terisi setelah jawaban dinilai"
+          },
+          "nomor_peserta": {
+            "type": "string"
+          },
+          "passing_grade": {
+            "type": "number",
+            "format": "double"
+          },
+          "peserta_sesi_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ruang": {
+            "type": "string"
+          },
+          "status_presensi": {
+            "type": "string"
+          },
+          "status_ujian": {
+            "type": "string",
+            "description": "MENUNGGU, SEDANG_MENGERJAKAN, SELESAI, WAKTU_HABIS"
+          },
+          "total_soal": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "waktu_mulai": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Waktu calon mulai mengerjakan"
+          },
+          "waktu_selesai": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Waktu jawaban dikirim (atau waktu habis)"
+          }
+        }
+      },
       "RiwayatPendidikanItem": {
         "type": "object",
+        "description": "Riwayat pendidikan formal pemohon RPL.",
         "required": [
           "jenjang",
           "nama_institusi",
-          "jurusan",
-          "tahun_lulus",
-          "ipk"
+          "tahun_lulus"
         ],
         "properties": {
-          "ipk": {
-            "type": "number",
+          "ipk_nilai": {
+            "type": [
+              "number",
+              "null"
+            ],
             "format": "double"
           },
           "jenjang": {
             "type": "string"
           },
-          "jurusan": {
-            "type": "string"
-          },
           "nama_institusi": {
             "type": "string"
           },
-          "tahun_lulus": {
+          "nomor_ijazah": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "program_studi": {
             "type": "string"
+          },
+          "tahun_lulus": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -12902,6 +15264,57 @@
           }
         }
       },
+      "RumusNimResponse": {
+        "type": "object",
+        "required": [
+          "template",
+          "lingkup_urut",
+          "template_bawaan",
+          "token",
+          "lingkup_pilihan",
+          "panjang_maks"
+        ],
+        "properties": {
+          "diperbarui_oleh": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "diperbarui_pada": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "lingkup_pilihan": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LingkupNimInfo"
+            }
+          },
+          "lingkup_urut": {
+            "type": "string"
+          },
+          "panjang_maks": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "template": {
+            "type": "string"
+          },
+          "template_bawaan": {
+            "type": "string"
+          },
+          "token": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TokenNimInfo"
+            }
+          }
+        }
+      },
       "RumusPenilaianJalur": {
         "type": "object",
         "required": [
@@ -12960,6 +15373,47 @@
           }
         }
       },
+      "SahkanSemuaBerkasRequest": {
+        "type": "object",
+        "description": "Sahkan semua berkas yang menunggu milik satu atau beberapa calon sekaligus.",
+        "required": [
+          "pendaftar_ids"
+        ],
+        "properties": {
+          "pendaftar_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Daftar calon (1 sampai 100)."
+          }
+        }
+      },
+      "SahkanSemuaBerkasResponse": {
+        "type": "object",
+        "required": [
+          "calon_diproses",
+          "berkas_disahkan",
+          "hasil"
+        ],
+        "properties": {
+          "berkas_disahkan": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "calon_diproses": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hasil": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HasilSahkanCalon"
+            }
+          }
+        }
+      },
       "SesiCalonInfoResponse": {
         "type": "object",
         "required": [
@@ -13000,6 +15454,13 @@
               "null"
             ],
             "format": "date-time"
+          },
+          "mode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`ONLINE` / `LURING`"
           },
           "nama_sesi": {
             "type": [
@@ -13056,25 +15517,20 @@
           }
         }
       },
-      "SesiUjian": {
+      "SesiTersediaItem": {
         "type": "object",
+        "description": "Sesi CBT yang dapat dipilih calon sebagai jadwal seleksi di formulir.",
         "required": [
           "id",
-          "paket_id",
           "nama_sesi",
           "jadwal_mulai",
           "jadwal_selesai",
+          "mode",
           "ruang",
           "kuota",
-          "status",
-          "created_at",
-          "updated_at"
+          "terisi"
         ],
         "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -13090,6 +15546,80 @@
           "kuota": {
             "type": "integer",
             "format": "int32"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "nama_sesi": {
+            "type": "string"
+          },
+          "ruang": {
+            "type": "string"
+          },
+          "terisi": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "SesiUjian": {
+        "type": "object",
+        "required": [
+          "id",
+          "paket_id",
+          "nama_sesi",
+          "jadwal_mulai",
+          "jadwal_selesai",
+          "ruang",
+          "kuota",
+          "status",
+          "mode",
+          "is_dibuka_pendaftaran",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "gelombang_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_dibuka_pendaftaran": {
+            "type": "boolean",
+            "description": "Sesi tampil sebagai pilihan jadwal seleksi di formulir calon"
+          },
+          "jadwal_mulai": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "jadwal_selesai": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "jalur_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "kuota": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "mode": {
+            "type": "string",
+            "description": "`ONLINE` (dari rumah, tanpa presensi pengawas) atau `LURING` (wajib presensi QR)"
           },
           "nama_sesi": {
             "type": "string"
@@ -13129,6 +15659,18 @@
           "prodi_id": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "SetujuiHasilCbtRequest": {
+        "type": "object",
+        "properties": {
+          "alasan": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Wajib (min. 5 karakter) bila hasil di bawah passing grade; opsional bila sudah lulus."
           }
         }
       },
@@ -13222,6 +15764,21 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "SimpanRumusNimRequest": {
+        "type": "object",
+        "required": [
+          "template",
+          "lingkup_urut"
+        ],
+        "properties": {
+          "lingkup_urut": {
+            "type": "string"
+          },
+          "template": {
+            "type": "string"
           }
         }
       },
@@ -13338,6 +15895,16 @@
             "type": "string"
           }
         }
+      },
+      "StatusLangkah": {
+        "type": "string",
+        "enum": [
+          "SELESAI",
+          "AKTIF",
+          "MENUNGGU_ADMIN",
+          "DITOLAK",
+          "TERKUNCI"
+        ]
       },
       "StatusPendaftaranStat": {
         "type": "object",
@@ -13474,6 +16041,50 @@
           }
         }
       },
+      "SubmitBuktiRequest": {
+        "type": "object",
+        "required": [
+          "tagihan_id",
+          "metode",
+          "nominal_dibayar",
+          "tgl_bayar",
+          "file_key",
+          "file_name",
+          "mime_type",
+          "file_size_bytes"
+        ],
+        "properties": {
+          "file_key": {
+            "type": "string"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "file_size_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "metode": {
+            "type": "string",
+            "description": "`VA_MANDIRI` atau `QRIS`"
+          },
+          "mime_type": {
+            "type": "string"
+          },
+          "nominal_dibayar": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tagihan_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tgl_bayar": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
       "SubmitDinamisRequest": {
         "type": "object",
         "required": [
@@ -13508,6 +16119,14 @@
               "null"
             ],
             "format": "uuid"
+          },
+          "sesi_ujian_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Sesi CBT (tanggal seleksi) yang dipilih calon. Wajib untuk jalur CBT saat formulir dikirim."
           }
         }
       },
@@ -13698,14 +16317,28 @@
               "null"
             ]
           },
+          "rincian": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RincianBiayaDto"
+            }
+          },
           "status": {
             "type": "string"
+          },
+          "tgl_jatuh_tempo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           },
           "va_number": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Nomor VA Mandiri kampus (rekening aktif) untuk transfer daftar ulang"
           }
         }
       },
@@ -13837,6 +16470,25 @@
           }
         }
       },
+      "TokenNimInfo": {
+        "type": "object",
+        "required": [
+          "token",
+          "keterangan",
+          "contoh"
+        ],
+        "properties": {
+          "contoh": {
+            "type": "string"
+          },
+          "keterangan": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          }
+        }
+      },
       "TransaksiDetailResponse": {
         "type": "object",
         "required": [
@@ -13933,6 +16585,25 @@
           "terverifikasi": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "UjianUlangCbtRequest": {
+        "type": "object",
+        "required": [
+          "alasan"
+        ],
+        "properties": {
+          "alasan": {
+            "type": "string"
+          },
+          "sesi_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Kosong = ulang di sesi yang sama (jadwalnya harus masih berlangsung).\nIsi untuk memindahkan peserta ke sesi lain; riwayat percobaan lama tetap tersimpan."
           }
         }
       },
@@ -14102,6 +16773,13 @@
           },
           "nama": {
             "type": "string"
+          },
+          "prodi_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
           },
           "tipe_file": {
             "type": "string"
@@ -14745,11 +17423,12 @@
       "VerifyEmailRequest": {
         "type": "object",
         "required": [
-          "token"
+          "kode"
         ],
         "properties": {
-          "token": {
-            "type": "string"
+          "kode": {
+            "type": "string",
+            "description": "Kode 6 digit yang dikirim ke email calon"
           }
         }
       },

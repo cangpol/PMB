@@ -15,7 +15,11 @@ export interface AuthContextType {
   login: (credentials: LoginRequest) => Promise<AuthResponse>;
   register: (data: RegisterRequest) => Promise<AuthResponse>;
   logout: () => Promise<void>;
+  /** Sesi berakhir karena pengguna keluar (bukan karena belum login). */
+  baruLogout: boolean;
   verifyEmail: (data: VerifyEmailRequest) => Promise<GenericMessageResponse>;
+  /** Minta kode verifikasi email baru (dibatasi jeda & kuota per jam). */
+  kirimUlangKode: () => Promise<GenericMessageResponse>;
   forgotPassword: (email: string) => Promise<GenericMessageResponse>;
   resetPassword: (
     data: ResetPasswordRequest,

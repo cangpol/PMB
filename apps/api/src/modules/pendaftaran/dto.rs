@@ -15,6 +15,9 @@ pub struct SubmitDinamisRequest {
     pub gelombang_id: Option<Uuid>,
     pub prodi_pilihan_1: Option<Uuid>,
     pub prodi_pilihan_2: Option<Uuid>,
+    /// Sesi CBT (tanggal seleksi) yang dipilih calon. Wajib untuk jalur CBT saat formulir dikirim.
+    #[serde(default)]
+    pub sesi_ujian_id: Option<Uuid>,
     pub data: serde_json::Value,
 }
 
@@ -143,6 +146,9 @@ pub struct CreateDefinisiBerkasRequest {
     pub tipe_file: Option<String>,
     pub ukuran_maks_kb: Option<i32>,
     pub urutan: Option<i32>,
+    /// Khusus calon yang memilih prodi ini (mis. bebas buta warna untuk Fisioterapi)
+    #[serde(default)]
+    pub prodi_id: Option<Uuid>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Validate, ToSchema)]
@@ -156,6 +162,8 @@ pub struct UpdateDefinisiBerkasRequest {
     pub ukuran_maks_kb: i32,
     pub urutan: i32,
     pub is_active: bool,
+    #[serde(default)]
+    pub prodi_id: Option<Uuid>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Validate, ToSchema)]
@@ -359,4 +367,109 @@ pub struct DashboardSummaryResponse {
     pub nim_resmi: Option<String>,
     pub bisa_cetak_bukti: bool,
     pub bisa_cetak_kartu: bool,
+    /// Program studi tempat calon diterima (setelah pengumuman)
+    pub prodi_diterima_nama: Option<String>,
+    /// Waktu formulir pertama kali dibuat
+    pub tgl_daftar: Option<DateTime<Utc>>,
+    /// Ringkasan unggah berkas persyaratan (setelah pembayaran formulir disetujui)
+    pub berkas: Option<RingkasanBerkasDashboard>,
+    /// Ringkasan jadwal & hasil CBT (jalur dengan CBT)
+    pub cbt: Option<RingkasanCbtDashboard>,
+    /// Seluruh biaya PMB calon: formulir dan daftar ulang
+    pub biaya: Vec<RingkasanBiayaItem>,
+}
+
+/// Jumlah berkas persyaratan per status.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, ToSchema)]
+pub struct RingkasanBerkasDashboard {
+    pub total_wajib: i32,
+    pub wajib_terunggah: i32,
+    pub valid: i32,
+    pub menunggu_verifikasi: i32,
+    pub ditolak: i32,
+}
+
+/// Jadwal dan hasil CBT calon.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct RingkasanCbtDashboard {
+    pub nama_sesi: Option<String>,
+    /// ONLINE atau LURING
+    pub mode: Option<String>,
+    pub ruang: Option<String>,
+    pub jadwal_mulai: Option<DateTime<Utc>>,
+    pub jadwal_selesai: Option<DateTime<Utc>>,
+    /// Status pengerjaan terakhir: MENUNGGU, SEDANG_MENGERJAKAN, SELESAI, WAKTU_HABIS
+    pub status_ujian: Option<String>,
+    /// Skor pengerjaan terakhir (0-100)
+    pub nilai_terakhir: Option<f64>,
+    pub passing_grade: Option<f64>,
+    pub waktu_selesai_terakhir: Option<DateTime<Utc>>,
+    pub jumlah_pengerjaan: i32,
+    /// Hasil terakhir memenuhi passing grade atau disetujui panitia (None = belum ada hasil)
+    pub memenuhi_passing_grade: Option<bool>,
+    /// Hasil di bawah passing grade yang disetujui panitia
+    pub disetujui_admin: bool,
+}
+
+/// Satu pos biaya PMB calon.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct RingkasanBiayaItem {
+    /// FORMULIR atau DAFTAR_ULANG
+    pub jenis: String,
+    pub label: String,
+    pub nominal: i64,
+    /// BELUM_TERBIT, MENUNGGU_PEMBAYARAN, MENUNGGU_VERIFIKASI, DITOLAK, LUNAS, KEDALUWARSA, BATAL
+    pub status: String,
+    pub nomor_tagihan: Option<String>,
+    pub tgl_jatuh_tempo: Option<DateTime<Utc>>,
+}
+
+/// Ringkasan berkas satu calon untuk daftar verifikasi (dikelompokkan per calon).
+/// Hanya unggahan terbaru tiap jenis berkas yang dihitung.
+#[derive(Clone, Debug, Serialize, Deserialize, ToSchema, FromRow)]
+pub struct BerkasCalonRingkasan {
+    pub pendaftar_id: Uuid,
+    pub nomor_pendaftaran: String,
+    pub nama_lengkap: String,
+    pub email: String,
+    pub nama_jalur: String,
+    pub nama_prodi: Option<String>,
+    pub status_pendaftaran: String,
+    /// Jumlah jenis berkas yang sudah diunggah.
+    pub total: i64,
+    /// Berkas yang menunggu diperiksa.
+    pub menunggu: i64,
+    /// Berkas yang sudah disahkan.
+    pub valid: i64,
+    /// Berkas yang ditolak (menunggu unggah ulang calon).
+    pub ditolak: i64,
+    /// Unggahan paling lama yang masih menunggu diperiksa.
+    pub menunggu_sejak: Option<chrono::DateTime<chrono::Utc>>,
+    pub terakhir_unggah: chrono::DateTime<chrono::Utc>,
+}
+
+/// Sahkan semua berkas yang menunggu milik satu atau beberapa calon sekaligus.
+#[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
+pub struct SahkanSemuaBerkasRequest {
+    /// Daftar calon (1 sampai 100).
+    pub pendaftar_ids: Vec<Uuid>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
+pub struct HasilSahkanCalon {
+    pub pendaftar_id: Uuid,
+    pub nama_lengkap: String,
+    /// Jumlah berkas yang baru disahkan.
+    pub berkas_disahkan: i64,
+    /// Semua berkas wajib sudah diunggah. Bila false, status calon belum maju.
+    pub lengkap: bool,
+    /// Status pendaftaran setelah pengesahan.
+    pub status_pendaftaran: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
+pub struct SahkanSemuaBerkasResponse {
+    pub calon_diproses: i64,
+    pub berkas_disahkan: i64,
+    pub hasil: Vec<HasilSahkanCalon>,
 }

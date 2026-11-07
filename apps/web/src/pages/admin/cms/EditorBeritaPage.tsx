@@ -10,11 +10,13 @@ import {
 } from "../../../components/common";
 import { SeoHead } from "../../../components/common/SeoHead";
 import type { components } from "../../../types/api";
+import { useDialog } from "@/components/ui/useDialog";
 
 type CmsPost = components["schemas"]["CmsPostResponse"];
 type CreatePostReq = components["schemas"]["CreateCmsPostRequest"];
 
 export const EditorBeritaPage: React.FC = () => {
+  const dialog = useDialog();
   const { id } = useParams<{ id: string }>();
   const isNew = !id || id === "baru";
   const navigate = useNavigate();
@@ -88,11 +90,20 @@ export const EditorBeritaPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-cms-posts"] });
-      alert("Artikel berhasil disimpan!");
+      void dialog.hasil({
+        nada: "sukses",
+        judul: "Artikel disimpan",
+        deskripsi: "Artikel berhasil disimpan.",
+        autoTutupMs: 2200,
+      });
       navigate("/admin/cms/berita");
     },
     onError: (err: Error) => {
-      alert(`Error: ${err.message}`);
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Artikel gagal disimpan",
+        deskripsi: err.message,
+      });
     },
   });
 
@@ -139,12 +150,21 @@ export const EditorBeritaPage: React.FC = () => {
 
     const TIPE_OK = ["image/png", "image/jpeg", "image/webp"];
     if (!TIPE_OK.includes(file.type)) {
-      alert("Format gambar harus PNG, JPG, atau WEBP.");
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Format gambar salah",
+        deskripsi:
+          "Format gambar harus PNG, JPG, atau WEBP. Silakan pilih ulang.",
+      });
       input.value = "";
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert("Ukuran gambar maksimal 5 MB.");
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Gambar terlalu besar",
+        deskripsi: "Ukuran gambar maksimal 5 MB. Silakan pilih gambar lain.",
+      });
       input.value = "";
       return;
     }
@@ -175,13 +195,22 @@ export const EditorBeritaPage: React.FC = () => {
         ...prev,
         gambar_url: presignData.url,
       }));
-      alert("Gambar berhasil diunggah!");
+      void dialog.hasil({
+        nada: "sukses",
+        judul: "Gambar diunggah",
+        deskripsi: "Gambar berhasil diunggah.",
+        autoTutupMs: 2000,
+      });
     } catch (err: unknown) {
       const message =
         err instanceof Error
           ? err.message
           : "Terjadi kesalahan yang tidak diketahui";
-      alert(`Gagal mengunggah gambar: ${message}`);
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Gambar gagal diunggah",
+        deskripsi: message,
+      });
     } finally {
       setUploadLoading(false);
       input.value = "";
@@ -191,7 +220,11 @@ export const EditorBeritaPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.judul.trim() || !formData.konten.trim()) {
-      alert("Judul dan Konten wajib diisi!");
+      void dialog.hasil({
+        nada: "peringatan",
+        judul: "Data belum lengkap",
+        deskripsi: "Judul dan konten artikel wajib diisi.",
+      });
       return;
     }
     saveMutation.mutate(formData);

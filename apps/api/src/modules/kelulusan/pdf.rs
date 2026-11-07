@@ -1,8 +1,12 @@
 // Generator Surat Penerimaan Resmi / Letter of Acceptance (LoA) PDF
 // Universitas Pignatelli Triputra (UPT) Surakarta
-// Standar ISO 32000-1 (PDF-1.4) dengan Vektor QR Code & Skema Biru-Putih Resmi
+// Standar ISO 32000-1 (PDF-1.4): kop surat berlogo, tabel biodata, rincian biaya,
+// QR Code verifikasi vektor, dan blok pengesahan.
 
-use qrcode::{Color, QrCode};
+use crate::pdfkit::{
+    ABU, BIRU, EMAS, GARIS, Halaman, LATAR, NAVY, PUTIH, TEKS, bangun_pdf, bungkus, kop_surat,
+    lebar_teks,
+};
 
 #[derive(Clone, Debug)]
 pub struct LoaPdfData {
@@ -21,369 +25,414 @@ pub struct LoaPdfData {
     pub ranking: i32,
     pub tgl_batas_daftar_ulang: String,
     pub verifikasi_url: String,
+    /// Rincian biaya daftar ulang (komponen, nominal)
+    pub rincian_biaya: Vec<(String, i64)>,
+    /// Nomor VA Mandiri kampus dan atas nama (bila sudah diatur admin)
+    pub va_mandiri: Option<(String, String)>,
+    pub ada_qris: bool,
+    pub nomor_registrasi: Option<String>,
 }
 
-fn pdf_escape(text: &str) -> String {
-    let mut out = String::with_capacity(text.len() * 2);
-    for c in text.chars() {
-        match c {
-            '(' => out.push_str("\\("),
-            ')' => out.push_str("\\)"),
-            '\\' => out.push_str("\\\\"),
-            _ if c.is_ascii() => out.push(c),
-            _ => out.push('?'),
+/// Format rupiah dengan pemisah ribuan titik, mis. 5000000 -> "Rp 5.000.000".
+pub fn rupiah(n: i64) -> String {
+    let digits = n.unsigned_abs().to_string();
+    let mut out = String::new();
+    for (i, c) in digits.chars().enumerate() {
+        if i > 0 && (digits.len() - i).is_multiple_of(3) {
+            out.push('.');
         }
+        out.push(c);
+    }
+    format!("{}Rp {}", if n < 0 { "-" } else { "" }, out)
+}
+
+/// Kanal pembayaran yang tersedia (VA Mandiri dan/atau QRIS).
+fn kanal_pembayaran(data: &LoaPdfData) -> String {
+    match (&data.va_mandiri, data.ada_qris) {
+        (Some((no, an)), true) => format!("VA Mandiri {} a.n. {} atau QRIS kampus", no, an),
+        (Some((no, an)), false) => format!("VA Mandiri {} a.n. {}", no, an),
+        (None, true) => "QRIS kampus (tersedia di portal PMB)".to_string(),
+        (None, false) => "rekening resmi yang tertera di portal PMB".to_string(),
+    }
+}
+
+/// Catatan transfer (nomor registrasi pada berita transfer + unggah bukti).
+fn catatan_transfer(data: &LoaPdfData) -> String {
+    match &data.nomor_registrasi {
+        Some(nr) => format!(
+            "Cantumkan No. Registrasi {} pada berita transfer, lalu unggah bukti bayar di portal PMB.",
+            nr
+        ),
+        None => {
+            "Setelah transfer, unggah bukti bayar di portal PMB (menu Daftar Ulang).".to_string()
+        }
+    }
+}
+
+/// Baris-baris instruksi pembayaran daftar ulang (maks. 7 baris agar muat di halaman).
+pub fn baris_instruksi_daftar_ulang(data: &LoaPdfData) -> Vec<String> {
+    let mut lines = vec!["Rincian biaya daftar ulang:".to_string()];
+    // Maks. 3 baris komponen: bila lebih dari 3, tampilkan 2 + ringkasan "lainnya"
+    let tampil = if data.rincian_biaya.len() > 3 { 2 } else { 3 };
+    for (nama, nominal) in data.rincian_biaya.iter().take(tampil) {
+        lines.push(format!("   - {}: {}", nama, rupiah(*nominal)));
+    }
+    if data.rincian_biaya.len() > tampil {
+        let sisa: i64 = data.rincian_biaya[tampil..].iter().map(|r| r.1).sum();
+        lines.push(format!("   - Komponen lainnya: {}", rupiah(sisa)));
+    }
+    let total: i64 = data.rincian_biaya.iter().map(|r| r.1).sum();
+    lines.push(format!("   TOTAL: {}", rupiah(total)));
+
+    lines.push(format!("Pembayaran melalui {}.", kanal_pembayaran(data)));
+    lines.push(catatan_transfer(data));
+    lines
+}
+
+const KIRI: f64 = 46.0;
+const LEBAR: f64 = 503.0;
+
+/// Komponen biaya yang ditampilkan (maks. 4 baris; sisanya diringkas "Komponen lainnya").
+fn baris_biaya(data: &LoaPdfData) -> Vec<(String, i64)> {
+    let tampil = if data.rincian_biaya.len() > 4 { 3 } else { 4 };
+    let mut out: Vec<(String, i64)> = data.rincian_biaya.iter().take(tampil).cloned().collect();
+    if data.rincian_biaya.len() > tampil {
+        let sisa: i64 = data.rincian_biaya[tampil..].iter().map(|r| r.1).sum();
+        out.push(("Komponen lainnya".to_string(), sisa));
     }
     out
 }
 
-fn generate_qr_vector_stream(qr_data: &str, x0: f64, y0: f64, target_size: f64) -> String {
-    let code = match QrCode::new(qr_data.as_bytes()) {
-        Ok(c) => c,
-        Err(_) => return String::new(),
-    };
-
-    let modules = code.to_colors();
-    let width = code.width();
-    let module_size = target_size / (width as f64);
-
-    let mut stream = String::new();
-    stream.push_str("0 0 0 rg\n"); // Hitam
-
-    for y in 0..width {
-        for x in 0..width {
-            let color = modules[y * width + x];
-            if color == Color::Dark {
-                let rx = x0 + (x as f64) * module_size;
-                let ry = y0 + ((width - 1 - y) as f64) * module_size;
-                stream.push_str(&format!(
-                    "{:.2} {:.2} {:.2} {:.2} re f\n",
-                    rx, ry, module_size, module_size
-                ));
-            }
-        }
-    }
-
-    stream
+fn judul_bagian(h: &mut Halaman, y: f64, judul: &str) {
+    h.kotak(KIRI, y - 3.0, 3.0, 13.0, EMAS);
+    h.teks(KIRI + 9.0, y, true, 10.5, NAVY, judul);
 }
 
 pub fn generate_loa_pdf(data: &LoaPdfData) -> Vec<u8> {
-    // Dimensi A4: 595.28 x 841.89 pt
-    let mut s = String::with_capacity(16 * 1024);
+    let mut h = Halaman::baru();
+    let tengah = 297.64;
 
-    // 1. Header Banner Biru Royal
-    // #061633 (0.024, 0.086, 0.200)
-    s.push_str("0.024 0.086 0.200 rg\n");
-    s.push_str("0 740 595.28 102 re f\n");
+    // Watermark logo (sangat samar) di tengah halaman
+    h.logo_watermark(148.0, 270.0, 300.0);
 
-    // Garis Aksen Emas/Kuning Halus di bawah header
-    s.push_str("0.85 0.70 0.25 rg\n");
-    s.push_str("0 735 595.28 5 re f\n");
-
-    // Teks Header Universitas
-    s.push_str("1 1 1 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F2 20 Tf\n");
-    s.push_str("50 795 Td\n");
-    s.push_str("(UNIVERSITAS PIGNATELLI TRIPUTRA) Tj\n");
-    s.push_str("ET\n");
-
-    s.push_str("BT\n");
-    s.push_str("/F1 10 Tf\n");
-    s.push_str("50 778 Td\n");
-    s.push_str("(Jl. Duwet I No. 1, Karangasem, Laweyan, Surakarta, Jawa Tengah 57145) Tj\n");
-    s.push_str("ET\n");
-
-    s.push_str("BT\n");
-    s.push_str("/F1 9 Tf\n");
-    s.push_str("50 763 Td\n");
-    s.push_str("(Website: pmb.upit.ac.id | Email: pmb@upit.ac.id | Telp: (0271) 714424) Tj\n");
-    s.push_str("ET\n");
-
-    // 2. Judul Dokumen Surat Keputusan
-    s.push_str("0.05 0.15 0.35 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F2 15 Tf\n");
-    s.push_str("50 690 Td\n");
-    s.push_str("(SURAT KEPUTUSAN KELULUSAN SELEKSI PMB) Tj\n");
-    s.push_str("ET\n");
-
-    s.push_str("0.4 0.4 0.4 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F1 11 Tf\n");
-    s.push_str("50 673 Td\n");
-    s.push_str("(OFFICIAL LETTER OF ACCEPTANCE) Tj\n");
-    s.push_str("ET\n");
-
-    s.push_str("0.1 0.1 0.1 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F2 10 Tf\n");
-    s.push_str("50 655 Td\n");
-    s.push_str(&format!(
-        "(Nomor Surat: {}) Tj\n",
-        pdf_escape(&data.nomor_surat_loa)
-    ));
-    s.push_str("ET\n");
-
-    // Garis Pemisah
-    s.push_str("0.8 0.8 0.8 rg\n");
-    s.push_str("50 642 495.28 1 re f\n");
-
-    // 3. Pernyataan Keputusan Resmi
-    s.push_str("0.1 0.1 0.1 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F1 10 Tf\n");
-    s.push_str("50 620 Td\n");
-    s.push_str(
-        "(Rektor Universitas Pignatelli Triputra dengan ini menetapkan bahwa calon mahasiswa di bawah ini:) Tj\n",
+    kop_surat(
+        &mut h,
+        "Panitia Penerimaan Mahasiswa Baru (PMB) Tahun Akademik 2026/2027",
     );
-    s.push_str("ET\n");
 
-    // 4. Tabel Identitas Calon
-    let draw_row = |stream: &mut String, y: f64, label: &str, val: &str| {
-        stream.push_str("0.35 0.35 0.35 rg\n");
-        stream.push_str("BT\n");
-        stream.push_str("/F1 10 Tf\n");
-        stream.push_str(&format!("50 {:.2} Td\n", y));
-        stream.push_str(&format!("({}:) Tj\n", pdf_escape(label)));
-        stream.push_str("ET\n");
+    // Judul & nomor surat
+    h.teks_tengah(
+        tengah,
+        712.0,
+        true,
+        14.5,
+        NAVY,
+        "SURAT KEPUTUSAN PENERIMAAN MAHASISWA BARU",
+    );
+    h.teks_tengah(
+        tengah,
+        697.0,
+        false,
+        9.0,
+        ABU,
+        "Official Letter of Acceptance",
+    );
+    h.teks_tengah(
+        tengah,
+        682.0,
+        true,
+        10.0,
+        TEKS,
+        &format!("Nomor: {}", data.nomor_surat_loa),
+    );
 
-        stream.push_str("0.05 0.05 0.05 rg\n");
-        stream.push_str("BT\n");
-        stream.push_str("/F2 10 Tf\n");
-        stream.push_str(&format!("180 {:.2} Td\n", y));
-        stream.push_str(&format!("({}) Tj\n", pdf_escape(val)));
-        stream.push_str("ET\n");
-    };
+    let y = h.paragraf(
+        KIRI,
+        658.0,
+        LEBAR,
+        false,
+        10.0,
+        14.0,
+        TEKS,
+        "Rektor Universitas Pignatelli Triputra, berdasarkan hasil seleksi penerimaan mahasiswa baru Tahun Akademik 2026/2027, dengan ini menetapkan bahwa calon mahasiswa berikut:",
+    );
 
-    draw_row(&mut s, 595.0, "Nomor Pendaftaran", &data.nomor_pendaftaran);
-    draw_row(&mut s, 577.0, "Nama Lengkap", &data.nama_lengkap);
-    draw_row(&mut s, 559.0, "Nomor Induk (NIK)", &data.nik);
-    draw_row(&mut s, 541.0, "Asal Sekolah", &data.asal_sekolah);
-    draw_row(&mut s, 523.0, "Jalur Penerimaan", &data.jalur_nama);
-
-    // Garis Pemisah Bagian Keputusan
-    s.push_str("0.85 0.85 0.85 rg\n");
-    s.push_str("50 508 495.28 1 re f\n");
-
-    // 5. Kotak Status DITERIMA / LULUS (Emerald Light Box)
-    s.push_str("0.92 0.98 0.94 rg\n"); // #ecfdf5
-    s.push_str("50 420 495.28 75 re f\n");
-    s.push_str("0.20 0.65 0.40 rg\n"); // Border Hijau
-    s.push_str("50 420 495.28 75 re s\n");
-
-    s.push_str("0.05 0.45 0.25 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F2 13 Tf\n");
-    s.push_str("70 472 Td\n");
-    s.push_str("(DINYATAKAN DITERIMA SEBAGAI MAHASISWA BARU) Tj\n");
-    s.push_str("ET\n");
-
-    s.push_str("0.05 0.15 0.35 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F2 11 Tf\n");
-    s.push_str("70 452 Td\n");
-    s.push_str(&format!(
-        "(Program Studi : {} {} (Pilihan Ke-{})) Tj\n",
-        pdf_escape(&data.jenjang),
-        pdf_escape(&data.prodi_diterima),
-        data.pilihan_ke
-    ));
-    s.push_str("ET\n");
-
-    s.push_str("0.2 0.2 0.2 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F1 10 Tf\n");
-    s.push_str("70 434 Td\n");
-    s.push_str(&format!(
-        "(Fakultas      : {} | Skor Seleksi: {:.2} (Peringkat {})) Tj\n",
-        pdf_escape(&data.fakultas),
-        data.skor_akhir,
-        data.ranking
-    ));
-    s.push_str("ET\n");
-
-    // 6. Petunjuk & Batas Waktu Daftar Ulang
-    s.push_str("0.1 0.1 0.1 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F2 11 Tf\n");
-    s.push_str("50 395 Td\n");
-    s.push_str("(Ketentuan & Prosedur Registrasi Ulang:) Tj\n");
-    s.push_str("ET\n");
-
-    let bullets = [
-        "1. Calon mahasiswa wajib menyelesaikan pembayaran biaya daftar ulang sebelum batas waktu.",
-        "2. Mengunggah berkas registrasi: Surat Pernyataan Mahasiswa Baru & Surat Bebas Narkoba.",
-        "3. Nomor Induk Mahasiswa (NIM) resmi akan diterbitkan otomatis setelah berkas diverifikasi.",
-        "4. Apabila tidak melakukan daftar ulang sampai batas waktu, hak penerimaan dianggap gugur.",
+    // Tabel biodata
+    let baris: [(&str, &str); 5] = [
+        ("Nomor Pendaftaran", &data.nomor_pendaftaran),
+        ("Nama Lengkap", &data.nama_lengkap),
+        ("Nomor Induk Kependudukan", &data.nik),
+        ("Asal Sekolah", &data.asal_sekolah),
+        ("Jalur Penerimaan", &data.jalur_nama),
     ];
-
-    let mut by = 377.0;
-    for b in bullets {
-        s.push_str("0.2 0.2 0.2 rg\n");
-        s.push_str("BT\n");
-        s.push_str("/F1 9 Tf\n");
-        s.push_str(&format!("50 {:.2} Td\n", by));
-        s.push_str(&format!("({}) Tj\n", pdf_escape(b)));
-        s.push_str("ET\n");
-        by -= 16.0;
+    let tinggi = 20.0;
+    let atas = y + 2.0;
+    h.garis(KIRI, atas, KIRI + LEBAR, atas, NAVY, 1.0);
+    for (i, (label, nilai)) in baris.iter().enumerate() {
+        let yt = atas - tinggi * i as f64;
+        if i % 2 == 1 {
+            h.kotak(KIRI, yt - tinggi, LEBAR, tinggi, LATAR);
+        }
+        h.teks(KIRI + 10.0, yt - 13.5, false, 9.5, ABU, label);
+        h.teks(KIRI + 150.0, yt - 13.5, false, 9.5, ABU, ":");
+        let nilai = if lebar_teks(nilai, true, 10.0) > 330.0 {
+            bungkus(nilai, true, 10.0, 330.0)
+                .first()
+                .cloned()
+                .unwrap_or_default()
+        } else {
+            nilai.to_string()
+        };
+        h.teks(KIRI + 162.0, yt - 13.5, true, 10.0, TEKS, &nilai);
     }
+    let bawah = atas - tinggi * baris.len() as f64;
+    h.garis(KIRI, bawah, KIRI + LEBAR, bawah, GARIS, 0.8);
 
-    // Kotak Batas Waktu Registrasi
-    s.push_str("0.95 0.97 1.0 rg\n"); // Biru muda
-    s.push_str("50 280 495.28 28 re f\n");
-    s.push_str("0.15 0.40 0.85 rg\n");
-    s.push_str("50 280 495.28 28 re s\n");
-
-    s.push_str("0.05 0.15 0.45 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F2 10 Tf\n");
-    s.push_str("65 291 Td\n");
-    s.push_str(&format!(
-        "(Batas Akhir Daftar Ulang: {} WIB) Tj\n",
-        pdf_escape(&data.tgl_batas_daftar_ulang)
-    ));
-    s.push_str("ET\n");
-
-    // 7. Area Tanda Tangan & QR Code Verifikasi
-    // QR Code Vektor di sebelah kiri bawah
-    let qr_str = generate_qr_vector_stream(&data.verifikasi_url, 50.0, 130.0, 90.0);
-    s.push_str(&qr_str);
-
-    s.push_str("0.4 0.4 0.4 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F1 8 Tf\n");
-    s.push_str("50 115 Td\n");
-    s.push_str("(Pindai QR Code untuk memverifikasi) Tj\n");
-    s.push_str("ET\n");
-    s.push_str("BT\n");
-    s.push_str("/F1 8 Tf\n");
-    s.push_str("50 105 Td\n");
-    s.push_str("(keaslian Surat Keputusan Penerimaan ini) Tj\n");
-    s.push_str("ET\n");
-
-    // Pengesahan Pejabat di sebelah kanan bawah
-    s.push_str("0.1 0.1 0.1 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F1 10 Tf\n");
-    s.push_str("370 215 Td\n");
-    s.push_str(&format!(
-        "(Surakarta, {}) Tj\n",
-        pdf_escape(&data.tanggal_sk)
-    ));
-    s.push_str("ET\n");
-
-    s.push_str("BT\n");
-    s.push_str("/F1 10 Tf\n");
-    s.push_str("370 200 Td\n");
-    s.push_str("(Universitas Pignatelli Triputra) Tj\n");
-    s.push_str("ET\n");
-
-    s.push_str("BT\n");
-    s.push_str("/F2 10 Tf\n");
-    s.push_str("370 185 Td\n");
-    s.push_str("(Ketua Panitia Seleksi PMB,) Tj\n");
-    s.push_str("ET\n");
-
-    // Stempel / Digital Signature Box
-    s.push_str("0.90 0.93 0.98 rg\n");
-    s.push_str("370 145 150 25 re f\n");
-    s.push_str("0.15 0.35 0.70 rg\n");
-    s.push_str("370 145 150 25 re s\n");
-    s.push_str("0.10 0.25 0.55 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F2 8 Tf\n");
-    s.push_str("385 155 Td\n");
-    s.push_str("(TERTANDA SECARA DIGITAL) Tj\n");
-    s.push_str("ET\n");
-
-    s.push_str("0.1 0.1 0.1 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F2 10 Tf\n");
-    s.push_str("370 125 Td\n");
-    s.push_str("(Dr. Ir. Fransiskus Xaverius, M.Kom.) Tj\n");
-    s.push_str("ET\n");
-
-    s.push_str("0.4 0.4 0.4 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F1 9 Tf\n");
-    s.push_str("370 110 Td\n");
-    s.push_str("(NIDN: 0612087501) Tj\n");
-    s.push_str("ET\n");
-
-    // Footer Dokumen
-    s.push_str("0.5 0.5 0.5 rg\n");
-    s.push_str("BT\n");
-    s.push_str("/F1 8 Tf\n");
-    s.push_str("50 40 Td\n");
-    s.push_str(
-        "(Dokumen ini sah dan diterbitkan secara resmi melalui Sistem Informasi PMB UPT. Verifikasi keaslian via pmb.upit.ac.id/verifikasi) Tj\n",
+    // Kotak keputusan
+    let kt = bawah - 14.0; // sisi atas kotak
+    let kh = 74.0;
+    h.kotak(KIRI, kt - kh, LEBAR, kh, NAVY);
+    h.kotak(KIRI, kt - kh, 5.0, kh, EMAS);
+    h.teks(
+        KIRI + 20.0,
+        kt - 18.0,
+        true,
+        8.5,
+        EMAS,
+        "DINYATAKAN DITERIMA SEBAGAI MAHASISWA BARU",
     );
-    s.push_str("ET\n");
+    let prodi = format!("{} {}", data.jenjang, data.prodi_diterima);
+    let ukuran_prodi = if lebar_teks(&prodi, true, 17.0) > 460.0 {
+        13.0
+    } else {
+        17.0
+    };
+    h.teks(KIRI + 20.0, kt - 40.0, true, ukuran_prodi, PUTIH, &prodi);
+    h.teks(
+        KIRI + 20.0,
+        kt - 56.0,
+        false,
+        9.5,
+        (0.80, 0.86, 0.95),
+        &format!("{}   |   Pilihan ke-{}", data.fakultas, data.pilihan_ke),
+    );
+    let skor = if data.ranking > 0 {
+        format!(
+            "Skor seleksi {:.2}   |   Peringkat {}",
+            data.skor_akhir, data.ranking
+        )
+    } else {
+        format!("Skor seleksi {:.2}", data.skor_akhir)
+    };
+    h.teks(
+        KIRI + 20.0,
+        kt - 68.0,
+        false,
+        9.5,
+        (0.80, 0.86, 0.95),
+        &skor,
+    );
 
-    build_pdf_file(&s)
+    // Ketentuan registrasi ulang + rincian biaya
+    let mut y = kt - kh - 26.0;
+    judul_bagian(&mut h, y, "KETENTUAN REGISTRASI ULANG");
+    y -= 12.0;
+    h.kotak(KIRI, y - 17.0, LEBAR, 17.0, NAVY);
+    h.teks(KIRI + 10.0, y - 12.0, true, 9.0, PUTIH, "Komponen Biaya");
+    h.teks_kanan(KIRI + LEBAR - 10.0, y - 12.0, true, 9.0, PUTIH, "Nominal");
+    y -= 17.0;
+    let rincian = baris_biaya(data);
+    for (i, (nama, nominal)) in rincian.iter().enumerate() {
+        if i % 2 == 1 {
+            h.kotak(KIRI, y - 16.0, LEBAR, 16.0, LATAR);
+        }
+        h.teks(KIRI + 10.0, y - 11.5, false, 9.5, TEKS, nama);
+        h.teks_kanan(
+            KIRI + LEBAR - 10.0,
+            y - 11.5,
+            false,
+            9.5,
+            TEKS,
+            &rupiah(*nominal),
+        );
+        y -= 16.0;
+    }
+    let total: i64 = data.rincian_biaya.iter().map(|r| r.1).sum();
+    h.garis(KIRI, y, KIRI + LEBAR, y, NAVY, 0.8);
+    h.kotak(KIRI, y - 18.0, LEBAR, 18.0, GARIS);
+    h.teks(KIRI + 10.0, y - 12.5, true, 10.0, NAVY, "TOTAL");
+    h.teks_kanan(
+        KIRI + LEBAR - 10.0,
+        y - 12.5,
+        true,
+        10.0,
+        NAVY,
+        &rupiah(total),
+    );
+    y -= 30.0;
+
+    y = h.paragraf(
+        KIRI,
+        y,
+        LEBAR,
+        false,
+        9.0,
+        12.0,
+        TEKS,
+        &format!(
+            "Pembayaran melalui {}. {}",
+            kanal_pembayaran(data),
+            catatan_transfer(data)
+        ),
+    );
+    y -= 4.0;
+
+    // Batas waktu
+    h.kotak(KIRI, y - 22.0, LEBAR, 24.0, LATAR);
+    h.bingkai(KIRI, y - 22.0, LEBAR, 24.0, BIRU, 0.8);
+    h.kotak(KIRI, y - 22.0, 4.0, 24.0, BIRU);
+    h.teks(
+        KIRI + 14.0,
+        y - 14.0,
+        true,
+        10.0,
+        NAVY,
+        &format!(
+            "Batas akhir daftar ulang: {} WIB",
+            data.tgl_batas_daftar_ulang
+        ),
+    );
+    y -= 36.0;
+    h.paragraf(
+        KIRI,
+        y,
+        LEBAR,
+        false,
+        8.5,
+        11.0,
+        ABU,
+        "Penerimaan gugur apabila registrasi ulang tidak diselesaikan sebelum batas waktu tanpa pemberitahuan tertulis kepada panitia. Surat ini dicetak dari portal PMB; keaslian dapat diperiksa melalui QR Code di bawah.",
+    );
+
+    // QR verifikasi (kiri) dan pengesahan (kanan)
+    h.bingkai(KIRI, 82.0, 84.0, 84.0, GARIS, 0.8);
+    h.qr(&data.verifikasi_url, KIRI + 5.0, 87.0, 74.0);
+    h.teks(
+        KIRI + 94.0,
+        142.0,
+        true,
+        8.5,
+        NAVY,
+        "Dokumen Digital Terverifikasi",
+    );
+    h.paragraf(
+        KIRI + 94.0,
+        130.0,
+        150.0,
+        false,
+        7.5,
+        10.0,
+        ABU,
+        "Pindai QR Code untuk memeriksa keaslian Surat Keputusan Penerimaan ini.",
+    );
+
+    let kanan = 330.0;
+    h.teks(
+        kanan,
+        164.0,
+        false,
+        9.5,
+        TEKS,
+        &format!("Surakarta, {}", data.tanggal_sk),
+    );
+    h.teks(kanan, 151.0, true, 9.5, TEKS, "Ketua Panitia Seleksi PMB,");
+    h.kotak(kanan, 108.0, 170.0, 30.0, LATAR);
+    h.bingkai(kanan, 108.0, 170.0, 30.0, BIRU, 0.8);
+    h.teks_tengah(
+        kanan + 85.0,
+        120.0,
+        true,
+        8.0,
+        BIRU,
+        "TERTANDA SECARA DIGITAL",
+    );
+    h.teks(
+        kanan,
+        96.0,
+        true,
+        10.0,
+        TEKS,
+        "Dr. Ir. Fransiskus Xaverius, M.Kom.",
+    );
+    h.teks(kanan, 84.0, false, 8.5, ABU, "NIDN: 0612087501");
+
+    // Footer
+    h.garis(KIRI, 58.0, KIRI + LEBAR, 58.0, NAVY, 0.8);
+    h.teks_tengah(
+        tengah,
+        46.0,
+        false,
+        7.5,
+        ABU,
+        "Dokumen ini sah dan diterbitkan secara resmi melalui Sistem Informasi PMB Universitas Pignatelli Triputra.",
+    );
+    h.teks_tengah(tengah, 36.0, false, 7.0, ABU, &data.verifikasi_url);
+
+    bangun_pdf(&h.s)
 }
 
-fn build_pdf_file(stream_content: &str) -> Vec<u8> {
-    let mut pdf = Vec::with_capacity(32 * 1024);
-    let mut xref_offsets: Vec<usize> = Vec::with_capacity(10);
-    xref_offsets.push(0); // Objek 0 kosong
+#[cfg(test)]
+mod tests_pembayaran {
+    use super::*;
 
-    pdf.extend_from_slice(b"%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
-
-    // Obj 1: Catalog
-    xref_offsets.push(pdf.len());
-    pdf.extend_from_slice(b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
-
-    // Obj 2: Pages
-    xref_offsets.push(pdf.len());
-    pdf.extend_from_slice(
-        b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595.28 841.89] >>\nendobj\n",
-    );
-
-    // Obj 3: Page
-    xref_offsets.push(pdf.len());
-    pdf.extend_from_slice(
-        b"3 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>\nendobj\n",
-    );
-
-    // Obj 4: Font F1 (Helvetica)
-    xref_offsets.push(pdf.len());
-    pdf.extend_from_slice(
-        b"4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n",
-    );
-
-    // Obj 5: Font F2 (Helvetica-Bold)
-    xref_offsets.push(pdf.len());
-    pdf.extend_from_slice(
-        b"5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj\n",
-    );
-
-    // Obj 6: Stream Konten Halaman
-    xref_offsets.push(pdf.len());
-    let stream_bytes = stream_content.as_bytes();
-    let stream_len = stream_bytes.len();
-    pdf.extend_from_slice(format!("6 0 obj\n<< /Length {} >>\nstream\n", stream_len).as_bytes());
-    pdf.extend_from_slice(stream_bytes);
-    pdf.extend_from_slice(b"\nendstream\nendobj\n");
-
-    // XRef Table
-    let xref_start = pdf.len();
-    pdf.extend_from_slice(format!("xref\n0 {}\n", xref_offsets.len()).as_bytes());
-    pdf.extend_from_slice(b"0000000000 65535 f \n");
-    for &offset in &xref_offsets[1..] {
-        pdf.extend_from_slice(format!("{:010} 00000 n \n", offset).as_bytes());
+    fn data(rincian: Vec<(String, i64)>) -> LoaPdfData {
+        LoaPdfData {
+            nomor_surat_loa: "SK/1".into(),
+            tanggal_sk: "1 Januari 2027".into(),
+            nomor_pendaftaran: "PMB-2027-0001".into(),
+            nama_lengkap: "Calon".into(),
+            nik: "3300000000000000".into(),
+            asal_sekolah: "SMA".into(),
+            jalur_nama: "Mandiri".into(),
+            prodi_diterima: "Fisioterapi".into(),
+            jenjang: "S1".into(),
+            fakultas: "FKES".into(),
+            pilihan_ke: 1,
+            skor_akhir: 80.0,
+            ranking: 1,
+            tgl_batas_daftar_ulang: "31-07-2027 23:59".into(),
+            verifikasi_url: "https://x".into(),
+            rincian_biaya: rincian,
+            va_mandiri: Some(("8900012345678".into(), "UPITRA".into())),
+            ada_qris: true,
+            nomor_registrasi: Some("REG-2027-ABC234".into()),
+        }
     }
 
-    // Trailer
-    pdf.extend_from_slice(
-        format!(
-            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{}\n%%EOF\n",
-            xref_offsets.len(),
-            xref_start
-        )
-        .as_bytes(),
-    );
+    #[test]
+    fn format_rupiah() {
+        assert_eq!(rupiah(0), "Rp 0");
+        assert_eq!(rupiah(250_000), "Rp 250.000");
+        assert_eq!(rupiah(12_500_000), "Rp 12.500.000");
+    }
 
-    pdf
+    #[test]
+    fn instruksi_memuat_va_total_dan_registrasi() {
+        let lines = baris_instruksi_daftar_ulang(&data(vec![
+            ("Dana Pengembangan".into(), 5_000_000),
+            ("UKT Semester 1".into(), 6_500_000),
+        ]));
+        let teks = lines.join("\n");
+        assert!(teks.contains("Rp 11.500.000"));
+        assert!(teks.contains("VA Mandiri 8900012345678"));
+        assert!(teks.contains("REG-2027-ABC234"));
+    }
+
+    #[test]
+    fn instruksi_maksimal_tujuh_baris() {
+        let banyak = (0..6).map(|i| (format!("K{i}"), 100_000)).collect();
+        let lines = baris_instruksi_daftar_ulang(&data(banyak));
+        assert!(lines.len() <= 7, "{} baris", lines.len());
+        assert!(lines.join("\n").contains("Komponen lainnya: Rp 400.000"));
+    }
 }

@@ -19,6 +19,7 @@ import {
   ErrorState,
 } from "../../components/common";
 import { fetchApi } from "../../services/api";
+import { useDialog } from "@/components/ui/useDialog";
 
 interface RumusPenilaian {
   id: string;
@@ -87,6 +88,7 @@ interface DrafResponse {
 }
 
 export const SeleksiKelulusanPage: React.FC = () => {
+  const dialog = useDialog();
   const [data, setData] = useState<DrafResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
@@ -164,13 +166,13 @@ export const SeleksiKelulusanPage: React.FC = () => {
       Number(editingRumus.bobot_prestasi) +
       Number(editingRumus.bobot_wawancara);
     if (Math.abs(total - 100) > 0.01) {
-      if (
-        !window.confirm(
-          `Total bobot saat ini ${total}%, bukan 100%. Tetap simpan konfigurasi ini?`,
-        )
-      ) {
-        return;
-      }
+      const lanjut = await dialog.konfirmasi({
+        judul: "Total bobot bukan 100%",
+        deskripsi: `Total bobot saat ini ${total}%, bukan 100%. Tetap simpan konfigurasi ini?`,
+        nada: "bahaya",
+        labelYa: "Ya, Tetap Simpan",
+      });
+      if (!lanjut) return;
     }
     try {
       await fetchApi(`/api/kelulusan/admin/rumus/${editingRumus.jalur_id}`, {
@@ -184,11 +186,20 @@ export const SeleksiKelulusanPage: React.FC = () => {
           keterangan: editingRumus.keterangan || null,
         }),
       });
-      alert("Konfigurasi rumus penilaian jalur berhasil disimpan.");
       await loadRumus();
+      void dialog.hasil({
+        nada: "sukses",
+        judul: "Rumus penilaian disimpan",
+        deskripsi: "Konfigurasi rumus penilaian jalur berhasil disimpan.",
+        autoTutupMs: 2500,
+      });
     } catch (err: unknown) {
       const eObj = err as { pesan?: string };
-      alert(eObj.pesan || "Gagal menyimpan konfigurasi rumus penilaian");
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Rumus gagal disimpan",
+        deskripsi: eObj.pesan || "Gagal menyimpan konfigurasi rumus penilaian",
+      });
     }
   };
 
@@ -220,12 +231,14 @@ export const SeleksiKelulusanPage: React.FC = () => {
 
   const handleApprove = async () => {
     if (!data?.sidang?.id) return;
-    if (
-      !window.confirm(
-        "Apakah Anda yakin menyetujui hasil sidang kelulusan ini?",
-      )
-    )
-      return;
+    const ya = await dialog.konfirmasi({
+      judul: "Setujui hasil sidang?",
+      deskripsi:
+        "Hasil sidang kelulusan ini akan ditandai disetujui dan siap dipublikasikan.",
+      nada: "sukses",
+      labelYa: "Ya, Setujui",
+    });
+    if (!ya) return;
     setIsLoading(true);
     try {
       await fetchApi(`/api/kelulusan/admin/approve/${data.sidang.id}`, {
@@ -235,30 +248,53 @@ export const SeleksiKelulusanPage: React.FC = () => {
         }),
       });
       await loadData();
+      void dialog.hasil({
+        nada: "sukses",
+        judul: "Sidang disetujui",
+        deskripsi:
+          "Hasil sidang kelulusan telah disetujui. Anda dapat mempublikasikannya kepada calon.",
+        autoTutupMs: 3000,
+      });
     } catch (err: unknown) {
       const eObj = err as { pesan?: string };
-      alert(eObj.pesan || "Gagal menyetujui sidang");
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Sidang gagal disetujui",
+        deskripsi: eObj.pesan || "Gagal menyetujui sidang",
+      });
       setIsLoading(false);
     }
   };
 
   const handlePublish = async () => {
     if (!data?.sidang?.id) return;
-    if (
-      !window.confirm(
-        "PERHATIAN: Setelah dipublikasikan, calon mahasiswa dapat langsung melihat hasil kelulusan di portal mereka. Lanjutkan publikasi?",
-      )
-    )
-      return;
+    const ya = await dialog.konfirmasi({
+      judul: "Publikasikan hasil kelulusan?",
+      deskripsi:
+        "Setelah dipublikasikan, calon mahasiswa dapat langsung melihat hasil kelulusan di portal mereka. Tindakan ini tidak dapat dibatalkan.",
+      nada: "bahaya",
+      labelYa: "Ya, Publikasikan",
+    });
+    if (!ya) return;
     setIsLoading(true);
     try {
       await fetchApi(`/api/kelulusan/admin/publish/${data.sidang.id}`, {
         method: "POST",
       });
       await loadData();
+      void dialog.hasil({
+        nada: "sukses",
+        judul: "Hasil kelulusan dipublikasikan",
+        deskripsi: "Calon mahasiswa kini dapat melihat hasilnya di portal.",
+        autoTutupMs: 3500,
+      });
     } catch (err: unknown) {
       const eObj = err as { pesan?: string };
-      alert(eObj.pesan || "Gagal mempublikasikan sidang");
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Publikasi gagal",
+        deskripsi: eObj.pesan || "Gagal mempublikasikan sidang",
+      });
       setIsLoading(false);
     }
   };
@@ -279,12 +315,65 @@ export const SeleksiKelulusanPage: React.FC = () => {
           catatan: alasanKoreksi,
         }),
       });
+      const nama = selectedKandidat.nama_lengkap;
       setSelectedKandidat(null);
       setAlasanKoreksi("");
       await loadData();
+      void dialog.hasil({
+        nada: "sukses",
+        judul: "Status kandidat diubah",
+        deskripsi: `Status kelulusan ${nama} berhasil dikoreksi.`,
+        autoTutupMs: 2800,
+      });
     } catch (err: unknown) {
       const eObj = err as { pesan?: string };
-      alert(eObj.pesan || "Gagal mengubah status kandidat");
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Status kandidat gagal diubah",
+        deskripsi: eObj.pesan || "Gagal mengubah status kandidat",
+      });
+    }
+  };
+
+  // Tidak diterima di pilihan 1: admin mengarahkan calon ke program studi pilihan ke-2
+  const handleArahkanPilihan2 = async (item: DrafKelulusanItem) => {
+    const catatan = await dialog.masukkanAlasan({
+      judul: `Arahkan ${item.nama_lengkap} ke pilihan 2?`,
+      deskripsi: `Calon tidak diterima di ${item.prodi_pilihan_1_nama}. Setelah diarahkan, calon diterima di ${item.prodi_pilihan_2_nama} (pilihan kedua), mendapat LoA, dan dapat melanjutkan ke daftar ulang.`,
+      label: "Catatan / dasar keputusan",
+      placeholder:
+        "Contoh: kuota prodi pilihan 1 penuh, calon bersedia pilihan 2",
+      labelKirim: "Arahkan ke Pilihan 2",
+    });
+    if (!catatan) return;
+    try {
+      const res = await fetchApi<{
+        pesan: string;
+        prodi_baru: string;
+        nomor_surat_loa?: string | null;
+      }>("/api/kelulusan/admin/arahkan-pilihan-2", {
+        method: "POST",
+        body: JSON.stringify({ pendaftar_id: item.pendaftar_id, catatan }),
+      });
+      await loadData();
+      void dialog.hasil({
+        nada: "sukses",
+        judul: "Calon diarahkan ke pilihan 2",
+        deskripsi: res.pesan,
+        rincian: [
+          `Program studi: ${res.prodi_baru}`,
+          ...(res.nomor_surat_loa ? [`No. LoA: ${res.nomor_surat_loa}`] : []),
+        ],
+        autoTutupMs: 4500,
+      });
+    } catch (err: unknown) {
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Gagal mengarahkan ke pilihan 2",
+        deskripsi:
+          (err as { pesan?: string }).pesan ||
+          "Calon tidak dapat diarahkan ke pilihan kedua.",
+      });
     }
   };
 
@@ -606,17 +695,32 @@ export const SeleksiKelulusanPage: React.FC = () => {
                       )}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedKandidat(item);
-                          setStatusKoreksi(item.status_kelulusan);
-                        }}
-                        className="text-[11px] px-2 py-1"
-                      >
-                        Koreksi
-                      </Button>
+                      <div className="flex flex-wrap items-center justify-center gap-1.5">
+                        {(item.status_kelulusan === "TIDAK_LULUS" ||
+                          item.status_kelulusan === "CADANGAN") &&
+                          item.prodi_pilihan_2_id && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => void handleArahkanPilihan2(item)}
+                              title={`Arahkan ke ${item.prodi_pilihan_2_nama}`}
+                              className="text-[11px] px-2 py-1"
+                            >
+                              Arahkan ke Pil. 2
+                            </Button>
+                          )}
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedKandidat(item);
+                            setStatusKoreksi(item.status_kelulusan);
+                          }}
+                          className="text-[11px] px-2 py-1"
+                        >
+                          Koreksi
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

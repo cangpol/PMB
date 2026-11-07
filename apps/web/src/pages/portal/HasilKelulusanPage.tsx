@@ -15,7 +15,18 @@ import {
   Card,
 } from "../../components/common";
 import { fetchApi } from "../../services/api";
-import logoPlaceholder from "../../assets/logo-placeholder.svg";
+import { DokumenLoa } from "../../components/dokumen/DokumenLoa";
+
+interface HasilCbtCalon {
+  nilai_akhir: number;
+  jumlah_benar: number;
+  jumlah_salah: number;
+  jumlah_kosong: number;
+  passing_grade: number;
+  memenuhi_passing_grade: boolean;
+  disetujui_admin: boolean;
+  waktu_submit: string;
+}
 
 interface CekKelulusanResponse {
   pendaftar_id: string;
@@ -37,6 +48,7 @@ interface CekKelulusanResponse {
   is_pengumuman_buka: boolean;
   status_daftar_ulang: string;
   pesan: string;
+  hasil_cbt?: HasilCbtCalon | null;
 }
 
 export const HasilKelulusanPage: React.FC = () => {
@@ -79,7 +91,7 @@ export const HasilKelulusanPage: React.FC = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    window.print(); // hanya area surat (.area-cetak) yang tercetak
   };
 
   const isLulus =
@@ -151,19 +163,69 @@ export const HasilKelulusanPage: React.FC = () => {
               Belum Ada Formulir Pendaftaran
             </h2>
             <p className="text-sm text-biru-800 mt-2 leading-relaxed">
-              Akun Anda belum memiliki berkas formulir pendaftaran PMB yang terdaftar. Silakan lengkapi formulir pendaftaran untuk mengikuti seleksi penerimaan mahasiswa baru.
+              Akun Anda belum memiliki berkas formulir pendaftaran PMB yang
+              terdaftar. Silakan lengkapi formulir pendaftaran untuk mengikuti
+              seleksi penerimaan mahasiswa baru.
             </p>
           </div>
           <div className="pt-2">
             <Button
               variant="primary"
-              onClick={() => navigate("/portal/pendaftaran")}
+              onClick={() => navigate("/portal/formulir")}
               className="gap-2 mx-auto"
             >
               <span>Isi Formulir Pendaftaran</span>
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
+        </Card>
+      )}
+
+      {/* Hasil CBT: tampil begitu hasil ada dan memenuhi passing grade / disetujui panitia */}
+      {!isLoading && !isError && data?.hasil_cbt && (
+        <Card
+          role="status"
+          aria-label="Hasil CBT"
+          className={`p-5 sm:p-6 rounded-3xl max-w-3xl mx-auto space-y-3 ${
+            data.hasil_cbt.memenuhi_passing_grade
+              ? "border-emerald-200 bg-emerald-50/70"
+              : "border-amber-200 bg-amber-50/70"
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-biru-700">
+                Hasil Ujian CBT
+              </p>
+              <h2 className="font-serif text-lg font-bold text-biru-950">
+                {data.hasil_cbt.memenuhi_passing_grade
+                  ? data.hasil_cbt.disetujui_admin
+                    ? "Disetujui panitia untuk melanjutkan"
+                    : "Memenuhi passing grade"
+                  : "Belum memenuhi passing grade"}
+              </h2>
+            </div>
+            <div className="text-right">
+              <p className="text-3xl font-bold text-biru-950">
+                {data.hasil_cbt.nilai_akhir.toFixed(2)}
+              </p>
+              <p className="text-xs text-biru-800">
+                Batas lulus {data.hasil_cbt.passing_grade}
+              </p>
+            </div>
+          </div>
+          <p className="text-sm text-biru-900">
+            Benar <strong>{data.hasil_cbt.jumlah_benar}</strong> · Salah{" "}
+            <strong>{data.hasil_cbt.jumlah_salah}</strong> · Kosong{" "}
+            <strong>{data.hasil_cbt.jumlah_kosong}</strong>
+          </p>
+          <p className="text-xs text-biru-800">
+            {data.hasil_cbt.memenuhi_passing_grade
+              ? data.is_pengumuman_buka
+                ? "Hasil akhir seleksi Anda tertera di bawah."
+                : "Anda lanjut ke tahap berikutnya. Pengumuman hasil akhir seleksi menunggu jadwal rilis panitia."
+              : "Panitia akan memutuskan ujian ulang atau melanjutkan proses Anda."}
+          </p>
         </Card>
       )}
 
@@ -294,15 +356,22 @@ export const HasilKelulusanPage: React.FC = () => {
                   </strong>{" "}
                   ({data.fakultas_diterima}) Universitas Pignatelli Triputra.
                 </p>
+                {data.pilihan_ke === 2 && (
+                  <p className="max-w-2xl rounded-lg bg-putih/10 px-3 py-2 text-xs leading-relaxed text-biru-100">
+                    Anda diarahkan panitia ke program studi pilihan kedua
+                    sebagai alternatif karena pilihan pertama tidak dapat
+                    dipenuhi.
+                  </p>
+                )}
               </div>
 
               {/* Call to action: Daftar Ulang */}
               <div className="flex-shrink-0 w-full md:w-auto">
                 <Button
-                  variant="primary"
+                  variant="white"
                   size="md"
                   onClick={() => navigate("/portal/daftar-ulang")}
-                  className="w-full md:w-auto bg-putih hover:bg-biru-50 text-biru-950 font-bold gap-2 px-6 py-3 shadow-lg"
+                  className="w-full md:w-auto gap-2 px-6 py-3 shadow-lg"
                 >
                   <span>Lanjut ke Daftar Ulang</span>
                   <ArrowRight className="w-4 h-4" />
@@ -311,157 +380,23 @@ export const HasilKelulusanPage: React.FC = () => {
             </div>
           </Card>
 
-          {/* Dokumen Fisik Letter of Acceptance (LoA) */}
-          <div className="bg-putih border-2 border-biru-300 rounded-3xl p-8 sm:p-12 shadow-xl space-y-8 print:border-none print:shadow-none print:p-0">
-            {/* KOP Surat Resmi Universitas */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b-2 border-biru-950 text-center sm:text-left">
-              <div className="flex items-center gap-4">
-                <img
-                  src={logoPlaceholder}
-                  alt="Logo Universitas Pignatelli Triputra"
-                  className="h-16 w-auto object-contain"
-                />
-                <div>
-                  <h3 className="font-serif text-lg sm:text-xl font-bold text-biru-950 tracking-wide uppercase">
-                    Universitas Pignatelli Triputra
-                  </h3>
-                  <p className="text-xs text-biru-800">
-                    Panitia Penerimaan Mahasiswa Baru (PMB) TA 2026/2027
-                  </p>
-                  <p className="text-[11px] text-biru-700 font-sans">
-                    Jl. Bawean No.9, Danukusuman, Kec. Serengan, Surakarta, Jawa
-                    Tengah 57156
-                  </p>
-                </div>
-              </div>
-              <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-biru-950 font-mono">
-                  {data.nomor_surat_loa || "SK/PMB-UPT/2026/0001"}
-                </p>
-                <p className="text-[11px] text-biru-700">
-                  Surakarta, {data.tanggal_sk || "2026"}
-                </p>
-              </div>
-            </div>
-
-            {/* Judul Surat Resmi */}
-            <div className="text-center space-y-1">
-              <h4 className="font-serif text-base sm:text-lg font-bold text-biru-950 uppercase tracking-wider underline">
-                Surat Keputusan Penerimaan Mahasiswa Baru
-              </h4>
-              <p className="text-xs font-mono text-biru-800">
-                Nomor: {data.nomor_surat_loa || "SK/PMB-UPT/2026/0001"}
-              </p>
-            </div>
-
-            {/* Narasi Keputusan */}
-            <div className="space-y-4 text-xs sm:text-sm text-biru-950 leading-relaxed font-sans">
-              <p>
-                Rektor Universitas Pignatelli Triputra, berdasarkan hasil
-                evaluasi dan rapat sidang pleno seleksi penerimaan mahasiswa
-                baru tahun akademik 2026/2027, dengan ini menerbitkan keputusan
-                penerimaan resmi kepada:
-              </p>
-
-              {/* Tabel Biodata Penerima */}
-              <div className="bg-biru-50/60 border border-biru-200 rounded-2xl p-4 sm:p-6 space-y-2">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1 border-b border-biru-100">
-                  <span className="text-biru-700 font-medium">
-                    Nomor Pendaftaran
-                  </span>
-                  <span className="sm:col-span-2 font-mono font-bold text-biru-950">
-                    {data.nomor_pendaftaran}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1 border-b border-biru-100">
-                  <span className="text-biru-700 font-medium">
-                    Nama Lengkap
-                  </span>
-                  <span className="sm:col-span-2 font-bold text-biru-950 uppercase">
-                    {data.nama_lengkap}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1 border-b border-biru-100">
-                  <span className="text-biru-700 font-medium">
-                    Jalur Pendaftaran
-                  </span>
-                  <span className="sm:col-span-2 text-biru-950">
-                    {data.jalur_nama}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1 border-b border-biru-100">
-                  <span className="text-biru-700 font-medium">
-                    Program Studi Diterima
-                  </span>
-                  <span className="sm:col-span-2 font-bold text-biru-950 text-sm">
-                    {data.jenjang_diterima} {data.prodi_diterima}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1 border-b border-biru-100">
-                  <span className="text-biru-700 font-medium">Fakultas</span>
-                  <span className="sm:col-span-2 text-biru-950">
-                    {data.fakultas_diterima}
-                  </span>
-                </div>
-                {data.nim_resmi && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-1">
-                    <span className="text-biru-900 font-bold">
-                      NIM Resmi Terbit
-                    </span>
-                    <span className="sm:col-span-2 font-mono font-extrabold text-biru-950 text-sm">
-                      {data.nim_resmi}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <p>
-                Kepada calon mahasiswa yang bersangkutan diwajibkan untuk
-                menyelesaikan tahapan registrasi ulang administrasi dan
-                pembayaran Uang Kuliah Tunggal (UKT) sebelum batas waktu yang
-                ditentukan.
-              </p>
-            </div>
-
-            {/* Tanda Tangan & QR Verifikasi Otentisitas */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-6 border-t border-biru-200">
-              <div className="flex items-center gap-4 text-left">
-                <div className="w-20 h-20 bg-biru-100 border border-biru-300 rounded-xl flex items-center justify-center p-2 text-center text-[10px] text-biru-800 font-mono">
-                  [QR-CODE VERIFIKASI]
-                </div>
-                <div className="text-[11px] text-biru-800 space-y-0.5">
-                  <p className="font-semibold text-biru-950">
-                    Dokumen Digital Terverifikasi
-                  </p>
-                  <p>Keabsahan dokumen ini dapat diverifikasi di:</p>
-                  <p className="font-mono text-biru-700 text-[10px]">
-                    https://pmb.pignatelli.ac.id/verifikasi-loa/
-                    {data.pendaftar_id}
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-center sm:text-right space-y-1">
-                <p className="text-xs text-biru-800">
-                  Surakarta, {data.tanggal_sk || "2026"}
-                </p>
-                <p className="text-xs font-bold text-biru-950">
-                  Rektor Universitas Pignatelli Triputra
-                </p>
-                <div className="h-14 flex items-center justify-center sm:justify-end">
-                  <span className="px-3 py-1 rounded border border-biru-400 bg-biru-50 text-[11px] font-serif italic text-biru-800">
-                    [Tanda Tangan Digital Resmi]
-                  </span>
-                </div>
-                <p className="text-xs font-bold text-biru-950 underline">
-                  Rektorat PMB Universitas Pignatelli Triputra
-                </p>
-                <p className="text-[11px] text-biru-700">
-                  NIP. 197805122005011002
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* Dokumen Letter of Acceptance (LoA) */}
+          <DokumenLoa
+            data={{
+              nomor_surat_loa: data.nomor_surat_loa,
+              tanggal_sk: data.tanggal_sk,
+              nomor_pendaftaran: data.nomor_pendaftaran,
+              nama_lengkap: data.nama_lengkap,
+              jalur_nama: data.jalur_nama,
+              jenjang_diterima: data.jenjang_diterima,
+              prodi_diterima: data.prodi_diterima,
+              fakultas_diterima: data.fakultas_diterima,
+              pilihan_ke: data.pilihan_ke,
+              skor_akhir: data.skor_akhir,
+              nim_resmi: data.nim_resmi,
+              pendaftar_id: data.pendaftar_id,
+            }}
+          />
         </div>
       )}
     </div>

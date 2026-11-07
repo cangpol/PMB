@@ -12,6 +12,8 @@ import {
   Save,
   Send,
   HelpCircle,
+  Upload,
+  ExternalLink,
 } from "lucide-react";
 import {
   Card,
@@ -22,33 +24,45 @@ import {
   CardSkeleton,
 } from "../../components/common";
 import { fetchApi } from "../../services/api";
+import type { components } from "@/types/api";
+import {
+  atributAccept,
+  periksaFormatBerkas,
+  unggahKeStorage,
+} from "@/lib/unggahBerkas";
+import { PopupFormatSalah } from "@/components/berkas/PopupFormatSalah";
 
-interface RiwayatPendidikanItem {
-  jenjang: string;
-  nama_institusi: string;
-  program_studi: string;
-  tahun_lulus: number;
-  ipk_nilai?: number | null;
-  nomor_ijazah?: string | null;
-}
+type RiwayatPendidikanItem = components["schemas"]["RiwayatPendidikanItem"];
+type PengalamanKerjaItem = components["schemas"]["PengalamanKerjaItem"];
+type BerkasRplItem = components["schemas"]["BerkasRplItem"];
 
-interface PengalamanKerjaItem {
-  nama_perusahaan: string;
-  jabatan: string;
-  deskripsi_pekerjaan: string;
-  tanggal_mulai: string;
-  tanggal_selesai?: string | null;
-  masih_bekerja: boolean;
-  bukti_dokumen_url?: string | null;
-}
+/** Jenis dokumen portofolio RPL yang dapat diunggah. */
+const JENIS_DOKUMEN_RPL = [
+  { kode: "IJAZAH", label: "Ijazah" },
+  { kode: "TRANSKRIP", label: "Transkrip nilai" },
+  { kode: "SERTIFIKAT", label: "Sertifikat kompetensi / pelatihan" },
+  { kode: "SURAT_KETERANGAN_KERJA", label: "Surat keterangan kerja" },
+  { kode: "PORTOFOLIO", label: "Portofolio karya" },
+  { kode: "LAINNYA", label: "Dokumen lainnya" },
+] as const;
 
-interface BerkasRplItem {
-  jenis_dokumen: string;
-  nama_file: string;
-  url: string;
-  ukuran_bytes: number;
-  keterangan?: string | null;
-}
+const MAKS_UKURAN_BERKAS = 5 * 1024 * 1024;
+const TIPE_BERKAS = ["application/pdf", "image/jpeg", "image/png"];
+
+const labelJenis = (kode: string) =>
+  JENIS_DOKUMEN_RPL.find((j) => j.kode === kode)?.label ?? kode;
+
+const ukuranFile = (b: number) =>
+  b >= 1024 * 1024
+    ? `${(b / 1024 / 1024).toFixed(1)} MB`
+    : `${Math.max(1, Math.round(b / 1024))} KB`;
+
+/** Pesan error dari fetchApi, termasuk rincian validasi server. */
+const pesanError = (err: unknown, cadangan: string) => {
+  const e = err as { pesan?: string; detail?: string[]; message?: string };
+  if (e.detail && e.detail.length > 0) return e.detail.join("; ");
+  return e.pesan || e.message || cadangan;
+};
 
 interface MataKuliah {
   id: string;
@@ -104,6 +118,7 @@ interface PermohonanDetail {
 
 export const FormulirRplPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
+  const [formatSalah, setFormatSalah] = useState<string | null>(null);
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -126,7 +141,12 @@ export const FormulirRplPage: React.FC = () => {
     Record<string, { sks: number; keterangan: string }>
   >({});
 
-  const isReadOnly = permohonan?.status === "SELESAI_DINILAI";
+  // Server menolak perubahan saat permohonan sedang/sudah dinilai
+  const isReadOnly =
+    permohonan?.status === "SELESAI_DINILAI" ||
+    permohonan?.status === "DALAM_PENILAIAN";
+  const [jenisUnggah, setJenisUnggah] = useState<string>("IJAZAH");
+  const [mengunggah, setMengunggah] = useState(false);
 
   const loadData = async () => {
     try {
@@ -245,7 +265,6 @@ export const FormulirRplPage: React.FC = () => {
         tanggal_mulai: "",
         tanggal_selesai: null,
         masih_bekerja: true,
-        bukti_dokumen_url: "",
       },
     ]);
   };
@@ -268,37 +287,51 @@ export const FormulirRplPage: React.FC = () => {
     });
   };
 
-  // Handler Berkas Pendukung
-  const handleAddBerkas = () => {
+  // Handler Berkas Pendukung: unggah file ke storage lewat URL presign
+  const handleUnggahBerkas = async (file: File) => {
     if (isReadOnly) return;
-    setBerkasPendukung((prev) => [
-      ...prev,
-      {
-        jenis_dokumen: "Transkrip Nilai Asal",
-        nama_file: "Dokumen_RPL.pdf",
-        url: "https://",
-        ukuran_bytes: 1024000,
-        keterangan: "",
-      },
-    ]);
+    const cek = await periksaFormatBerkas(file, TIPE_BERKAS);
+    if (!cek.ok) {
+      setFormatSalah(cek.alasan);
+      return;
+    }
+    const mime = cek.mime;
+    if (file.size > MAKS_UKURAN_BERKAS) {
+      setError("Ukuran file maksimal 5 MB.");
+      return;
+    }
+    try {
+      setMengunggah(true);
+      setError(null);
+      const p = await fetchApi<{ upload_url: string; file_key: string }>(
+        "/api/rpl/berkas/presign",
+        { method: "POST", body: JSON.stringify({ file_name: file.name }) },
+      );
+      await unggahKeStorage(p.upload_url, file, mime);
+      setBerkasPendukung((prev) => [
+        ...prev,
+        {
+          jenis_dokumen: jenisUnggah,
+          nama_file: file.name,
+          file_key: p.file_key,
+          mime_type: mime,
+          ukuran_bytes: file.size,
+          keterangan: null,
+        },
+      ]);
+      setSuccessMessage(
+        `"${file.name}" terunggah. Simpan draf agar dokumen tercatat pada permohonan.`,
+      );
+    } catch (err: unknown) {
+      setError(pesanError(err, "Gagal mengunggah dokumen."));
+    } finally {
+      setMengunggah(false);
+    }
   };
 
   const handleRemoveBerkas = (index: number) => {
     if (isReadOnly) return;
     setBerkasPendukung((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleUpdateBerkas = (
-    index: number,
-    field: keyof BerkasRplItem,
-    val: any,
-  ) => {
-    if (isReadOnly) return;
-    setBerkasPendukung((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [field]: val };
-      return copy;
-    });
   };
 
   const handleSavePermohonan = async (isDraft: boolean) => {
@@ -346,7 +379,7 @@ export const FormulirRplPage: React.FC = () => {
       );
     } catch (err: any) {
       setError(
-        err?.pesan || "Terjadi kesalahan saat menyimpan permohonan RPL.",
+        pesanError(err, "Terjadi kesalahan saat menyimpan permohonan RPL."),
       );
     } finally {
       setSaving(false);
@@ -356,6 +389,10 @@ export const FormulirRplPage: React.FC = () => {
   if (loading) {
     return (
       <div className="p-6 max-w-6xl mx-auto space-y-6">
+        <PopupFormatSalah
+          alasan={formatSalah}
+          onTutup={() => setFormatSalah(null)}
+        />
         <CardSkeleton />
         <CardSkeleton />
       </div>
@@ -376,6 +413,10 @@ export const FormulirRplPage: React.FC = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <PopupFormatSalah
+        alasan={formatSalah}
+        onTutup={() => setFormatSalah(null)}
+      />
       {/* Header Halaman */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-biru-100 pb-5">
         <div>
@@ -785,24 +826,61 @@ export const FormulirRplPage: React.FC = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="text-xs font-medium text-biru-900 block mb-1">
-                      Tautan Bukti Portofolio / SK Kerja
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs font-medium text-biru-900 block mb-1">
+                        Mulai
+                      </label>
+                      <input
+                        type="date"
+                        value={item.tanggal_mulai}
+                        disabled={isReadOnly}
+                        onChange={(e) =>
+                          handleUpdateKerja(
+                            idx,
+                            "tanggal_mulai",
+                            e.target.value,
+                          )
+                        }
+                        className="w-full text-xs rounded border border-biru-200 p-2 text-biru-950"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-biru-900 block mb-1">
+                        Selesai
+                      </label>
+                      <input
+                        type="date"
+                        value={item.tanggal_selesai ?? ""}
+                        disabled={isReadOnly || item.masih_bekerja}
+                        onChange={(e) =>
+                          handleUpdateKerja(
+                            idx,
+                            "tanggal_selesai",
+                            e.target.value || null,
+                          )
+                        }
+                        className="w-full text-xs rounded border border-biru-200 p-2 text-biru-950 disabled:bg-biru-50"
+                      />
+                    </div>
+                    <label className="col-span-2 flex items-center gap-2 text-xs text-biru-900">
+                      <input
+                        type="checkbox"
+                        checked={item.masih_bekerja}
+                        disabled={isReadOnly}
+                        onChange={(e) => {
+                          handleUpdateKerja(
+                            idx,
+                            "masih_bekerja",
+                            e.target.checked,
+                          );
+                          if (e.target.checked)
+                            handleUpdateKerja(idx, "tanggal_selesai", null);
+                        }}
+                        className="accent-biru-700"
+                      />
+                      Masih bekerja di sini
                     </label>
-                    <input
-                      type="text"
-                      value={item.bukti_dokumen_url || ""}
-                      disabled={isReadOnly}
-                      placeholder="https://drive.google.com/..."
-                      onChange={(e) =>
-                        handleUpdateKerja(
-                          idx,
-                          "bukti_dokumen_url",
-                          e.target.value,
-                        )
-                      }
-                      className="w-full text-xs rounded border border-biru-200 p-2 text-biru-950"
-                    />
                   </div>
                 </div>
 
@@ -833,88 +911,105 @@ export const FormulirRplPage: React.FC = () => {
 
       {/* SEKSI 4: BERKAS DOKUMEN & PORTOFOLIO */}
       <Card className="p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-biru-950 font-serif font-bold text-lg">
-            <FileText className="w-5 h-5 text-biru-700" />
-            <h2>4. Tautan Berkas Transkrip, Sertifikat & Portofolio</h2>
-          </div>
-          {!isReadOnly && (
-            <Button variant="outline" size="sm" onClick={handleAddBerkas}>
-              <Plus className="w-3.5 h-3.5 mr-1 inline" />
-              Tambah Tautan Berkas
-            </Button>
-          )}
+        <div className="flex items-center gap-2 text-biru-950 font-serif font-bold text-lg">
+          <FileText className="w-5 h-5 text-biru-700" />
+          <h2>4. Dokumen Pendukung & Portofolio</h2>
         </div>
+        <p className="text-xs text-biru-800">
+          Unggah ijazah, transkrip, sertifikat, surat keterangan kerja, atau
+          contoh karya. Format PDF, JPG, atau PNG, maksimal 5 MB per file.
+        </p>
+
+        {!isReadOnly && (
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3 p-3.5 rounded-lg border border-dashed border-biru-300 bg-biru-50/40">
+            <label className="flex-1 text-xs text-biru-900 space-y-1">
+              <span className="font-medium block">Jenis dokumen</span>
+              <select
+                value={jenisUnggah}
+                onChange={(e) => setJenisUnggah(e.target.value)}
+                className="w-full rounded border border-biru-200 p-2 text-biru-950 bg-putih"
+              >
+                {JENIS_DOKUMEN_RPL.map((j) => (
+                  <option key={j.kode} value={j.kode}>
+                    {j.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label
+              className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+                mengunggah
+                  ? "bg-biru-200 text-biru-700 cursor-wait"
+                  : "bg-biru-950 text-putih hover:bg-biru-800 cursor-pointer"
+              }`}
+            >
+              <Upload className="w-4 h-4" aria-hidden />
+              {mengunggah ? "Mengunggah..." : "Pilih & Unggah File"}
+              <input
+                type="file"
+                accept={atributAccept(TIPE_BERKAS)}
+                className="sr-only"
+                disabled={mengunggah}
+                onChange={(e) => {
+                  const f = e.currentTarget.files?.[0];
+                  e.currentTarget.value = "";
+                  if (f) handleUnggahBerkas(f);
+                }}
+              />
+            </label>
+          </div>
+        )}
 
         {berkasPendukung.length === 0 ? (
           <EmptyState
-            title="Belum ada berkas portofolio yang dilampirkan."
-            description="Sertakan tautan transkrip nilai, sertifikasi industri, atau portofolio repositori kode."
+            title="Belum ada dokumen yang diunggah."
+            description="Minimal satu dokumen pendukung wajib diunggah sebelum permohonan diajukan."
           />
         ) : (
-          <div className="space-y-3">
+          <ul className="space-y-2">
             {berkasPendukung.map((b, idx) => (
-              <div
-                key={idx}
-                className="p-3.5 rounded-lg border border-biru-200 bg-putih flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs"
+              <li
+                key={b.file_key || idx}
+                className="p-3 rounded-lg border border-biru-200 bg-putih flex items-center gap-3 text-xs"
               >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1 w-full">
-                  <div>
-                    <label className="text-[11px] font-medium text-biru-900 block mb-0.5">
-                      Jenis Dokumen
-                    </label>
-                    <input
-                      type="text"
-                      value={b.jenis_dokumen}
-                      disabled={isReadOnly}
-                      onChange={(e) =>
-                        handleUpdateBerkas(idx, "jenis_dokumen", e.target.value)
-                      }
-                      className="w-full rounded border border-biru-200 p-1.5 text-biru-950"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-medium text-biru-900 block mb-0.5">
-                      Nama File / Judul Karya
-                    </label>
-                    <input
-                      type="text"
-                      value={b.nama_file}
-                      disabled={isReadOnly}
-                      onChange={(e) =>
-                        handleUpdateBerkas(idx, "nama_file", e.target.value)
-                      }
-                      className="w-full rounded border border-biru-200 p-1.5 text-biru-950"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-medium text-biru-900 block mb-0.5">
-                      URL Tautan Dokumen (Google Drive/GitHub/Cloud)
-                    </label>
-                    <input
-                      type="text"
-                      value={b.url}
-                      disabled={isReadOnly}
-                      onChange={(e) =>
-                        handleUpdateBerkas(idx, "url", e.target.value)
-                      }
-                      className="w-full rounded border border-biru-200 p-1.5 text-biru-950"
-                    />
-                  </div>
+                <FileText
+                  className="w-4 h-4 text-biru-700 shrink-0"
+                  aria-hidden
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-biru-950 truncate">
+                    {b.nama_file}
+                  </p>
+                  <p className="text-biru-800">
+                    {labelJenis(b.jenis_dokumen)}
+                    {(b.ukuran_bytes ?? 0) > 0 && (
+                      <> · {ukuranFile(b.ukuran_bytes ?? 0)}</>
+                    )}
+                  </p>
                 </div>
-
+                {b.url_unduh && (
+                  <a
+                    href={b.url_unduh}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-bold text-biru-800 hover:text-biru-950 shrink-0"
+                  >
+                    Lihat <ExternalLink className="w-3.5 h-3.5" aria-hidden />
+                  </a>
+                )}
                 {!isReadOnly && (
                   <button
                     type="button"
                     onClick={() => handleRemoveBerkas(idx)}
+                    aria-label={`Hapus ${b.nama_file}`}
                     className="text-biru-800 hover:text-biru-950 shrink-0 p-1"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </Card>
 

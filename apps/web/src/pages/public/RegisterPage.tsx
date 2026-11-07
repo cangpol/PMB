@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,7 +17,9 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Card } from "../../components/ui/Card";
 import { useAuth } from "../../context/useAuth";
+import { tujuanSetelahLogin } from "../../components/auth/akses";
 import { SUMBER_INFORMASI_OPTIONS } from "../../data/sumberInformasi";
+import { simpanPilihanAwal } from "../../lib/pilihanAwal";
 
 const registerSchema = z
   .object({
@@ -42,8 +44,13 @@ const registerSchema = z
       .string()
       .min(1, "Konfirmasi kata sandi tidak boleh kosong")
       .min(8, "Konfirmasi kata sandi minimal 8 karakter"),
-    sumber_informasi: z.string().min(1, "Pilih dari mana Anda mengetahui PMB UPITRA"),
-    sumber_informasi_lainnya: z.string().max(150, "Maksimal 150 karakter").optional(),
+    sumber_informasi: z
+      .string()
+      .min(1, "Pilih dari mana Anda mengetahui PMB UPITRA"),
+    sumber_informasi_lainnya: z
+      .string()
+      .max(150, "Maksimal 150 karakter")
+      .optional(),
   })
   .refine((data) => data.password === data.confirm_password, {
     message: "Konfirmasi kata sandi tidak cocok dengan kata sandi di atas",
@@ -59,7 +66,6 @@ const registerSchema = z
     },
   );
 
-
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export const RegisterPage: React.FC = () => {
@@ -68,15 +74,18 @@ export const RegisterPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+
+  // Jalur/prodi yang dipilih di website dibawa sampai formulir pendaftaran
+  React.useEffect(() => {
+    simpanPilihanAwal(searchParams);
+  }, [searchParams]);
 
   React.useEffect(() => {
     if (!isLoading && user) {
-      navigate(
-        user.role === "calon_mahasiswa"
-          ? "/portal/dashboard"
-          : "/admin/dashboard",
-        { replace: true },
-      );
+      navigate(tujuanSetelahLogin(user.role, null, user.is_email_verified), {
+        replace: true,
+      });
     }
   }, [user, isLoading, navigate]);
 

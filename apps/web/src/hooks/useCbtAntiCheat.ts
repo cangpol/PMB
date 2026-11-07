@@ -23,12 +23,27 @@ const DEBOUNCE_MS = 1500;
  * Pengawasan sisi klien selama ujian CBT. Klien hanya MELAPORKAN;
  * keputusan (hitung pelanggaran & auto-submit) tetap ada di server.
  */
+/**
+ * Layar penuh API (`requestFullscreen`) ATAU jendela yang sudah memenuhi layar
+ * (mis. tombol hijau macOS / F11), yang tidak mengisi `document.fullscreenElement`.
+ */
+export const sedangLayarPenuh = (): boolean =>
+  !!document.fullscreenElement ||
+  (window.innerWidth >= window.screen.width - 2 &&
+    window.innerHeight >= window.screen.height - 60);
+
 export function useCbtAntiCheat({ aktif, onPelanggaran }: Options) {
   const lastRef = useRef<Record<string, number>>({});
   const cbRef = useRef(onPelanggaran);
-  const [isFullscreen, setIsFullscreen] = useState<boolean>(
-    !!document.fullscreenElement,
-  );
+  const [layarPenuh, setLayarPenuh] = useState<boolean>(sedangLayarPenuh);
+  // Peserta memilih lanjut walau browser menolak layar penuh (tercatat sebagai pelanggaran)
+  const [gagalFullscreen, setGagalFullscreen] = useState(false);
+  const [dilepas, setDilepas] = useState(false);
+
+  const dilepasRef = useRef(false);
+  useEffect(() => {
+    dilepasRef.current = dilepas;
+  }, [dilepas]);
 
   useEffect(() => {
     cbRef.current = onPelanggaran;
@@ -48,13 +63,27 @@ export function useCbtAntiCheat({ aktif, onPelanggaran }: Options) {
 
   const masukFullscreen = useCallback(async () => {
     try {
-      if (!document.fullscreenElement) {
+      if (!sedangLayarPenuh()) {
         await document.documentElement.requestFullscreen();
       }
+      setLayarPenuh(sedangLayarPenuh());
+      // Beri waktu browser menyelesaikan animasi layar penuh sebelum menilai gagal
+      window.setTimeout(() => {
+        const ok = sedangLayarPenuh();
+        setLayarPenuh(ok);
+        setGagalFullscreen(!ok);
+      }, 800);
     } catch {
-      // Browser menolak (butuh gesture pengguna); tombol manual tersedia
+      // Browser menolak layar penuh: tampilkan pilihan lanjut agar peserta tidak terkunci
+      setLayarPenuh(sedangLayarPenuh());
+      setGagalFullscreen(true);
     }
   }, []);
+
+  const lanjutTanpaLayarPenuh = useCallback(() => {
+    setDilepas(true);
+    lapor("FULLSCREEN_KELUAR", "Lanjut tanpa layar penuh (ditolak browser)");
+  }, [lapor]);
 
   useEffect(() => {
     if (!aktif) return;
@@ -64,10 +93,13 @@ export function useCbtAntiCheat({ aktif, onPelanggaran }: Options) {
     };
     const onBlur = () => lapor("WINDOW_BLUR", "Fokus jendela hilang");
     const onFullscreen = () => {
-      const fs = !!document.fullscreenElement;
-      setIsFullscreen(fs);
-      if (!fs) lapor("FULLSCREEN_KELUAR", "Keluar dari layar penuh");
+      const fs = sedangLayarPenuh();
+      setLayarPenuh(fs);
+      if (fs) setGagalFullscreen(false);
+      else if (!dilepasRef.current)
+        lapor("FULLSCREEN_KELUAR", "Keluar dari layar penuh");
     };
+    const onResize = () => setLayarPenuh(sedangLayarPenuh());
     const block = (jenis: JenisPelanggaran) => (e: Event) => {
       e.preventDefault();
       lapor(jenis);
@@ -106,7 +138,10 @@ export function useCbtAntiCheat({ aktif, onPelanggaran }: Options) {
         lapor(k === "p" ? "CETAK" : "SHORTCUT", `Ctrl+${k.toUpperCase()}`);
         return;
       }
-      if (e.altKey && (k === "tab" || k === "arrowleft" || k === "arrowright")) {
+      if (
+        e.altKey &&
+        (k === "tab" || k === "arrowleft" || k === "arrowright")
+      ) {
         e.preventDefault();
         lapor("SHORTCUT", `Alt+${k}`);
       }
@@ -119,7 +154,7 @@ export function useCbtAntiCheat({ aktif, onPelanggaran }: Options) {
     const devtoolsTimer = window.setInterval(() => {
       const lebar = window.outerWidth - window.innerWidth > 200;
       const tinggi = window.outerHeight - window.innerHeight > 200;
-      if ((lebar || tinggi) && !document.fullscreenElement) {
+      if ((lebar || tinggi) && !sedangLayarPenuh()) {
         lapor("DEVTOOLS", "Dimensi jendela mencurigakan");
       }
     }, 3000);
@@ -127,6 +162,7 @@ export function useCbtAntiCheat({ aktif, onPelanggaran }: Options) {
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onBlur);
     document.addEventListener("fullscreenchange", onFullscreen);
+    window.addEventListener("resize", onResize);
     document.addEventListener("copy", onCopy);
     document.addEventListener("cut", onCut);
     document.addEventListener("paste", onPaste);
@@ -142,6 +178,7 @@ export function useCbtAntiCheat({ aktif, onPelanggaran }: Options) {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("blur", onBlur);
       document.removeEventListener("fullscreenchange", onFullscreen);
+      window.removeEventListener("resize", onResize);
       document.removeEventListener("copy", onCopy);
       document.removeEventListener("cut", onCut);
       document.removeEventListener("paste", onPaste);
@@ -161,5 +198,10 @@ export function useCbtAntiCheat({ aktif, onPelanggaran }: Options) {
     }
   }, [aktif]);
 
-  return { isFullscreen, masukFullscreen };
+  return {
+    isFullscreen: layarPenuh || dilepas,
+    masukFullscreen,
+    gagalFullscreen,
+    lanjutTanpaLayarPenuh,
+  };
 }

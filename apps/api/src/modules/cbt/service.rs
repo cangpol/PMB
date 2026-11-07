@@ -11,10 +11,10 @@ use crate::{
         cbt::{
             dto::{
                 AutosaveJawabanRequest, AutosaveJawabanResponse, CreatePaketRequest,
-                LaporPelanggaranRequest, LaporPelanggaranResponse,
-                CreateSesiRequest, ImportSoalResultResponse, LivePesertaStatusItem,
-                MulaiUjianCbtResponse, PresensiCheckInRequest, PresensiCheckInResponse,
-                SesiCalonInfoResponse, SoalCbtPesertaResponse, SoalOpsiDto, SubmitUjianResponse,
+                CreateSesiRequest, ImportSoalResultResponse, LaporPelanggaranRequest,
+                LaporPelanggaranResponse, LivePesertaStatusItem, MulaiUjianCbtResponse,
+                PresensiCheckInRequest, PresensiCheckInResponse, SesiCalonInfoResponse,
+                SoalCbtPesertaResponse, SoalOpsiDto, SubmitUjianResponse,
             },
             excel_importer::ExcelSoalImporter,
             model::{BankSoal, PaketUjian, PesertaSesi, SesiUjian},
@@ -41,6 +41,7 @@ impl CbtService {
     pub async fn get_my_sesi_info(
         &self,
         pendaftar_id: Uuid,
+        boleh_ujian: bool,
     ) -> Result<SesiCalonInfoResponse, AppError> {
         let peserta_opt = self
             .repo
@@ -61,6 +62,7 @@ impl CbtService {
                         jadwal_mulai: None,
                         jadwal_selesai: None,
                         ruang: None,
+                        mode: None,
                         durasi_menit: 60,
                         total_soal: 0,
                         passing_grade: 65.0,
@@ -104,11 +106,20 @@ impl CbtService {
             (paket.durasi_menit as i64) * 60
         };
 
-        let is_hadir = peserta.status_presensi == "HADIR";
+        let is_online = sesi.mode == "ONLINE";
+        // Sesi ONLINE tidak memerlukan presensi pengawas (tercatat otomatis saat mulai)
+        let is_hadir = is_online || peserta.status_presensi == "HADIR";
         let is_in_progress = peserta.status_ujian == "SEDANG_MENGERJAKAN";
-        let can_start = (is_hadir && peserta.status_ujian == "MENUNGGU") || is_in_progress;
+        let selesai = peserta.status_ujian == "SELESAI" || peserta.status_ujian == "WAKTU_HABIS";
+        let can_start =
+            (boleh_ujian && is_hadir && peserta.status_ujian == "MENUNGGU") || is_in_progress;
 
-        let pesan = if !is_hadir {
+        let pesan = if !boleh_ujian && !selesai && !is_in_progress {
+            Some(
+                "Akses ujian dibuka setelah seluruh berkas pendaftaran Anda diverifikasi admin PMB."
+                    .to_string(),
+            )
+        } else if !is_hadir {
             Some(
                 "Presensi Diperlukan: Tunjukkan kartu peserta PMB Anda kepada pengawas ruang untuk scan QR check-in sebelum memulai ujian."
                     .to_string(),
@@ -125,6 +136,7 @@ impl CbtService {
             jadwal_mulai: Some(sesi.jadwal_mulai),
             jadwal_selesai: Some(sesi.jadwal_selesai),
             ruang: Some(sesi.ruang),
+            mode: Some(sesi.mode),
             durasi_menit: paket.durasi_menit,
             total_soal: paket.total_soal,
             passing_grade: paket.passing_grade,
@@ -169,14 +181,6 @@ impl CbtService {
                 AppError::NotFound("Anda belum terdaftar dalam sesi ujian CBT".to_string())
             })?;
 
-        // GATEKEEPER PRESENSI: Wajib sudah HADIR
-        if peserta.status_presensi != "HADIR" {
-            return Err(AppError::Forbidden(
-                "Akses Ujian Terkunci: Anda belum melakukan presensi. Silakan scan kartu peserta Anda di meja pengawas."
-                    .to_string(),
-            ));
-        }
-
         if peserta.status_ujian == "SELESAI" || peserta.status_ujian == "WAKTU_HABIS" {
             return Err(AppError::BadRequest(
                 "Anda telah menyelesaikan sesi ujian seleksi ini. Ujian hanya dapat diambil satu kali."
@@ -189,6 +193,14 @@ impl CbtService {
             .find_sesi_by_id(peserta.sesi_id)
             .await?
             .ok_or_else(|| AppError::NotFound("Sesi ujian tidak ditemukan".to_string()))?;
+
+        // GATEKEEPER PRESENSI: sesi LURING wajib sudah HADIR (scan QR pengawas)
+        if sesi.mode != "ONLINE" && peserta.status_presensi != "HADIR" {
+            return Err(AppError::Forbidden(
+                "Akses Ujian Terkunci: Anda belum melakukan presensi. Silakan scan kartu peserta Anda di meja pengawas."
+                    .to_string(),
+            ));
+        }
 
         let paket = self
             .repo
@@ -230,6 +242,11 @@ impl CbtService {
         // Waktu dihitung di SERVER dan tidak boleh melewati penutupan sesi
         let batas_waktu =
             (now + Duration::minutes(paket.durasi_menit as i64)).min(sesi.jadwal_selesai);
+
+        // Sesi ONLINE: presensi tercatat otomatis saat ujian dimulai
+        if sesi.mode == "ONLINE" {
+            self.repo.presensi_online(peserta.id).await?;
+        }
 
         let started_peserta = self
             .repo
@@ -804,15 +821,49 @@ impl CbtService {
     }
 
     pub async fn create_sesi(&self, req: CreateSesiRequest) -> Result<SesiUjian, AppError> {
-        self.repo
-            .create_sesi(
-                req.paket_id,
-                &req.nama_sesi,
-                req.jadwal_mulai,
-                req.jadwal_selesai,
-                &req.ruang,
-                req.kuota,
-            )
-            .await
+        if req.mode != "ONLINE" && req.mode != "LURING" {
+            return Err(AppError::BadRequest(
+                "Mode sesi harus ONLINE atau LURING".to_string(),
+            ));
+        }
+        if req.jadwal_selesai <= req.jadwal_mulai {
+            return Err(AppError::BadRequest(
+                "Jadwal selesai harus setelah jadwal mulai".to_string(),
+            ));
+        }
+        if req.kuota <= 0 {
+            return Err(AppError::BadRequest(
+                "Kuota sesi harus lebih dari 0".to_string(),
+            ));
+        }
+        self.repo.create_sesi(&req).await
+    }
+
+    pub async fn list_sesi_tersedia(
+        &self,
+        gelombang_id: Option<Uuid>,
+        jalur_id: Option<Uuid>,
+    ) -> Result<Vec<crate::modules::cbt::dto::SesiTersediaItem>, AppError> {
+        self.repo.list_sesi_tersedia(gelombang_id, jalur_id).await
+    }
+
+    pub async fn hasil_admin(
+        &self,
+        cari: Option<&str>,
+        sesi_id: Option<Uuid>,
+    ) -> Result<crate::modules::cbt::dto::HasilCbtAdminResponse, AppError> {
+        let items = self.repo.list_hasil_admin(cari, sesi_id).await?;
+        let nilai: Vec<f64> = items.iter().filter_map(|i| i.nilai_akhir).collect();
+        let rata_rata = if nilai.is_empty() {
+            None
+        } else {
+            Some((nilai.iter().sum::<f64>() / nilai.len() as f64 * 100.0).round() / 100.0)
+        };
+        Ok(crate::modules::cbt::dto::HasilCbtAdminResponse {
+            total: items.len(),
+            selesai: nilai.len(),
+            rata_rata,
+            items,
+        })
     }
 }

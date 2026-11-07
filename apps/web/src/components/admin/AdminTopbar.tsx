@@ -74,7 +74,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   const pathSegments = location.pathname.split("/").filter(Boolean);

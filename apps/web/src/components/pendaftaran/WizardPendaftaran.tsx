@@ -1,243 +1,233 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  CheckCircle2,
-  ArrowRight,
   ArrowLeft,
-  FileText,
-  CreditCard,
-  GraduationCap,
+  ArrowRight,
+  CalendarClock,
+  CheckCircle2,
   Download,
+  GraduationCap,
+  FileText,
+  Send,
+  Monitor,
+  Building,
   AlertCircle,
-  Clock,
+  RefreshCw,
 } from "lucide-react";
 import { Button, Card, CardSkeleton, ErrorState } from "../common";
 import { DynamicFormRenderer } from "../form/DynamicFormRenderer";
 import type { DefinisiFieldItem } from "../form/DynamicFormRenderer";
-import { BerkasUploader } from "../berkas/BerkasUploader";
-import type { BerkasItem } from "../berkas/BerkasUploader";
 import { useToast } from "@/components/ui/useToast";
+import { fetchApi, type ApiError } from "@/services/api";
+import {
+  ambilPilihanAwal,
+  cariJalurAwal,
+  cariProdiAwal,
+  hapusPilihanAwal,
+} from "@/lib/pilihanAwal";
+import type { components } from "@/types/api";
+import { AlurStepper, useAlur } from "./AlurStepper";
 
-interface JalurOption {
+type Jalur = components["schemas"]["JalurResponse"];
+type Gelombang = components["schemas"]["GelombangResponse"];
+type Prodi = components["schemas"]["ProdiResponse"];
+type SesiTersedia = components["schemas"]["SesiTersediaItem"];
+
+interface PendaftaranSaya {
   id: string;
-  kode: string;
-  nama: string;
-  deskripsi?: string;
-  tipe_seleksi?: string;
-}
-
-interface GelombangOption {
-  id: string;
-  nama: string;
-  status: string;
-  tgl_mulai: string;
-  tgl_selesai: string;
-}
-
-interface ProdiOption {
-  id: string;
-  nama: string;
-  jenjang: string;
-  kuota: number;
-}
-
-interface LangkahItem {
-  id: string;
-  kode_langkah: string;
-  judul_langkah: string;
-  deskripsi: string | null;
-  tipe_langkah: string;
-  urutan: number;
-  wajib: boolean;
-  status: "BELUM" | "SEDANG_BERJALAN" | "SELESAI";
-  selesai_at: string | null;
-}
-
-interface DashboardSummary {
-  pendaftar_id: string | null;
-  nomor_pendaftaran: string | null;
+  nomor_pendaftaran: string;
   status_pendaftaran: string;
-  jalur_nama: string | null;
-  gelombang_nama: string | null;
-  prodi_1_nama: string | null;
-  prodi_2_nama: string | null;
-  tagihan_lunas: boolean;
-  nomor_tagihan: string | null;
-  nominal_tagihan: number | null;
-  jadwal_ujian: string | null;
-  lokasi_ujian: string | null;
-  pengumuman_status: string | null;
-  nim_resmi: string | null;
-  bisa_cetak_bukti: boolean;
-  bisa_cetak_kartu: boolean;
+  jalur_id: string;
+  gelombang_id: string;
+  prodi_pilihan_1: string;
+  prodi_pilihan_2?: string | null;
+  nama_jalur?: string;
+  nama_gelombang?: string;
+  nama_prodi_1?: string;
+  nama_prodi_2?: string | null;
+  data_formulir?: Record<string, unknown>;
 }
 
+const SELECT =
+  "w-full px-4 py-3 bg-biru-50/50 border border-biru-200 rounded-2xl text-sm text-biru-950 focus:outline-none focus:ring-2 focus:ring-biru-600 transition";
+
+const fmtWaktu = (iso: string) =>
+  new Date(iso).toLocaleString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Jakarta",
+  }) + " WIB";
+
+const pesanError = (err: unknown, cadangan: string) => {
+  const e = err as ApiError & { message?: string };
+  return e.detail?.length
+    ? e.detail.join(", ")
+    : e.pesan || e.message || cadangan;
+};
+
+/**
+ * Langkah 3 alur PMB: isi formulir.
+ * (1) Jalur, gelombang & prodi -> (2) data diri, sekolah, orang tua -> (3) jadwal seleksi (sesi CBT) & kirim.
+ */
 export const WizardPendaftaran: React.FC = () => {
   const { toast } = useToast();
+  const { alur, muatUlang: muatAlur } = useAlur();
 
-  const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
-  const [langkahList, setLangkahList] = useState<LangkahItem[]>([]);
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [berkasList, setBerkasList] = useState<BerkasItem[]>([]);
-
-  // Master Data Pilihan
-  const [jalurList, setJalurList] = useState<JalurOption[]>([]);
-  const [gelombangList, setGelombangList] = useState<GelombangOption[]>([]);
-  const [prodiList, setProdiList] = useState<ProdiOption[]>([]);
-
-  // State Pilihan Prodi
-  const [selectedJalur, setSelectedJalur] = useState<string>("");
-  const [selectedGelombang, setSelectedGelombang] = useState<string>("");
-  const [selectedProdi1, setSelectedProdi1] = useState<string>("");
-  const [selectedProdi2, setSelectedProdi2] = useState<string>("");
-
-  // Dynamic Fields
+  const [tahap, setTahap] = useState<0 | 1 | 2>(0);
+  const [jalurList, setJalurList] = useState<Jalur[]>([]);
+  const [gelombangList, setGelombangList] = useState<Gelombang[]>([]);
+  const [prodiList, setProdiList] = useState<Prodi[]>([]);
   const [fields, setFields] = useState<DefinisiFieldItem[]>([]);
-  const [formValues, setFormValues] = useState<Record<string, any>>({});
+  const [saya, setSaya] = useState<PendaftaranSaya | null>(null);
+  const [sesiList, setSesiList] = useState<SesiTersedia[]>([]);
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [isError, setIsError] = useState<boolean>(false);
+  const [jalurId, setJalurId] = useState("");
+  const [gelombangId, setGelombangId] = useState("");
+  const [prodi1, setProdi1] = useState("");
+  const [prodi2, setProdi2] = useState("");
+  const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+  const [sesiId, setSesiId] = useState("");
+  const [setuju, setSetuju] = useState(false);
 
-  const loadInitialData = async () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const jalurDipilih = jalurList.find((j) => j.id === jalurId);
+  const butuhCbt =
+    !jalurDipilih || ["CBT", "CAMPURAN"].includes(jalurDipilih.tipe_seleksi);
+
+  const muat = useCallback(async () => {
     try {
-      setIsError(false);
-
-      const [
-        summaryRes,
-        langkahRes,
-        masterJalur,
-        masterGel,
-        masterProdi,
-        fieldsRes,
-        myRes,
-        berkasRes,
-      ] = await Promise.all([
-        fetch("/api/pendaftaran/dashboard-summary"),
-        fetch("/api/pendaftaran/langkah"),
-        fetch("/api/master/jalur"),
-        fetch("/api/master/gelombang"),
-        fetch("/api/master/prodi"),
-        fetch("/api/pendaftaran/fields"),
-        fetch("/api/pendaftaran/my"),
-        fetch("/api/pendaftaran/berkas/syarat"),
+      setLoadError(null);
+      const [j, g, p, my] = await Promise.all([
+        fetchApi<Jalur[]>("/api/master/jalur"),
+        fetchApi<Gelombang[]>("/api/master/gelombang"),
+        fetchApi<Prodi[]>("/api/master/prodi"),
+        fetchApi<PendaftaranSaya>("/api/pendaftaran/my").catch(
+          (err: ApiError) => {
+            if (err.kode === "DATA_TIDAK_DITEMUKAN") return null;
+            throw err;
+          },
+        ),
       ]);
-
-      if (summaryRes.ok) {
-        const sumData = await summaryRes.json();
-        setSummary(sumData);
-      }
-
-      if (langkahRes.ok) {
-        const lData = await langkahRes.json();
-        setLangkahList(lData);
-      }
-
-      if (berkasRes.ok) {
-        const bData = await berkasRes.json();
-        setBerkasList(bData);
-      }
-
-      if (masterJalur.ok) {
-        const jData = await masterJalur.json();
-        setJalurList(jData);
-        if (jData.length > 0 && !selectedJalur) setSelectedJalur(jData[0].id);
-      }
-
-      if (masterGel.ok) {
-        const gData = await masterGel.json();
-        setGelombangList(gData);
-        const buka = gData.find((g: GelombangOption) => g.status === "BUKA");
-        if (buka) setSelectedGelombang(buka.id);
-        else if (gData.length > 0) setSelectedGelombang(gData[0].id);
-      }
-
-      if (masterProdi.ok) {
-        const pData = await masterProdi.json();
-        setProdiList(pData);
-        if (pData.length > 0 && !selectedProdi1) setSelectedProdi1(pData[0].id);
-      }
-
-      if (fieldsRes.ok) {
-        const fData = await fieldsRes.json();
-        setFields(fData);
-      }
-
-      if (myRes.ok) {
-        const myData = await myRes.json();
-        if (myData.jalur_id) setSelectedJalur(myData.jalur_id);
-        if (myData.gelombang_id) setSelectedGelombang(myData.gelombang_id);
-        if (myData.prodi_pilihan_1) setSelectedProdi1(myData.prodi_pilihan_1);
-        if (myData.prodi_pilihan_2) setSelectedProdi2(myData.prodi_pilihan_2);
-
-        setFormValues(myData.data_formulir || {});
+      setJalurList(j);
+      setGelombangList(g);
+      setProdiList(p);
+      setSaya(my);
+      // Jalur/prodi dari website (mis. /register?jalur=rpl) dipakai bila belum
+      // pernah memilih; tanpa itu calon wajib memilih sendiri (tidak ada default diam-diam).
+      const awal = my ? {} : ambilPilihanAwal();
+      setJalurId(my?.jalur_id ?? cariJalurAwal(j, awal.jalur)?.id ?? "");
+      setGelombangId(my?.gelombang_id ?? g[0]?.id ?? "");
+      setProdi1(my?.prodi_pilihan_1 ?? cariProdiAwal(p, awal.prodi)?.id ?? "");
+      setProdi2(my?.prodi_pilihan_2 ?? "");
+      setFormValues(my?.data_formulir ?? {});
+      // Lanjutkan dari tahap yang belum diisi
+      if (my) {
+        const adaBiodata =
+          my.data_formulir && Object.keys(my.data_formulir).length > 0;
+        setTahap(adaBiodata ? 2 : 1);
       }
     } catch (err) {
-      console.error(err);
-      setIsError(true);
+      setLoadError(pesanError(err, "Gagal memuat formulir pendaftaran."));
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadInitialData();
   }, []);
 
-  // Simpan Pilihan Prodi & Jalur (Langkah 1)
-  const handleSavePilihanProdi = async () => {
-    if (!selectedJalur || !selectedGelombang || !selectedProdi1) {
+  useEffect(() => {
+    muat();
+  }, [muat]);
+
+  // Kolom formulir dinamis mengikuti jalur
+  useEffect(() => {
+    if (!jalurId) return;
+    fetchApi<DefinisiFieldItem[]>(`/api/pendaftaran/fields?jalur_id=${jalurId}`)
+      .then(setFields)
+      .catch(() => setFields([]));
+  }, [jalurId]);
+
+  // Sesi CBT yang bisa dipilih mengikuti gelombang & jalur. Daftar diperbarui
+  // berkala & saat tab kembali aktif, agar sesi yang baru dibuka admin langsung tampil.
+  const [memuatSesi, setMemuatSesi] = useState(false);
+  const muatSesi = useCallback(async () => {
+    if (!jalurId || !gelombangId) return;
+    setMemuatSesi(true);
+    try {
+      const list = await fetchApi<SesiTersedia[]>(
+        `/api/cbt/sesi-tersedia?gelombang_id=${gelombangId}&jalur_id=${jalurId}`,
+      );
+      setSesiList(list);
+      // Lepaskan pilihan bila sesinya sudah ditutup / berakhir
+      setSesiId((id) => (id && !list.some((x) => x.id === id) ? "" : id));
+    } catch {
+      setSesiList([]);
+    } finally {
+      setMemuatSesi(false);
+    }
+  }, [jalurId, gelombangId]);
+
+  useEffect(() => {
+    if (tahap !== 2) return;
+    muatSesi();
+    const interval = window.setInterval(muatSesi, 20_000);
+    const saatAktif = () => {
+      if (document.visibilityState === "visible") muatSesi();
+    };
+    document.addEventListener("visibilitychange", saatAktif);
+    window.addEventListener("focus", saatAktif);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", saatAktif);
+      window.removeEventListener("focus", saatAktif);
+    };
+  }, [tahap, muatSesi]);
+
+  const sudahDikirim = useMemo(
+    () => !!alur && alur.status_pendaftaran !== "DRAFT",
+    [alur],
+  );
+
+  const simpanPilihan = async () => {
+    if (!jalurId || !gelombangId || !prodi1) {
       toast({
-        title: "Pilihan Belum Lengkap",
-        description:
-          "Harap tentukan Jalur, Gelombang, dan Program Studi Utama Anda.",
+        title: "Pilihan belum lengkap",
+        description: "Tentukan jalur, gelombang, dan program studi pilihan 1.",
         variant: "peringatan",
       });
       return;
     }
-
-    if (selectedProdi2 && selectedProdi2 === selectedProdi1) {
+    if (prodi2 && prodi2 === prodi1) {
       toast({
-        title: "Pilihan Prodi Tidak Valid",
-        description: "Program Studi Pilihan 1 dan Pilihan 2 tidak boleh sama.",
+        title: "Pilihan prodi tidak valid",
+        description: "Program studi pilihan 1 dan 2 tidak boleh sama.",
         variant: "peringatan",
       });
       return;
     }
-
     try {
       setIsSaving(true);
-      const res = await fetch("/api/pendaftaran/pilih-prodi", {
+      await fetchApi("/api/pendaftaran/pilih-prodi", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          jalur_id: selectedJalur,
-          gelombang_id: selectedGelombang,
-          prodi_pilihan_1: selectedProdi1,
-          prodi_pilihan_2: selectedProdi2 || null,
+          jalur_id: jalurId,
+          gelombang_id: gelombangId,
+          prodi_pilihan_1: prodi1,
+          prodi_pilihan_2: prodi2 || null,
         }),
       });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(
-          errJson.pesan || "Gagal menyimpan pilihan program studi",
-        );
-      }
-
+      hapusPilihanAwal();
+      await muat();
+      setTahap(1);
+    } catch (err) {
       toast({
-        title: "Pilihan Tersimpan",
-        description:
-          "Program studi berhasil disimpan. Silakan lanjutkan ke pengisian biodata.",
-        variant: "success",
-      });
-
-      await loadInitialData();
-      setActiveStepIndex(1); // Lanjut ke Biodata
-    } catch (err: any) {
-      toast({
-        title: "Gagal Menyimpan",
-        description: err.message || "Terjadi kesalahan saat menyimpan pilihan.",
+        title: "Gagal menyimpan pilihan",
+        description: pesanError(err, "Terjadi kesalahan."),
         variant: "error",
       });
     } finally {
@@ -245,45 +235,25 @@ export const WizardPendaftaran: React.FC = () => {
     }
   };
 
-  // Simpan Biodata Form Dinamis (Langkah 2)
-  const handleSaveBiodata = async (formData: Record<string, any>) => {
+  const simpanBiodata = async (data: Record<string, unknown>) => {
     try {
       setIsSaving(true);
-      const res = await fetch("/api/pendaftaran/submit-dinamis", {
+      await fetchApi("/api/pendaftaran/submit-dinamis", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          jalur_id: selectedJalur || undefined,
-          gelombang_id: selectedGelombang || undefined,
-          prodi_pilihan_1: selectedProdi1 || undefined,
-          prodi_pilihan_2: selectedProdi2 || undefined,
-          data: formData,
+          jalur_id: jalurId,
+          gelombang_id: gelombangId,
+          prodi_pilihan_1: prodi1,
+          prodi_pilihan_2: prodi2 || null,
+          data,
         }),
       });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(
-          errJson.detail?.join(", ") ||
-            errJson.pesan ||
-            "Gagal menyimpan biodata pendaftaran",
-        );
-      }
-
+      setFormValues(data);
+      setTahap(2);
+    } catch (err) {
       toast({
-        title: "Biodata Disimpan",
-        description:
-          "Data formulir berhasil diperbarui. Silakan unggah berkas persyaratan.",
-        variant: "success",
-      });
-
-      await loadInitialData();
-      setActiveStepIndex(2); // Lanjut ke Unggah Berkas
-    } catch (err: any) {
-      toast({
-        title: "Validasi Formulir Gagal",
-        description:
-          err.message || "Mohon periksa kembali isian formulir Anda.",
+        title: "Validasi formulir gagal",
+        description: pesanError(err, "Periksa kembali isian formulir Anda."),
         variant: "error",
       });
     } finally {
@@ -291,596 +261,442 @@ export const WizardPendaftaran: React.FC = () => {
     }
   };
 
-  if (isLoading) {
-    return <CardSkeleton />;
-  }
+  const kirimFormulir = async () => {
+    if (butuhCbt && !sesiId) {
+      toast({
+        title: "Jadwal seleksi belum dipilih",
+        description: "Pilih salah satu sesi CBT yang tersedia.",
+        variant: "peringatan",
+      });
+      return;
+    }
+    try {
+      setIsSaving(true);
+      // Simpan pilihan sesi bersama data formulir, lalu kunci formulir
+      await fetchApi("/api/pendaftaran/submit-dinamis", {
+        method: "POST",
+        body: JSON.stringify({
+          jalur_id: jalurId,
+          gelombang_id: gelombangId,
+          prodi_pilihan_1: prodi1,
+          prodi_pilihan_2: prodi2 || null,
+          sesi_ujian_id: sesiId || null,
+          data: formValues,
+        }),
+      });
+      const hasil = await fetchApi<{ pesan: string; biaya_gratis?: boolean }>(
+        "/api/pendaftaran/finalisasi",
+        { method: "POST" },
+      );
+      toast({
+        title: "Formulir terkirim",
+        description: hasil.biaya_gratis
+          ? "Jalur Anda tanpa biaya formulir. Lanjutkan dengan unggah berkas."
+          : "Lanjutkan dengan pembayaran biaya formulir.",
+        variant: "success",
+      });
+      await Promise.all([muat(), muatAlur()]);
+    } catch (err) {
+      toast({
+        title: "Gagal mengirim formulir",
+        description: pesanError(err, "Terjadi kesalahan."),
+        variant: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-  if (isError) {
+  if (isLoading) return <CardSkeleton />;
+  if (loadError)
     return (
       <ErrorState
-        title="Gagal Memuat Wizard Pendaftaran"
-        message="Tidak dapat memuat tahapan alur pendaftaran PMB. Silakan periksa koneksi Anda dan coba kembali."
-        onRetry={loadInitialData}
+        title="Gagal Memuat Formulir"
+        message={loadError}
+        onRetry={muat}
       />
+    );
+
+  const header = (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-biru-100">
+      <div>
+        <span className="text-xs font-bold text-biru-800 uppercase tracking-wider block">
+          Langkah 3 dari 9
+        </span>
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-biru-950 mt-1">
+          Formulir Pendaftaran
+        </h1>
+        <p className="text-xs sm:text-sm text-biru-800/80 mt-1">
+          Pilihan prodi, jadwal seleksi, data diri, data sekolah, dan data orang
+          tua.
+        </p>
+      </div>
+      {saya?.nomor_pendaftaran && (
+        <div className="p-3 bg-biru-50 border border-biru-200 rounded-2xl shrink-0">
+          <span className="text-[11px] font-bold text-biru-700 block uppercase tracking-wider">
+            Nomor Pendaftaran
+          </span>
+          <span className="font-mono text-base font-bold text-biru-950">
+            {saya.nomor_pendaftaran}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
+  // Formulir sudah dikirim: tampilkan ringkasan + langkah berikutnya
+  if (sudahDikirim && saya) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto">
+        {header}
+        {alur && <AlurStepper alur={alur} />}
+        <Card className="p-6 border-biru-200 rounded-3xl space-y-4">
+          <div className="flex items-center gap-2 text-biru-950">
+            <CheckCircle2 className="w-5 h-5 text-biru-700" />
+            <h2 className="font-serif font-bold text-lg">
+              Formulir telah dikirim
+            </h2>
+          </div>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            {[
+              ["Jalur", saya.nama_jalur],
+              ["Gelombang", saya.nama_gelombang],
+              ["Prodi pilihan 1", saya.nama_prodi_1],
+              ["Prodi pilihan 2", saya.nama_prodi_2 || "-"],
+            ].map(([k, v]) => (
+              <div
+                key={k}
+                className="p-3 rounded-xl bg-biru-50/60 border border-biru-100"
+              >
+                <dt className="text-[11px] text-biru-700">{k}</dt>
+                <dd className="font-bold text-biru-950">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-xs text-biru-800">
+            Formulir terkunci setelah dikirim. Hubungi panitia PMB bila ada data
+            yang perlu diperbaiki.
+          </p>
+          <a
+            href={`/api/pendaftaran/${saya.id}/cetak/bukti-pendaftaran`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-block"
+          >
+            <Button variant="outline" size="sm" className="gap-2">
+              <Download className="w-4 h-4" /> Unduh Bukti Pendaftaran (PDF)
+            </Button>
+          </a>
+        </Card>
+      </div>
     );
   }
 
-  const stepsList = [
-    { title: "Pilih Prodi & Jalur", icon: GraduationCap },
-    { title: "Isi Biodata", icon: FileText },
-    { title: "Unggah Berkas", icon: FileText },
-    { title: "Biaya Formulir", icon: CreditCard },
-    { title: "Ujian Seleksi", icon: Clock },
-    { title: "Cetak Dokumen", icon: Download },
+  const daftarTahap = [
+    { judul: "Jalur & Prodi", icon: GraduationCap },
+    { judul: "Data Diri, Sekolah & Orang Tua", icon: FileText },
+    { judul: "Jadwal Seleksi & Kirim", icon: CalendarClock },
   ];
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
-      {/* Header Alur Pendaftaran */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-biru-100">
-        <div>
-          <span className="text-xs font-bold text-biru-800 uppercase tracking-wider block">
-            Universitas Pignatelli Triputra
-          </span>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-biru-950 mt-1">
-            Alur Pendaftaran Mahasiswa Baru
-          </h1>
-          <p className="text-xs sm:text-sm text-biru-800/80 mt-1">
-            Lengkapi tahapan pendaftaran secara berurutan. Progres tersimpan
-            secara otomatis.
-          </p>
-        </div>
-        {summary?.nomor_pendaftaran && (
-          <div className="p-3 bg-biru-50 border border-biru-200 rounded-2xl shrink-0">
-            <span className="text-[11px] font-bold text-biru-700 block uppercase tracking-wider">
-              Nomor Pendaftaran Resmi
-            </span>
-            <span className="font-mono text-base font-bold text-biru-950">
-              {summary.nomor_pendaftaran}
-            </span>
-          </div>
-        )}
-      </div>
+    <div className="space-y-6 max-w-5xl mx-auto">
+      {header}
 
-      {/* Stepper Premium */}
-      <div className="bg-putih border border-biru-200 rounded-3xl p-5 shadow-xs overflow-x-auto">
-        <div className="flex items-center min-w-[620px] justify-between relative">
-          <div className="absolute top-5 left-6 right-6 h-0.5 bg-biru-100 -z-0" />
-          {stepsList.map((st, idx) => {
-            const Icon = st.icon;
-            const backendDone =
-              idx === 0
-                ? langkahList.find((l) => l.tipe_langkah === "pilih_prodi")
-                    ?.status === "SELESAI" || !!summary?.prodi_1_nama
-                : idx === 1
-                  ? langkahList.find((l) => l.tipe_langkah === "biodata")
-                      ?.status === "SELESAI" ||
-                    summary?.status_pendaftaran !== "BELUM_DAFTAR"
-                  : idx === 2
-                    ? langkahList.find((l) => l.tipe_langkah === "berkas")
-                        ?.status === "SELESAI" ||
-                      (summary?.bisa_cetak_bukti ?? false)
-                    : idx === 3
-                      ? (summary?.tagihan_lunas ?? false)
-                      : idx === 4
-                        ? summary?.status_pendaftaran === "SELESAI_UJIAN" ||
-                          summary?.status_pendaftaran === "LULUS"
-                        : summary?.pengumuman_status === "LULUS";
+      <ol className="grid grid-cols-3 gap-2" aria-label="Bagian formulir">
+        {daftarTahap.map((t, i) => {
+          const Icon = t.icon;
+          const aktif = i === tahap;
+          const lewat = i < tahap;
+          return (
+            <li
+              key={t.judul}
+              aria-current={aktif ? "step" : undefined}
+              className={`flex items-center gap-2 p-3 rounded-2xl border text-xs ${
+                aktif
+                  ? "border-biru-700 bg-biru-50 font-bold text-biru-950"
+                  : lewat
+                    ? "border-biru-200 text-biru-800"
+                    : "border-biru-100 text-biru-400"
+              }`}
+            >
+              {lewat ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              ) : (
+                <Icon className="w-4 h-4 shrink-0" />
+              )}
+              <span>
+                {i + 1}. {t.judul}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
 
-            const isCurrent = idx === activeStepIndex;
-            const isPassed =
-              (idx < activeStepIndex || backendDone) && !isCurrent;
-
-            return (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setActiveStepIndex(idx)}
-                className="relative z-10 flex flex-col items-center group cursor-pointer"
-              >
-                <div
-                  className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${
-                    isPassed
-                      ? "bg-biru-700 text-putih shadow-xs"
-                      : isCurrent
-                        ? "bg-biru-950 text-putih ring-4 ring-biru-100"
-                        : "bg-biru-50 text-biru-400 border border-biru-200"
-                  }`}
-                >
-                  {isPassed ? (
-                    <CheckCircle2 className="w-5 h-5" />
-                  ) : (
-                    <Icon className="w-4 h-4" />
-                  )}
-                </div>
-                <span
-                  className={`text-xs mt-2 font-medium transition-colors ${
-                    isCurrent
-                      ? "font-bold text-biru-950"
-                      : isPassed
-                        ? "text-biru-800"
-                        : "text-biru-400"
-                  }`}
-                >
-                  {st.title}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* KONTEN LANGKAH 1: PILIH PRODI & JALUR */}
-      {activeStepIndex === 0 && (
-        <Card className="p-6 sm:p-8 bg-putih border border-biru-200 rounded-3xl space-y-6 shadow-xs">
-          <div>
-            <h2 className="font-serif text-xl font-bold text-biru-950">
-              Tahap 1: Pemilihan Jalur, Gelombang & Program Studi
-            </h2>
-            <p className="text-xs text-biru-800/80 mt-1">
-              Tentukan jalur seleksi dan program studi yang Anda minati. Anda
-              dapat memilih hingga 2 program studi berbeda.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Jalur Pendaftaran */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-biru-950 uppercase tracking-wider block">
-                Jalur Seleksi PMB <span className="text-biru-700">*</span>
-              </label>
+      {tahap === 0 && (
+        <Card className="p-6 sm:p-8 border-biru-200 rounded-3xl space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <label className="space-y-2 block">
+              <span className="text-xs font-bold text-biru-950 uppercase tracking-wider">
+                Jalur masuk *
+              </span>
               <select
-                value={selectedJalur}
-                onChange={(e) => setSelectedJalur(e.target.value)}
-                className="w-full px-4 py-3 bg-biru-50/50 border border-biru-200 rounded-2xl text-xs font-medium text-biru-950 focus:outline-none focus:ring-2 focus:ring-biru-600 transition"
+                value={jalurId}
+                onChange={(e) => setJalurId(e.target.value)}
+                className={SELECT}
               >
+                <option value="" disabled>
+                  -- Pilih jalur masuk --
+                </option>
                 {jalurList.map((j) => (
                   <option key={j.id} value={j.id}>
-                    {j.nama}{" "}
-                    {j.tipe_seleksi ? `(${j.tipe_seleksi.toUpperCase()})` : ""}
+                    {j.nama_jalur} - formulir Rp{" "}
+                    {j.biaya_formulir.toLocaleString("id-ID")}
                   </option>
                 ))}
               </select>
-            </div>
-
-            {/* Gelombang PMB */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-biru-950 uppercase tracking-wider block">
-                Gelombang Pendaftaran <span className="text-biru-700">*</span>
-              </label>
+            </label>
+            <label className="space-y-2 block">
+              <span className="text-xs font-bold text-biru-950 uppercase tracking-wider">
+                Gelombang *
+              </span>
               <select
-                value={selectedGelombang}
-                onChange={(e) => setSelectedGelombang(e.target.value)}
-                className="w-full px-4 py-3 bg-biru-50/50 border border-biru-200 rounded-2xl text-xs font-medium text-biru-950 focus:outline-none focus:ring-2 focus:ring-biru-600 transition"
+                value={gelombangId}
+                onChange={(e) => setGelombangId(e.target.value)}
+                className={SELECT}
               >
                 {gelombangList.map((g) => (
                   <option key={g.id} value={g.id}>
-                    {g.nama} - {g.status === "BUKA" ? "Buka (Aktif)" : "Tutup"}{" "}
-                    ({g.tgl_mulai} s.d. {g.tgl_selesai})
+                    {g.nama_gelombang}
                   </option>
                 ))}
               </select>
-            </div>
-
-            {/* Pilihan Prodi 1 */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-biru-950 uppercase tracking-wider block">
-                Program Studi Pilihan 1 (Prioritas Utama){" "}
-                <span className="text-biru-700">*</span>
-              </label>
+            </label>
+            <label className="space-y-2 block">
+              <span className="text-xs font-bold text-biru-950 uppercase tracking-wider">
+                Program studi pilihan 1 *
+              </span>
               <select
-                value={selectedProdi1}
-                onChange={(e) => setSelectedProdi1(e.target.value)}
-                className="w-full px-4 py-3 bg-biru-50/50 border border-biru-200 rounded-2xl text-xs font-medium text-biru-950 focus:outline-none focus:ring-2 focus:ring-biru-600 transition"
+                value={prodi1}
+                onChange={(e) => setProdi1(e.target.value)}
+                className={SELECT}
               >
+                <option value="">-- Pilih program studi --</option>
                 {prodiList.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.jenjang} {p.nama} (Kuota: {p.kuota})
+                    {p.jenjang} {p.nama_prodi}
                   </option>
                 ))}
               </select>
-            </div>
-
-            {/* Pilihan Prodi 2 */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-biru-950 uppercase tracking-wider block">
-                Program Studi Pilihan 2 (Pilihan Cadangan)
-              </label>
+            </label>
+            <label className="space-y-2 block">
+              <span className="text-xs font-bold text-biru-950 uppercase tracking-wider">
+                Program studi pilihan 2
+              </span>
               <select
-                value={selectedProdi2}
-                onChange={(e) => setSelectedProdi2(e.target.value)}
-                className="w-full px-4 py-3 bg-biru-50/50 border border-biru-200 rounded-2xl text-xs font-medium text-biru-950 focus:outline-none focus:ring-2 focus:ring-biru-600 transition"
+                value={prodi2}
+                onChange={(e) => setProdi2(e.target.value)}
+                className={SELECT}
               >
-                <option value="">
-                  -- Tidak memilih program studi kedua --
-                </option>
+                <option value="">-- Tidak memilih --</option>
                 {prodiList
-                  .filter((p) => p.id !== selectedProdi1)
+                  .filter((p) => p.id !== prodi1)
                   .map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.jenjang} {p.nama}
+                      {p.jenjang} {p.nama_prodi}
                     </option>
                   ))}
               </select>
-            </div>
+            </label>
           </div>
-
           {gelombangList.length === 0 && (
-            <div className="p-4 rounded-2xl bg-biru-50 border border-biru-200 text-xs text-biru-900 flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-biru-700 shrink-0" />
-              <span>
-                Saat ini belum ada gelombang pendaftaran PMB yang dibuka. Harap
-                hubungi panitia PMB atau periksa kembali jadwal penerimaan.
-              </span>
-            </div>
+            <p className="flex items-center gap-2 text-xs text-biru-900 p-3 rounded-xl bg-biru-50 border border-biru-200">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              Belum ada gelombang pendaftaran yang dibuka.
+            </p>
           )}
-
-          {prodiList.length === 0 && (
-            <div className="p-4 rounded-2xl bg-biru-50 border border-biru-200 text-xs text-biru-900 flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-biru-700 shrink-0" />
-              <span>
-                Data program studi belum tersedia. Harap hubungi administrator
-                PMB.
-              </span>
-            </div>
-          )}
-
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-biru-100">
+          <div className="flex justify-end pt-4 border-t border-biru-100">
             <Button
               variant="primary"
-              size="md"
-              onClick={handleSavePilihanProdi}
-              disabled={
-                isSaving ||
-                gelombangList.length === 0 ||
-                prodiList.length === 0 ||
-                !selectedProdi1
-              }
+              onClick={simpanPilihan}
+              disabled={isSaving || !prodi1 || gelombangList.length === 0}
               className="gap-2"
             >
-              <span>{isSaving ? "Menyimpan..." : "Simpan & Lanjutkan"}</span>
+              {isSaving ? "Menyimpan..." : "Simpan & Lanjutkan"}
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
         </Card>
       )}
 
-      {/* KONTEN LANGKAH 2: BIODATA DINAMIS */}
-      {activeStepIndex === 1 && (
-        <Card className="p-6 sm:p-8 bg-putih border border-biru-200 rounded-3xl space-y-6 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h2 className="font-serif text-xl font-bold text-biru-950">
-                Tahap 2: Pengisian Biodata Calon Mahasiswa
-              </h2>
-              <p className="text-xs text-biru-800/80 mt-1">
-                Kolom formulir dikonfigurasi dinamis oleh panitia PMB. Data
-                disimpan ke sistem secara otomatis.
-              </p>
-            </div>
+      {tahap === 1 && (
+        <Card className="p-6 sm:p-8 border-biru-200 rounded-3xl space-y-6">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-serif text-xl font-bold text-biru-950">
+              Data diri, data sekolah & data orang tua
+            </h2>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setActiveStepIndex(0)}
-              className="gap-1.5 self-start sm:self-auto"
+              onClick={() => setTahap(0)}
+              className="gap-1.5"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Kembali</span>
+              <ArrowLeft className="w-3.5 h-3.5" /> Kembali
             </Button>
           </div>
-
           <DynamicFormRenderer
             fields={fields}
             defaultValues={formValues}
-            onSubmit={handleSaveBiodata}
+            onSubmit={simpanBiodata}
             isSubmitting={isSaving}
+            submitButtonText="Simpan & Pilih Jadwal Seleksi"
           />
         </Card>
       )}
 
-      {/* KONTEN LANGKAH 3: UNGGAH BERKAS */}
-      {activeStepIndex === 2 && (
-        <Card className="p-6 sm:p-8 bg-putih border border-biru-200 rounded-3xl space-y-6 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-biru-100">
-            <div>
-              <h2 className="font-serif text-xl font-bold text-biru-950">
-                Tahap 3: Unggah Berkas Persyaratan
-              </h2>
-              <p className="text-xs text-biru-800/80 mt-1">
-                Unggah dokumen persyaratan resmi (PDF/JPG/PNG) melalui
-                penyimpanan aman MinIO UPT.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveStepIndex(1)}
-                className="gap-1.5"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Kembali</span>
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setActiveStepIndex(3)}
-                className="gap-1.5"
-              >
-                <span>Lanjut ke Biaya</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </div>
-
-          <BerkasUploader
-            berkasList={berkasList}
-            onUploadSuccess={loadInitialData}
-          />
-        </Card>
-      )}
-
-      {/* KONTEN LANGKAH 4: PEMBAYARAN FORMULIR */}
-      {activeStepIndex === 3 && (
-        <Card className="p-6 sm:p-8 bg-putih border border-biru-200 rounded-3xl space-y-6 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-biru-100">
-            <div>
-              <h2 className="font-serif text-xl font-bold text-biru-950">
-                Tahap 4: Pembayaran & Konfirmasi Biaya Formulir
-              </h2>
-              <p className="text-xs text-biru-800/80 mt-1">
-                Biaya pendaftaran formulir untuk memvalidasi kepesertaan seleksi
-                masuk universitas.
-              </p>
-            </div>
+      {tahap === 2 && (
+        <Card className="p-6 sm:p-8 border-biru-200 rounded-3xl space-y-6">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-serif text-xl font-bold text-biru-950">
+              Jadwal seleksi (sesi CBT)
+            </h2>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setActiveStepIndex(2)}
-              className="gap-1.5 self-start sm:self-auto"
+              onClick={() => setTahap(1)}
+              className="gap-1.5"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Kembali</span>
+              <ArrowLeft className="w-3.5 h-3.5" /> Kembali
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-5 rounded-2xl bg-biru-50/50 border border-biru-200 space-y-4">
-              <span className="text-xs font-bold text-biru-800 uppercase tracking-wider block">
-                Ringkasan Tagihan Formulir
-              </span>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between py-1 border-b border-biru-100">
-                  <span className="text-biru-800">Nomor Invoice</span>
-                  <span className="font-mono font-bold text-biru-950">
-                    {summary?.nomor_tagihan || "INV-2026-FORMULIR"}
-                  </span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-biru-100">
-                  <span className="text-biru-800">Status Pembayaran</span>
-                  <span className="font-bold text-biru-950">
-                    {summary?.tagihan_lunas
-                      ? "LUNAS (Terverifikasi)"
-                      : "Menunggu Pembayaran"}
-                  </span>
-                </div>
-                <div className="flex justify-between py-1 pt-2 text-sm font-bold">
-                  <span className="text-biru-950">Total Nominal</span>
-                  <span className="text-biru-800">
-                    Rp{" "}
-                    {(summary?.nominal_tagihan || 250000).toLocaleString(
-                      "id-ID",
-                    )}
-                  </span>
-                </div>
-              </div>
+          {butuhCbt && (
+            <div className="flex items-center justify-between gap-2 text-[11px] text-biru-800">
+              <span>Daftar sesi diperbarui otomatis.</span>
+              <button
+                type="button"
+                onClick={muatSesi}
+                disabled={memuatSesi}
+                className="inline-flex items-center gap-1 font-bold text-biru-800 hover:text-biru-950 disabled:opacity-60"
+              >
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${memuatSesi ? "animate-spin" : ""}`}
+                  aria-hidden
+                />
+                Muat ulang
+              </button>
+            </div>
+          )}
 
-              <div className="pt-2">
-                <Link to="/portal/pembayaran">
-                  <Button variant="primary" size="sm" className="w-full gap-2">
-                    <CreditCard className="w-4 h-4" />
-                    <span>Buka Halaman Pembayaran & Voucher</span>
-                  </Button>
+          {butuhCbt ? (
+            sesiList.length === 0 ? (
+              <p className="flex items-center gap-2 text-xs text-biru-900 p-3 rounded-xl bg-biru-50 border border-biru-200">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                Belum ada sesi CBT yang dibuka untuk jalur & gelombang ini.
+                Silakan cek kembali nanti atau hubungi panitia PMB.
+              </p>
+            ) : (
+              <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <legend className="sr-only">Pilih sesi CBT</legend>
+                {sesiList.map((s) => {
+                  const sisa = s.kuota - s.terisi;
+                  const penuh = sisa <= 0;
+                  const ModeIcon = s.mode === "ONLINE" ? Monitor : Building;
+                  return (
+                    <label
+                      key={s.id}
+                      className={`flex gap-3 p-4 rounded-2xl border cursor-pointer transition ${
+                        sesiId === s.id
+                          ? "border-biru-700 bg-biru-50"
+                          : "border-biru-200 hover:border-biru-400"
+                      } ${penuh ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      <input
+                        type="radio"
+                        name="sesi"
+                        value={s.id}
+                        checked={sesiId === s.id}
+                        disabled={penuh}
+                        onChange={() => setSesiId(s.id)}
+                        className="mt-1 accent-biru-700"
+                      />
+                      <span className="space-y-1 text-xs text-biru-900">
+                        <span className="block text-sm font-bold text-biru-950">
+                          {s.nama_sesi}
+                        </span>
+                        <span className="block">
+                          {fmtWaktu(s.jadwal_mulai)} s.d.{" "}
+                          {fmtWaktu(s.jadwal_selesai)} WIB
+                        </span>
+                        {new Date(s.jadwal_mulai).getTime() <= Date.now() && (
+                          <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
+                            Sedang berlangsung
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1.5">
+                          <ModeIcon className="w-3.5 h-3.5" />
+                          {s.mode === "ONLINE"
+                            ? "Online dari rumah"
+                            : `Di kampus - ${s.ruang}`}
+                        </span>
+                        <span className="block font-semibold">
+                          {penuh ? "Kuota penuh" : `Sisa kuota: ${sisa}`}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </fieldset>
+            )
+          ) : (
+            <p className="text-xs text-biru-900 p-3 rounded-xl bg-biru-50 border border-biru-200">
+              Jalur {jalurDipilih?.nama_jalur} diseleksi tanpa CBT. Jadwal
+              pengumuman mengikuti gelombang pendaftaran.
+            </p>
+          )}
+
+          <label className="flex items-start gap-2 text-xs text-biru-900">
+            <input
+              type="checkbox"
+              checked={setuju}
+              onChange={(e) => setSetuju(e.target.checked)}
+              className="mt-0.5 accent-biru-700"
+            />
+            <span>
+              Saya menyatakan data yang saya isi benar. Setelah dikirim,
+              formulir terkunci dan tidak dapat diubah lagi.
+            </span>
+          </label>
+
+          <div className="flex justify-end pt-4 border-t border-biru-100">
+            <Button
+              variant="primary"
+              onClick={kirimFormulir}
+              disabled={isSaving || !setuju || (butuhCbt && !sesiId)}
+              className="gap-2"
+            >
+              <Send className="w-4 h-4" />
+              {isSaving ? "Mengirim..." : "Kirim Formulir"}
+            </Button>
+          </div>
+          <p className="text-[11px] text-biru-700 text-right">
+            {jalurDipilih?.biaya_formulir === 0 ? (
+              <>
+                Jalur ini tanpa biaya formulir. Setelah terkirim:{" "}
+                <Link to="/portal/berkas" className="underline">
+                  unggah berkas
                 </Link>
-              </div>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-putih border border-biru-200 flex flex-col justify-between space-y-4">
-              <div>
-                <span className="text-xs font-bold text-biru-800 uppercase tracking-wider block">
-                  Metode Pembayaran Tersedia
-                </span>
-                <ul className="text-xs text-biru-800/80 space-y-2 mt-3 list-disc list-inside">
-                  <li>
-                    Virtual Account Bank BCA, Mandiri, BNI, BRI otomatis lunas.
-                  </li>
-                  <li>Pembayaran tunai di Loket PMB Kampus UPT Surakarta.</li>
-                  <li>
-                    Dukungan klaim voucher potongan biaya bagi siswa
-                    berprestasi.
-                  </li>
-                </ul>
-              </div>
-
-              <Button
-                variant="outline"
-                size="md"
-                onClick={() => setActiveStepIndex(4)}
-                className="w-full gap-2 justify-center"
-              >
-                <span>Lanjut ke Jadwal Ujian</span>
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* KONTEN LANGKAH 5: JADWAL UJIAN CBT */}
-      {activeStepIndex === 4 && (
-        <Card className="p-6 sm:p-8 bg-putih border border-biru-200 rounded-3xl space-y-6 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-biru-100">
-            <div>
-              <h2 className="font-serif text-xl font-bold text-biru-950">
-                Tahap 5: Informasi & Pelaksanaan Ujian CBT
-              </h2>
-              <p className="text-xs text-biru-800/80 mt-1">
-                Pelaksanaan tes potensi skolastik dan literasi secara daring
-                atau di laboratorium komputer UPT.
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setActiveStepIndex(3)}
-              className="gap-1.5 self-start sm:self-auto"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Kembali</span>
-            </Button>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-biru-50/50 border border-biru-200 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div>
-                <span className="text-biru-800 block">Jadwal Ujian Masuk</span>
-                <span className="font-bold text-biru-950 text-sm mt-0.5 block">
-                  {summary?.jadwal_ujian ||
-                    "Ujian CBT Online / Sesuai Jadwal Gelombang"}
-                </span>
-              </div>
-              <div>
-                <span className="text-biru-800 block">Lokasi / Ruang</span>
-                <span className="font-bold text-biru-950 text-sm mt-0.5 block">
-                  {summary?.lokasi_ujian ||
-                    "Laboratorium Komputer Kampus UPT Surakarta"}
-                </span>
-              </div>
-            </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
-              <Link to="/portal/ujian" className="w-full sm:w-auto">
-                <Button variant="primary" size="md" className="gap-2 w-full">
-                  <Clock className="w-4 h-4" />
-                  <span>Masuk ke Modul CBT Ujian</span>
-                </Button>
-              </Link>
-              <Button
-                variant="outline"
-                size="md"
-                onClick={() => setActiveStepIndex(5)}
-                className="gap-2 w-full sm:w-auto"
-              >
-                <span>Lihat Hasil & Dokumen</span>
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* KONTEN LANGKAH 6: CETAK DOKUMEN & PENGUMUMAN */}
-      {activeStepIndex === 5 && (
-        <Card className="p-6 sm:p-8 bg-putih border border-biru-200 rounded-3xl space-y-6 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-biru-100">
-            <div>
-              <h2 className="font-serif text-xl font-bold text-biru-950">
-                Tahap 6: Pengumuman Seleksi & Cetak Dokumen Resmi
-              </h2>
-              <p className="text-xs text-biru-800/80 mt-1">
-                Unduh Bukti Pendaftaran dan Kartu Peserta Ujian berformat PDF
-                resmi dengan QR Code vektor.
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setActiveStepIndex(4)}
-              className="gap-1.5 self-start sm:self-auto"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Kembali</span>
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Kartu Bukti Pendaftaran */}
-            <div className="p-5 rounded-2xl bg-biru-50/50 border border-biru-200 flex flex-col justify-between space-y-4">
-              <div>
-                <span className="text-xs font-bold text-biru-800 uppercase tracking-wider block">
-                  Bukti Pendaftaran Mahasiswa Baru
-                </span>
-                <p className="text-xs text-biru-800/80 mt-2 leading-relaxed">
-                  Lembar tanda bukti sah pendaftaran calon mahasiswa baru dengan
-                  Nomor Pendaftaran, data diri lengkap, serta rincian pilihan
-                  program studi.
-                </p>
-              </div>
-
-              {summary?.bisa_cetak_bukti && summary.pendaftar_id ? (
-                <a
-                  href={`/api/pendaftaran/${summary.pendaftar_id}/cetak/bukti-pendaftaran`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="w-full gap-2 justify-center"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Unduh PDF Bukti Pendaftaran</span>
-                  </Button>
-                </a>
-              ) : (
-                <div className="p-3 bg-biru-100/50 rounded-xl text-xs text-biru-800 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>
-                    Selesaikan pemilihan program studi terlebih dahulu.
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Kartu Peserta Ujian */}
-            <div className="p-5 rounded-2xl bg-biru-50/50 border border-biru-200 flex flex-col justify-between space-y-4">
-              <div>
-                <span className="text-xs font-bold text-biru-800 uppercase tracking-wider block">
-                  Kartu Peserta Ujian Seleksi
-                </span>
-                <p className="text-xs text-biru-800/80 mt-2 leading-relaxed">
-                  Dokumen wajib cetak untuk ditunjukkan kepada pengawas saat
-                  mengikuti tes seleksi. Memuat nomor peserta, jadwal, dan QR
-                  Code presensi.
-                </p>
-              </div>
-
-              {summary?.bisa_cetak_kartu && summary.pendaftar_id ? (
-                <a
-                  href={`/api/pendaftaran/${summary.pendaftar_id}/cetak/kartu-peserta`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Button
-                    variant="outline"
-                    size="md"
-                    className="w-full gap-2 justify-center"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Unduh PDF Kartu Peserta Ujian</span>
-                  </Button>
-                </a>
-              ) : (
-                <div className="p-3 bg-biru-100/50 rounded-xl text-xs text-biru-800 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>
-                    Tersedia setelah pembayaran formulir lunas atau pendaftaran
-                    loket offline.
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
+                .
+              </>
+            ) : (
+              <>
+                Setelah terkirim:{" "}
+                <Link to="/portal/pembayaran" className="underline">
+                  bayar biaya formulir
+                </Link>{" "}
+                lalu unggah buktinya.
+              </>
+            )}
+          </p>
         </Card>
       )}
     </div>

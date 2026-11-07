@@ -1,6 +1,6 @@
 import React from "react";
 import { Mail, Phone, MapPin, Award, CheckCircle2 } from "lucide-react";
-import logoPlaceholder from "../../assets/logo-placeholder.svg";
+import { Logo } from "../ui/Logo";
 
 const CURRENT_YEAR = 2026;
 
@@ -11,11 +11,7 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
           {/* Kolom Profil Kampus */}
           <div className="md:col-span-5 space-y-4">
-            <img
-              src={logoPlaceholder}
-              alt="Logo Universitas Pignatelli Triputra"
-              className="h-12 w-auto object-contain"
-            />
+            <Logo theme="dark" height={52} />
             <p className="text-sm text-biru-200 leading-relaxed max-w-sm">
               Universitas Pignatelli Triputra menyelenggarakan pendidikan tinggi
               berkualitas berstandar industri melalui sinergi Triputra Group,

@@ -72,8 +72,9 @@ pub struct AuthResponse {
 
 #[derive(Debug, Deserialize, Validate, ToSchema)]
 pub struct VerifyEmailRequest {
-    #[validate(length(min = 1, message = "Token verifikasi tidak boleh kosong"))]
-    pub token: String,
+    /// Kode 6 digit yang dikirim ke email calon
+    #[validate(length(min = 6, max = 12, message = "Kode verifikasi harus 6 digit"))]
+    pub kode: String,
 }
 
 #[derive(Debug, Deserialize, Validate, ToSchema)]
@@ -104,6 +105,29 @@ pub struct ChangePasswordRequest {
 pub struct UpdateUserRoleRequest {
     #[validate(length(min = 1, message = "Peran baru tidak boleh kosong"))]
     pub role: String,
+}
+
+#[derive(Debug, Deserialize, Validate, ToSchema)]
+pub struct AturPeranMassalRequest {
+    /// Pengguna yang dicentang (1-200).
+    #[validate(length(min = 1, max = 200, message = "Pilih 1 sampai 200 pengguna"))]
+    pub user_ids: Vec<Uuid>,
+    /// admin_pmb | keuangan | calon_mahasiswa | pengawas_ujian | asesor_rpl
+    #[validate(length(min = 1, message = "Peran baru tidak boleh kosong"))]
+    pub role: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct PeranDilewati {
+    pub id: Uuid,
+    pub alasan: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct AturPeranMassalResponse {
+    pub role: String,
+    pub diubah: Vec<UserListItemResponse>,
+    pub dilewati: Vec<PeranDilewati>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

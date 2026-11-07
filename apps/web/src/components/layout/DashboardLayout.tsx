@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   FolderOpen,
   BookOpen,
+  ClipboardCheck,
+  Lock,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "../ui/Avatar";
 import {
@@ -33,43 +35,67 @@ import {
   BreadcrumbPage,
 } from "../ui/Breadcrumb";
 import { useAuth } from "@/context";
-import logoSvg from "../../assets/logo-placeholder.svg";
+import { langkahTerbuka, useAlurContext } from "../pendaftaran/AlurStepper";
+import { LANGKAH_HALAMAN } from "../pendaftaran/GerbangLangkah";
+import { Logo } from "../ui/Logo";
 
 export interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
+  /** Kode langkah alur PMB yang membuka menu ini; kosong = selalu terbuka. */
+  langkah?: readonly string[];
+  /** Hanya untuk calon Jalur RPL; terkunci untuk jalur lain. */
+  khususRpl?: boolean;
 }
 
+/** Menu portal calon, berurutan sesuai alur PMB. */
 const DASHBOARD_NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/portal/dashboard", icon: LayoutDashboard },
   {
     label: "Formulir Pendaftaran",
     href: "/portal/formulir",
     icon: FileText,
+    langkah: LANGKAH_HALAMAN.formulir,
   },
   {
     label: "Portofolio & Jalur RPL",
     href: "/portal/rpl",
     icon: BookOpen,
+    langkah: LANGKAH_HALAMAN.rpl,
+    khususRpl: true,
   },
   {
-    label: "Pembayaran Biaya",
+    label: "Pembayaran Formulir",
     href: "/portal/pembayaran",
     icon: CreditCard,
+    langkah: LANGKAH_HALAMAN.pembayaran,
   },
   {
-    label: "Ujian Seleksi Online",
+    label: "Unggah Berkas",
+    href: "/portal/berkas",
+    icon: FolderOpen,
+    langkah: LANGKAH_HALAMAN.berkas,
+  },
+  {
+    label: "Ujian Seleksi (CBT)",
     href: "/portal/ujian",
     icon: GraduationCap,
+    langkah: LANGKAH_HALAMAN.ujian,
   },
   {
-    label: "Status Kelulusan",
+    label: "Pengumuman Kelulusan",
     href: "/portal/hasil",
     icon: CheckCircle2,
+    langkah: LANGKAH_HALAMAN.hasil,
   },
-  { label: "Unggah Dokumen", href: "/portal/berkas", icon: FolderOpen },
+  {
+    label: "Daftar Ulang",
+    href: "/portal/daftar-ulang",
+    icon: ClipboardCheck,
+    langkah: LANGKAH_HALAMAN.daftarUlang,
+  },
 ];
 
 export interface DashboardLayoutProps {
@@ -91,6 +117,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const alurCtx = useAlurContext();
+  /** Menu terkunci bila langkah alurnya belum terbuka (hanya di dalam portal). */
+  const bukanJalurRpl = (item: NavItem) =>
+    !!alurCtx && !!item.khususRpl && !alurCtx.alur?.jalur_rpl;
+  const terkunci = (item: NavItem) =>
+    bukanJalurRpl(item) ||
+    (!!alurCtx &&
+      !!item.langkah &&
+      !langkahTerbuka(alurCtx.alur, item.langkah));
 
   const resolvedRole =
     userRole ||
@@ -107,7 +142,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   const getInitials = (name: string) => {
@@ -135,11 +170,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             onClick={onSelect}
             className="flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-biru-500 rounded-lg"
           >
-            <img
-              src={logoSvg}
-              alt="Logo Universitas Pignatelli Triputra"
-              className="h-10 w-auto object-contain brightness-110"
-            />
+            <Logo theme="dark" height={42} />
           </Link>
           <div className="mt-3 flex items-center gap-2 rounded-lg bg-biru-950/70 px-2.5 py-1.5 border border-biru-800">
             <span className="h-2 w-2 rounded-full bg-biru-500 animate-pulse" />
@@ -157,6 +188,30 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 ? location.pathname === "/portal/dashboard"
                 : location.pathname.startsWith(item.href);
             const Icon = item.icon;
+
+            if (terkunci(item)) {
+              return (
+                <div
+                  key={item.href}
+                  aria-disabled="true"
+                  title={
+                    bukanJalurRpl(item)
+                      ? "Terkunci: hanya untuk calon Jalur RPL"
+                      : "Terkunci: selesaikan langkah sebelumnya"
+                  }
+                  className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-biru-200/40 cursor-not-allowed select-none"
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className="h-5 w-5 shrink-0 text-biru-400/40" />
+                    <span>{item.label}</span>
+                  </div>
+                  <Lock
+                    className="h-3.5 w-3.5 shrink-0"
+                    aria-label="Terkunci"
+                  />
+                </div>
+              );
+            }
 
             return (
               <Link

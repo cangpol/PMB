@@ -75,3 +75,70 @@ impl MailSender for LogMailSender {
         })
     }
 }
+
+/// Pengirim email nyata melalui SMTP (STARTTLS atau TLS langsung).
+#[derive(Clone)]
+pub struct SmtpMailSender {
+    transport: lettre::AsyncSmtpTransport<lettre::Tokio1Executor>,
+    from: lettre::message::Mailbox,
+}
+
+impl SmtpMailSender {
+    pub fn new(cfg: &crate::config::SmtpConfig) -> Result<Self, String> {
+        use lettre::transport::smtp::authentication::Credentials;
+        use lettre::{AsyncSmtpTransport, Tokio1Executor};
+
+        let builder = if cfg.tls_langsung {
+            AsyncSmtpTransport::<Tokio1Executor>::relay(&cfg.host)
+        } else {
+            AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&cfg.host)
+        }
+        .map_err(|e| format!("Host SMTP tidak valid: {e}"))?
+        .port(cfg.port);
+        let builder = if cfg.username.is_empty() {
+            builder
+        } else {
+            builder.credentials(Credentials::new(cfg.username.clone(), cfg.password.clone()))
+        };
+        let from = cfg
+            .from
+            .parse()
+            .map_err(|e| format!("SMTP_FROM tidak valid: {e}"))?;
+        Ok(Self {
+            transport: builder.build(),
+            from,
+        })
+    }
+}
+
+impl MailSender for SmtpMailSender {
+    fn send_email<'a>(
+        &'a self,
+        to: &'a str,
+        subject: &'a str,
+        body: &'a str,
+    ) -> BoxFuture<'a, Result<(), AppError>> {
+        Box::pin(async move {
+            use lettre::AsyncTransport;
+            let tujuan = to.parse().map_err(|e| {
+                AppError::BadRequest(format!("Alamat email tujuan tidak valid: {e}"))
+            })?;
+            let pesan = lettre::Message::builder()
+                .from(self.from.clone())
+                .to(tujuan)
+                .subject(subject)
+                .header(lettre::message::header::ContentType::TEXT_PLAIN)
+                .body(body.to_string())
+                .map_err(|e| AppError::Internal(format!("Gagal menyusun email: {e}")))?;
+            self.transport
+                .send(pesan)
+                .await
+                .map_err(|e| AppError::Internal(format!("Gagal mengirim email via SMTP: {e}")))?;
+            Ok(())
+        })
+    }
+
+    fn get_sent_emails<'a>(&'a self) -> BoxFuture<'a, Vec<SentEmail>> {
+        Box::pin(async { Vec::new() })
+    }
+}

@@ -81,6 +81,18 @@ impl StorageService {
         expires_seconds: u64,
         datetime: DateTime<Utc>,
     ) -> String {
+        let canonical_uri = format!("/{}/{}", self.bucket, object_key);
+        self.sign_path(method, &canonical_uri, expires_seconds, datetime)
+    }
+
+    /// Tanda tangan SigV4 (query string) untuk path apa pun, mis. `/bucket` atau `/bucket/key`.
+    fn sign_path(
+        &self,
+        method: &str,
+        canonical_uri: &str,
+        expires_seconds: u64,
+        datetime: DateTime<Utc>,
+    ) -> String {
         let date_stamp = datetime.format("%Y%m%d").to_string();
         let amz_date = datetime.format("%Y%m%dT%H%M%SZ").to_string();
 
@@ -98,8 +110,6 @@ impl StorageService {
 
         // Encoding aman URL untuk parameter query AWS SigV4
         let encoded_credential = credential_param.replace('/', "%2F");
-
-        let canonical_uri = format!("/{}/{}", self.bucket, object_key);
 
         // Query string harus diurutkan secara alfabetis berdasarkan kunci
         let canonical_query_string = format!(
@@ -141,6 +151,75 @@ impl StorageService {
             "{}{}?{}&X-Amz-Signature={}",
             self.endpoint, canonical_uri, canonical_query_string, signature
         )
+    }
+
+    /// Pastikan bucket ada (dibuat bila belum). Dipanggil saat API start agar unggah
+    /// berkas tidak gagal karena bucket belum dibuat. Hanya untuk endpoint `http://`
+    /// (MinIO lokal/docker); endpoint `https://` hanya dicek keterjangkauannya.
+    pub async fn pastikan_bucket(&self) -> Result<&'static str, String> {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        use tokio::net::TcpStream;
+        use tokio::time::{Duration, timeout};
+
+        let (https, sisa) = if let Some(r) = self.endpoint.strip_prefix("https://") {
+            (true, r)
+        } else {
+            (false, self.endpoint.trim_start_matches("http://"))
+        };
+        let host = sisa.split('/').next().unwrap_or_default().to_string();
+        let alamat = if host.contains(':') {
+            host.clone()
+        } else {
+            format!("{host}:{}", if https { 443 } else { 80 })
+        };
+
+        let mut stream = timeout(Duration::from_secs(3), TcpStream::connect(&alamat))
+            .await
+            .map_err(|_| format!("penyimpanan berkas {alamat} tidak merespons"))?
+            .map_err(|e| format!("penyimpanan berkas {alamat} tidak dapat dihubungi: {e}"))?;
+        if https {
+            return Ok("terjangkau (https; bucket tidak diperiksa)");
+        }
+
+        let url = self.sign_path("PUT", &format!("/{}", self.bucket), 60, Utc::now());
+        let path = url.trim_start_matches(&self.endpoint);
+        let req = format!(
+            "PUT {path} HTTP/1.1\r\nHost: {host}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+        );
+        let io = async {
+            stream.write_all(req.as_bytes()).await?;
+            let mut buf = Vec::new();
+            stream.read_to_end(&mut buf).await?;
+            Ok::<_, std::io::Error>(buf)
+        };
+        let buf = timeout(Duration::from_secs(5), io)
+            .await
+            .map_err(|_| "penyimpanan berkas tidak menjawab".to_string())?
+            .map_err(|e| format!("gagal berkomunikasi dengan penyimpanan berkas: {e}"))?;
+        let teks = String::from_utf8_lossy(&buf);
+        let kode = teks
+            .split_whitespace()
+            .nth(1)
+            .and_then(|k| k.parse::<u16>().ok())
+            .unwrap_or(0);
+        match kode {
+            200 => Ok("bucket dibuat"),
+            409 if teks.contains("BucketAlreadyOwnedByYou")
+                || teks.contains("BucketAlreadyExists") =>
+            {
+                Ok("bucket sudah ada")
+            }
+            _ => Err(format!(
+                "gagal membuat bucket '{}' (HTTP {kode}): {}",
+                self.bucket,
+                teks.lines()
+                    .last()
+                    .unwrap_or_default()
+                    .chars()
+                    .take(200)
+                    .collect::<String>()
+            )),
+        }
     }
 
     fn get_signature_key(&self, date_stamp: &str) -> Vec<u8> {

@@ -38,7 +38,7 @@ impl PembayaranRepository {
         gelombang_id: Uuid,
     ) -> Result<Option<i64>, AppError> {
         let nominal: Option<(i64,)> = sqlx::query_as(
-            "SELECT COALESCE(SUM(nominal), 0) 
+            "SELECT COALESCE(SUM(nominal), 0)::bigint
              FROM matriks_biaya 
              WHERE prodi_id = $1 AND jalur_id = $2 AND gelombang_id = $3",
         )
@@ -49,6 +49,16 @@ impl PembayaranRepository {
         .await?;
 
         Ok(nominal.map(|r| r.0).filter(|&v| v > 0))
+    }
+
+    /// Biaya formulir per jalur masuk (default 250.000 bila jalur tidak ditemukan).
+    pub async fn get_biaya_formulir_jalur(&self, jalur_id: Uuid) -> Result<i64, AppError> {
+        let nominal: Option<i64> =
+            sqlx::query_scalar("SELECT biaya_formulir FROM jalur_masuk WHERE id = $1")
+                .bind(jalur_id)
+                .fetch_optional(&self.pool)
+                .await?;
+        Ok(nominal.unwrap_or(250_000))
     }
 
     pub async fn find_voucher_by_code(&self, code: &str) -> Result<Option<Voucher>, AppError> {
@@ -117,7 +127,8 @@ impl PembayaranRepository {
     // ==========================================
 
     pub async fn get_next_sequence(&self) -> Result<i64, AppError> {
-        let row: (i64,) = sqlx::query_as("SELECT COALESCE(COUNT(*), 0) + 1 FROM tagihan")
+        // SEQUENCE: aman dari bentrok saat ada baris terhapus / pengiriman bersamaan
+        let row: (i64,) = sqlx::query_as("SELECT nextval('seq_nomor_tagihan')")
             .fetch_one(&self.pool)
             .await?;
         Ok(row.0)
@@ -136,16 +147,12 @@ impl PembayaranRepository {
     ) -> Result<Tagihan, AppError> {
         let mut tx = self.pool.begin().await?;
 
-        let status = if nominal_akhir == 0 {
-            "LUNAS"
-        } else {
-            "MENUNGGU_PEMBAYARAN"
-        };
-        let lunas_at = if nominal_akhir == 0 {
-            Some(Utc::now())
-        } else {
-            None
-        };
+        // Selalu terbit sebagai belum lunas. Tagihan Rp 0 dilunasi pemanggil lewat
+        // settle_pembayaran_idempoten, satu-satunya jalur yang juga memajukan alur
+        // pendaftar; bila di sini langsung LUNAS, pelunasan dianggap sudah terjadi
+        // dan calon tertahan di status SUBMITTED.
+        let status = "MENUNGGU_PEMBAYARAN";
+        let lunas_at: Option<DateTime<Utc>> = None;
 
         let t = sqlx::query_as::<_, Tagihan>(
             "INSERT INTO tagihan (
@@ -186,7 +193,7 @@ impl PembayaranRepository {
         .bind(diskon_voucher)
         .bind(nominal_akhir)
         .bind(voucher_id)
-        .bind(if nominal_akhir == 0 { "LUNAS" } else { "PENDING" })
+        .bind("PENDING")
         .bind(tgl_jatuh_tempo)
         .bind(lunas_at)
         .execute(&mut *tx)
@@ -322,174 +329,233 @@ impl PembayaranRepository {
     // 4. PEMROSESAN WEBHOOK IDEMPOTEN & ATOMIK
     // ==========================================
 
+    /// Rekonsiliasi menyeluruh tahap bayar formulir (dijalankan saat server mulai):
+    /// jalur gratis yang belum dilunasi dan tagihan lunas yang statusnya tertinggal.
+    /// Mengembalikan jumlah pendaftar yang dimajukan.
+    pub async fn rekonsiliasi_alur_pembayaran(&self) -> Result<usize, AppError> {
+        let kandidat: Vec<(Uuid, Uuid, String)> = sqlx::query_as(
+            "SELECT id, jalur_id, status_pendaftaran FROM pendaftar
+             WHERE status_pendaftaran IN ('SUBMITTED', 'MENUNGGU_VERIFIKASI_BAYAR', 'PEMBAYARAN_DITOLAK')",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        let mut jumlah = 0;
+        for (id, jalur_id, st) in kandidat {
+            // Kegagalan satu pendaftar tidak boleh menghentikan pemeriksaan yang lain
+            let hasil = async {
+                Ok::<bool, AppError>(
+                    self.sinkron_formulir_lunas(id).await?
+                        || (st == "SUBMITTED" && self.lunasi_formulir_gratis(id, jalur_id).await?),
+                )
+            }
+            .await;
+            match hasil {
+                Ok(true) => jumlah += 1,
+                Ok(false) => {}
+                Err(e) => tracing::warn!("Rekonsiliasi pendaftar {id} gagal: {e}"),
+            }
+        }
+        Ok(jumlah)
+    }
+
+    /// Perbaikan otomatis: tagihan formulir sudah LUNAS tetapi status pendaftar
+    /// tertinggal (mis. data lama sebelum perbaikan) -> majukan alurnya.
+    /// Mengembalikan true bila ada status yang dimajukan.
+    pub async fn sinkron_formulir_lunas(&self, pendaftar_id: Uuid) -> Result<bool, AppError> {
+        let lunas: Option<(String, i64, Option<DateTime<Utc>>)> = sqlx::query_as(
+            "SELECT nomor_tagihan, nominal_akhir, lunas_at FROM tagihan
+             WHERE pendaftar_id = $1 AND jenis_tagihan = 'FORMULIR' AND status = 'LUNAS'
+             ORDER BY tgl_terbit DESC LIMIT 1",
+        )
+        .bind(pendaftar_id)
+        .fetch_optional(&self.pool)
+        .await?;
+        let Some((nomor, nominal, lunas_at)) = lunas else {
+            return Ok(false);
+        };
+        let waktu = lunas_at.unwrap_or_else(Utc::now);
+        let mut conn = self.pool.acquire().await?;
+        majukan_alur_formulir_lunas(
+            &mut conn,
+            pendaftar_id,
+            &serde_json::json!({ "order_id": nomor, "nominal": nominal, "paid_at": waktu }),
+            waktu,
+        )
+        .await
+    }
+
+    /// Jalur berbiaya formulir Rp 0: terbitkan tagihan Rp 0 lalu lunasi, sehingga
+    /// calon langsung lanjut ke unggah berkas tanpa transfer & bukti. Idempoten.
+    /// Mengembalikan true bila biaya formulir calon memang gratis (sudah lunas).
+    pub async fn lunasi_formulir_gratis(
+        &self,
+        pendaftar_id: Uuid,
+        jalur_id: Uuid,
+    ) -> Result<bool, AppError> {
+        if self.get_biaya_formulir_jalur(jalur_id).await? != 0 {
+            return Ok(false);
+        }
+        let ada = self
+            .find_tagihan_by_pendaftar_id(pendaftar_id)
+            .await?
+            .into_iter()
+            .find(|t| {
+                t.jenis_tagihan == "FORMULIR"
+                    && !matches!(t.status.as_str(), "KEDALUWARSA" | "BATAL")
+            });
+        let nomor = match ada {
+            Some(t) if t.status == "LUNAS" => {
+                self.sinkron_formulir_lunas(pendaftar_id).await?;
+                return Ok(true);
+            }
+            Some(t) => t.nomor_tagihan,
+            None => {
+                let nomor = format!("INV-2026-{:05}", self.get_next_sequence().await?);
+                self.create_tagihan(
+                    pendaftar_id,
+                    &nomor,
+                    "FORMULIR",
+                    0,
+                    0,
+                    0,
+                    None,
+                    Utc::now() + chrono::Duration::days(3),
+                )
+                .await?;
+                nomor
+            }
+        };
+        self.settle_pembayaran_idempoten(&nomor, Utc::now()).await?;
+        Ok(true)
+    }
+
     pub async fn settle_pembayaran_idempoten(
         &self,
         order_id: &str,
         paid_at: DateTime<Utc>,
     ) -> Result<(bool, Option<Uuid>), AppError> {
         let mut db_tx = self.pool.begin().await?;
+        let lunas = settle_dalam_tx(&mut db_tx, order_id, paid_at).await?;
+        db_tx.commit().await?;
 
-        // 1. Lock transaksi berdasarkan nomor_transaksi atau nomor_tagihan
-        let trx: Option<TransaksiPembayaran> = sqlx::query_as(
-            "SELECT * FROM transaksi_pembayaran 
+        match lunas {
+            Some(tagihan) => {
+                self.notifikasi_lunas(&tagihan).await;
+                Ok((true, Some(tagihan.pendaftar_id)))
+            }
+            None => Ok((false, None)),
+        }
+    }
+
+    /// Email konfirmasi setelah tagihan lunas (dipanggil setelah commit).
+    pub async fn notifikasi_lunas(&self, tagihan: &Tagihan) {
+        let (subject, pesan) = pesan_lunas(tagihan);
+        crate::modules::pendaftaran::alur::kirim_notifikasi(
+            &self.pool,
+            tagihan.pendaftar_id,
+            subject,
+            &pesan,
+            "PEMBAYARAN_LUNAS",
+        )
+        .await;
+    }
+}
+
+/// Inti pelunasan idempoten di dalam transaksi pemanggil.
+/// Mengembalikan `Some(tagihan)` bila tagihan baru saja lunas, `None` bila sudah lunas sebelumnya.
+pub async fn settle_dalam_tx(
+    db_tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    order_id: &str,
+    paid_at: DateTime<Utc>,
+) -> Result<Option<Tagihan>, AppError> {
+    // 1. Lock transaksi berdasarkan nomor_transaksi atau nomor_tagihan
+    let trx: Option<TransaksiPembayaran> = sqlx::query_as(
+        "SELECT * FROM transaksi_pembayaran 
              WHERE nomor_transaksi = $1 
              FOR UPDATE",
-        )
-        .bind(order_id)
-        .fetch_optional(&mut *db_tx)
-        .await?;
+    )
+    .bind(order_id)
+    .fetch_optional(&mut **db_tx)
+    .await?;
 
-        let (tagihan_id, trx_id) = match trx {
-            Some(ref t) => {
-                if t.status == "SETTLEMENT" || t.status == "PAID" {
-                    // Idempotent: transaksi ini sudah lunas sebelumnya
-                    db_tx.commit().await?;
-                    return Ok((false, None));
-                }
-                (t.tagihan_id, Some(t.id))
+    let (tagihan_id, trx_id) = match trx {
+        Some(ref t) => {
+            if t.status == "SETTLEMENT" || t.status == "PAID" {
+                // Idempotent: transaksi ini sudah lunas sebelumnya
+                return Ok(None);
             }
-            None => {
-                // Cari apakah order_id adalah nomor_tagihan langsung
-                let tag: Option<Tagihan> =
-                    sqlx::query_as("SELECT * FROM tagihan WHERE nomor_tagihan = $1 FOR UPDATE")
-                        .bind(order_id)
-                        .fetch_optional(&mut *db_tx)
-                        .await?;
+            (t.tagihan_id, Some(t.id))
+        }
+        None => {
+            // Cari apakah order_id adalah nomor_tagihan langsung
+            let tag: Option<Tagihan> =
+                sqlx::query_as("SELECT * FROM tagihan WHERE nomor_tagihan = $1 FOR UPDATE")
+                    .bind(order_id)
+                    .fetch_optional(&mut **db_tx)
+                    .await?;
 
-                match tag {
-                    Some(tg) => {
-                        if tg.status == "LUNAS" {
-                            db_tx.commit().await?;
-                            return Ok((false, None));
-                        }
-                        (tg.id, None)
+            match tag {
+                Some(tg) => {
+                    if tg.status == "LUNAS" {
+                        return Ok(None);
                     }
-                    None => {
-                        db_tx.rollback().await?;
-                        return Err(AppError::NotFound(format!(
-                            "Transaksi atau tagihan dengan order_id {} tidak ditemukan",
-                            order_id
-                        )));
-                    }
+                    (tg.id, None)
+                }
+                None => {
+                    return Err(AppError::NotFound(format!(
+                        "Transaksi atau tagihan dengan order_id {} tidak ditemukan",
+                        order_id
+                    )));
                 }
             }
-        };
+        }
+    };
 
-        // 2. Update status transaksi jika ada
-        if let Some(tid) = trx_id {
-            sqlx::query(
-                "UPDATE transaksi_pembayaran 
+    // 2. Update status transaksi jika ada
+    if let Some(tid) = trx_id {
+        sqlx::query(
+            "UPDATE transaksi_pembayaran 
                  SET status = 'SETTLEMENT', waktu_dibayar = $1, updated_at = NOW() 
                  WHERE id = $2",
-            )
-            .bind(paid_at)
-            .bind(tid)
-            .execute(&mut *db_tx)
-            .await?;
-        }
+        )
+        .bind(paid_at)
+        .bind(tid)
+        .execute(&mut **db_tx)
+        .await?;
+    }
 
-        // 3. Update status tagihan
-        let tagihan = sqlx::query_as::<_, Tagihan>(
-            "UPDATE tagihan 
+    // 3. Update status tagihan
+    let tagihan = sqlx::query_as::<_, Tagihan>(
+        "UPDATE tagihan 
              SET status = 'LUNAS', lunas_at = $1, updated_at = NOW() 
              WHERE id = $2 
              RETURNING *",
-        )
-        .bind(paid_at)
-        .bind(tagihan_id)
-        .fetch_one(&mut *db_tx)
-        .await?;
+    )
+    .bind(paid_at)
+    .bind(tagihan_id)
+    .fetch_one(&mut **db_tx)
+    .await?;
 
-        // 4. Update tabel legacy `pembayaran`
-        let _ = sqlx::query(
-            "UPDATE pembayaran 
+    // 4. Update tabel legacy `pembayaran`
+    let _ = sqlx::query(
+        "UPDATE pembayaran 
              SET status_pembayaran = 'LUNAS', tgl_bayar = $1, updated_at = NOW() 
              WHERE id = $2 OR nomor_tagihan = $3",
-        )
-        .bind(paid_at)
-        .bind(tagihan_id)
-        .bind(&tagihan.nomor_tagihan)
-        .execute(&mut *db_tx)
-        .await;
+    )
+    .bind(paid_at)
+    .bind(tagihan_id)
+    .bind(&tagihan.nomor_tagihan)
+    .execute(&mut **db_tx)
+    .await;
 
-        // 5. Update state langkah pendaftaran -> SELESAI
-        let langkah_pembayaran_id: Option<(Uuid,)> = sqlx::query_as(
-            "SELECT id FROM definisi_langkah WHERE tipe_langkah = 'pembayaran' LIMIT 1",
-        )
-        .fetch_optional(&mut *db_tx)
-        .await?;
+    // 5. Lanjutkan alur pendaftar sesuai jenis tagihan (satu tempat untuk semua jalur lunas:
+    //    webhook gateway, persetujuan bukti bayar, konfirmasi loket)
+    lanjutkan_alur_setelah_lunas(db_tx, &tagihan, order_id, paid_at).await?;
 
-        if let Some((langkah_id,)) = langkah_pembayaran_id {
-            let _ = sqlx::query(
-                "INSERT INTO state_langkah_pendaftar (pendaftar_id, langkah_id, status, data, selesai_at)
-                 VALUES ($1, $2, 'SELESAI', $3, $4)
-                 ON CONFLICT (pendaftar_id, langkah_id) DO UPDATE
-                 SET status = 'SELESAI', data = EXCLUDED.data, selesai_at = EXCLUDED.selesai_at, updated_at = NOW()"
-            )
-            .bind(tagihan.pendaftar_id)
-            .bind(langkah_id)
-            .bind(serde_json::json!({
-                "metode": "PAYMENT_GATEWAY",
-                "order_id": order_id,
-                "nominal": tagihan.nominal_akhir,
-                "paid_at": paid_at
-            }))
-            .bind(paid_at)
-            .execute(&mut *db_tx)
-            .await;
-        }
+    Ok(Some(tagihan))
+}
 
-        // 6. Majukan status pendaftar ke MENUNGGU_UJIAN jika saat ini SUBMITTED atau DRAFT
-        let _ = sqlx::query(
-            "UPDATE pendaftar 
-             SET status_pendaftaran = 'MENUNGGU_UJIAN', updated_at = NOW() 
-             WHERE id = $1 AND status_pendaftaran IN ('SUBMITTED', 'DRAFT')",
-        )
-        .bind(tagihan.pendaftar_id)
-        .execute(&mut *db_tx)
-        .await;
-
-        // 7. Enqueue notifikasi email via antrean_email
-        let user_info: Option<(String, String)> = sqlx::query_as(
-            "SELECT u.nama_lengkap, u.email 
-             FROM users u 
-             JOIN pendaftar p ON p.user_id = u.id 
-             WHERE p.id = $1",
-        )
-        .bind(tagihan.pendaftar_id)
-        .fetch_optional(&mut *db_tx)
-        .await?;
-
-        if let Some((nama, email)) = user_info {
-            let subject = "Konfirmasi Pembayaran Biaya Formulir PMB Berhasil";
-            let body_text = format!(
-                "Halo {},\n\nPembayaran biaya formulir PMB Anda dengan Nomor Tagihan: {} sebesar Rp {} telah berhasil diverifikasi.\nTahapan seleksi Anda kini telah berlanjut ke Ujian Seleksi PMB. Silakan login ke portal PMB untuk mengunduh Kartu Peserta Ujian resmi Anda.",
-                nama, tagihan.nomor_tagihan, tagihan.nominal_akhir
-            );
-            let body_html = format!(
-                "<p>Halo <strong>{}</strong>,</p><p>Pembayaran biaya formulir PMB Anda dengan Nomor Tagihan: <strong>{}</strong> sebesar <strong>Rp {}</strong> telah berhasil diverifikasi lunas.</p><p>Tahapan seleksi Anda kini telah berlanjut ke Ujian Seleksi PMB. Silakan login ke portal PMB untuk mengunduh Kartu Peserta Ujian resmi Anda.</p>",
-                nama, tagihan.nomor_tagihan, tagihan.nominal_akhir
-            );
-
-            let _ = sqlx::query(
-                "INSERT INTO antrean_email (
-                    to_email, to_name, subject, body_text, body_html, tipe_notifikasi, pendaftar_id
-                ) VALUES ($1, $2, $3, $4, $5, 'PEMBAYARAN_LUNAS', $6)",
-            )
-            .bind(email)
-            .bind(nama)
-            .bind(subject)
-            .bind(body_text)
-            .bind(body_html)
-            .bind(tagihan.pendaftar_id)
-            .execute(&mut *db_tx)
-            .await;
-        }
-
-        db_tx.commit().await?;
-        Ok((true, Some(tagihan.pendaftar_id)))
-    }
-
+impl PembayaranRepository {
     pub async fn expire_pembayaran_idempoten(&self, order_id: &str) -> Result<bool, AppError> {
         let mut db_tx = self.pool.begin().await?;
 
@@ -660,7 +726,7 @@ impl PembayaranRepository {
         // Agregat Ringkasan Keuangan
         let ringkasan_row: (i64, i64, i64, i64) = sqlx::query_as(
             "SELECT 
-                COALESCE(SUM(CASE WHEN status = 'LUNAS' THEN nominal_akhir ELSE 0 END), 0) as total_dana,
+                COALESCE(SUM(CASE WHEN status = 'LUNAS' THEN nominal_akhir ELSE 0 END), 0)::bigint as total_dana,
                 COUNT(CASE WHEN status = 'LUNAS' THEN 1 END) as total_lunas,
                 COUNT(CASE WHEN status = 'MENUNGGU_PEMBAYARAN' THEN 1 END) as total_pending,
                 COUNT(CASE WHEN status = 'KEDALUWARSA' THEN 1 END) as total_expired
@@ -706,19 +772,18 @@ impl PembayaranRepository {
             .await?;
 
         // Log audit
-        let _ = sqlx::query(
-            "INSERT INTO audit_log (id, user_id, action, entity, entity_id, payload, created_at)
-             VALUES ($1, $2, 'MANUAL_SETTLE_PAYMENT', 'tagihan', $3, $4, NOW())",
+        let _ = crate::security::record_audit_log(
+            &self.pool,
+            Some(admin_id),
+            "MANUAL_SETTLE_PAYMENT",
+            "tagihan",
+            Some(tagihan_id),
+            None,
+            Some(serde_json::json!({
+                "nomor_tagihan": tagihan.nomor_tagihan,
+                "catatan": catatan,
+            })),
         )
-        .bind(Uuid::new_v4())
-        .bind(admin_id)
-        .bind(tagihan_id)
-        .bind(serde_json::json!({
-            "nomor_tagihan": tagihan.nomor_tagihan,
-            "catatan": catatan,
-            "admin_id": admin_id
-        }))
-        .execute(&self.pool)
         .await;
 
         Ok(())
@@ -801,5 +866,126 @@ impl PembayaranRepository {
         .fetch_all(&self.pool)
         .await?;
         Ok(list)
+    }
+}
+
+/// Majukan alur pendaftar setelah sebuah tagihan lunas (dijalankan di dalam transaksi settle).
+async fn lanjutkan_alur_setelah_lunas(
+    db_tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    tagihan: &Tagihan,
+    order_id: &str,
+    paid_at: DateTime<Utc>,
+) -> Result<(), AppError> {
+    use crate::modules::pendaftaran::alur::status;
+
+    match tagihan.jenis_tagihan.as_str() {
+        "FORMULIR" => {
+            majukan_alur_formulir_lunas(
+                db_tx,
+                tagihan.pendaftar_id,
+                &serde_json::json!({
+                    "order_id": order_id,
+                    "nominal": tagihan.nominal_akhir,
+                    "paid_at": paid_at
+                }),
+                paid_at,
+            )
+            .await?;
+        }
+        "DAFTAR_ULANG_UKT" => {
+            sqlx::query(
+                "UPDATE hasil_kelulusan SET status_daftar_ulang = 'LUNAS', updated_at = NOW()
+                 WHERE pendaftar_id = $1
+                   AND status_daftar_ulang IN ('BELUM_DAFTAR_ULANG', 'TAGIHAN_TERBIT')",
+            )
+            .bind(tagihan.pendaftar_id)
+            .execute(&mut **db_tx)
+            .await?;
+
+            sqlx::query(
+                "UPDATE pendaftar SET status_pendaftaran = $1, updated_at = NOW()
+                 WHERE id = $2 AND status_pendaftaran = ANY($3)",
+            )
+            .bind(status::DAFTAR_ULANG_LUNAS)
+            .bind(tagihan.pendaftar_id)
+            .bind(
+                [status::LULUS, status::MENUNGGU_VERIFIKASI_DAFTAR_ULANG]
+                    .map(String::from)
+                    .to_vec(),
+            )
+            .execute(&mut **db_tx)
+            .await?;
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+/// Pembayaran formulir lunas -> langkah pembayaran SELESAI dan status
+/// PEMBAYARAN_DISETUJUI. Satu-satunya tempat transisi ini, dipakai oleh approve
+/// bukti, jalur gratis, voucher 100%, dan perbaikan data. Idempoten: tidak
+/// mengubah apa pun bila status pendaftar sudah lebih maju.
+pub async fn majukan_alur_formulir_lunas(
+    conn: &mut sqlx::PgConnection,
+    pendaftar_id: Uuid,
+    data: &serde_json::Value,
+    waktu: DateTime<Utc>,
+) -> Result<bool, AppError> {
+    use crate::modules::pendaftaran::alur::status;
+
+    let maju = sqlx::query(
+        "UPDATE pendaftar SET status_pendaftaran = $1, updated_at = NOW()
+         WHERE id = $2 AND status_pendaftaran = ANY($3)",
+    )
+    .bind(status::PEMBAYARAN_DISETUJUI)
+    .bind(pendaftar_id)
+    .bind(
+        [
+            status::SUBMITTED,
+            status::MENUNGGU_VERIFIKASI_BAYAR,
+            status::PEMBAYARAN_DITOLAK,
+        ]
+        .map(String::from)
+        .to_vec(),
+    )
+    .execute(&mut *conn)
+    .await?
+    .rows_affected()
+        > 0;
+
+    sqlx::query(
+        "INSERT INTO state_langkah_pendaftar (pendaftar_id, langkah_id, status, data_tambahan, selesai_at)
+         SELECT $1, dl.id, 'SELESAI', $2, $3
+         FROM definisi_langkah dl
+         WHERE dl.tipe_langkah = 'pembayaran' AND dl.is_active = TRUE
+         ON CONFLICT (pendaftar_id, langkah_id) DO UPDATE
+         SET status = 'SELESAI', data_tambahan = EXCLUDED.data_tambahan,
+             selesai_at = EXCLUDED.selesai_at, updated_at = NOW()",
+    )
+    .bind(pendaftar_id)
+    .bind(data)
+    .bind(waktu)
+    .execute(&mut *conn)
+    .await?;
+
+    Ok(maju)
+}
+
+fn pesan_lunas(tagihan: &Tagihan) -> (&'static str, String) {
+    match tagihan.jenis_tagihan.as_str() {
+        "DAFTAR_ULANG_UKT" => (
+            "Pembayaran Daftar Ulang PMB Disetujui",
+            format!(
+                "Pembayaran daftar ulang Anda (No. Tagihan {}) sebesar Rp {} telah disetujui. Langkah terakhir: lengkapi berkas registrasi ulang di portal PMB untuk menerima NIM.",
+                tagihan.nomor_tagihan, tagihan.nominal_akhir
+            ),
+        ),
+        _ => (
+            "Pembayaran Formulir PMB Disetujui",
+            format!(
+                "Pembayaran biaya formulir Anda (No. Tagihan {}) sebesar Rp {} telah disetujui. Langkah berikutnya: unggah berkas persyaratan di portal PMB.",
+                tagihan.nomor_tagihan, tagihan.nominal_akhir
+            ),
+        ),
     }
 }

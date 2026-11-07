@@ -13,7 +13,7 @@ use validator::Validate;
 
 use crate::{
     error::AppError,
-    extractors::auth::AuthUser,
+    extractors::{ValidatedJson, auth::AuthUser},
     modules::rpl::{
         dto::{
             AssignAsesorRequest, CreateMataKuliahRequest, LaporanRplResponse, RplItemRekapDto,
@@ -24,8 +24,83 @@ use crate::{
         repository::RplRepository,
         service::RplService,
     },
+    security::storage::{PresignedUploadResponse, StorageService},
     state::AppState,
 };
+
+fn storage(state: &AppState) -> StorageService {
+    StorageService::new(
+        state.config.s3_endpoint.clone(),
+        state.config.s3_access_key.clone(),
+        state.config.s3_secret_key.clone(),
+        state.config.s3_bucket.clone(),
+    )
+}
+
+/// Isi URL unduh sementara untuk tiap dokumen portofolio sebelum dikirim ke klien.
+fn lengkapi_url_unduh(
+    state: &AppState,
+    mut detail: RplPermohonanDetailResponse,
+) -> RplPermohonanDetailResponse {
+    let st = storage(state);
+    for b in detail.berkas_pendukung.iter_mut() {
+        if !b.file_key.is_empty() {
+            b.url_unduh = Some(st.generate_presigned_get_url(&b.file_key, 900).download_url);
+        }
+    }
+    detail
+}
+
+/// Ekstensi dokumen portofolio RPL yang diterima.
+const EKSTENSI_BERKAS_RPL: &[&str] = &["pdf", "jpg", "jpeg", "png"];
+
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
+pub struct PresignBerkasRplRequest {
+    #[validate(length(min = 1, max = 255, message = "Nama file wajib diisi"))]
+    pub file_name: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/rpl/berkas/presign",
+    tag = "RPL",
+    request_body = PresignBerkasRplRequest,
+    responses(
+        (status = 200, description = "URL unggah dokumen portofolio RPL (15 menit)", body = PresignedUploadResponse),
+        (status = 400, description = "Format file tidak didukung / bukan jalur RPL")
+    )
+)]
+pub async fn presign_berkas_rpl_handler(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    ValidatedJson(req): ValidatedJson<PresignBerkasRplRequest>,
+) -> Result<Json<PresignedUploadResponse>, AppError> {
+    let repo = RplRepository::new(state.db.clone());
+    let (pendaftar_id, jalur_id, _, _) = repo
+        .find_pendaftar_by_user_id(auth_user.user_id)
+        .await?
+        .ok_or_else(|| {
+        AppError::NotFound("Anda belum terdaftar dalam sistem PMB".to_string())
+    })?;
+    if !repo.check_jalur_has_rpl_step(jalur_id).await? {
+        return Err(AppError::BadRequest(
+            "Jalur pendaftaran Anda bukan Jalur RPL".to_string(),
+        ));
+    }
+    let ext = req
+        .file_name
+        .rsplit_once('.')
+        .map(|(_, e)| e.to_lowercase())
+        .filter(|e| EKSTENSI_BERKAS_RPL.contains(&e.as_str()))
+        .ok_or_else(|| AppError::BadRequest("Format file harus PDF, JPG, atau PNG".to_string()))?;
+    let key = format!(
+        "{}{}.{}",
+        crate::modules::rpl::service::prefix_berkas_rpl(pendaftar_id),
+        Uuid::new_v4(),
+        ext
+    );
+    Ok(Json(storage(&state).generate_presigned_put_url(&key, 900)))
+}
 
 fn create_service(state: &AppState) -> RplService {
     let repo = RplRepository::new(state.db.clone());
@@ -50,6 +125,7 @@ pub fn rpl_router() -> Router<AppState> {
             get(get_mata_kuliah_by_prodi_handler),
         )
         .route("/my-permohonan", get(get_my_permohonan_handler))
+        .route("/berkas/presign", post(presign_berkas_rpl_handler))
         .route("/submit", post(submit_permohonan_handler))
         // Admin & Asesor Endpoints
         .route("/admin/permohonan", get(list_permohonan_handler))
@@ -112,7 +188,7 @@ pub async fn get_my_permohonan_handler(
 ) -> Result<Json<RplPermohonanDetailResponse>, AppError> {
     let service = create_service(&state);
     let res = service.get_my_permohonan(&auth_user).await?;
-    Ok(Json(res))
+    Ok(Json(lengkapi_url_unduh(&state, res)))
 }
 
 #[utoipa::path(
@@ -131,15 +207,11 @@ pub async fn get_my_permohonan_handler(
 pub async fn submit_permohonan_handler(
     State(state): State<AppState>,
     auth_user: AuthUser,
-    Json(payload): Json<SubmitRplPermohonanRequest>,
+    ValidatedJson(payload): ValidatedJson<SubmitRplPermohonanRequest>,
 ) -> Result<Json<RplPermohonanDetailResponse>, AppError> {
-    payload
-        .validate()
-        .map_err(|e| AppError::BadRequest(e.to_string()))?;
-
     let service = create_service(&state);
     let res = service.submit_permohonan(&auth_user, payload).await?;
-    Ok(Json(res))
+    Ok(Json(lengkapi_url_unduh(&state, res)))
 }
 
 #[utoipa::path(
@@ -190,7 +262,7 @@ pub async fn get_permohonan_detail_handler(
 ) -> Result<Json<RplPermohonanDetailResponse>, AppError> {
     let service = create_service(&state);
     let detail = service.get_permohonan_detail(&auth_user, id).await?;
-    Ok(Json(detail))
+    Ok(Json(lengkapi_url_unduh(&state, detail)))
 }
 
 #[utoipa::path(

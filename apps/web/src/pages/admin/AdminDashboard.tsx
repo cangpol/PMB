@@ -37,6 +37,7 @@ import {
 } from "../../components/common";
 import { SeoHead } from "../../components/common/SeoHead";
 import { PageHeader } from "../../components/admin/PageHeader";
+import { KartuAntrean } from "../../components/admin/KartuAntrean";
 import { Sparkline } from "../../components/ui/Sparkline";
 import { fetchApi } from "../../services/api";
 import type { components } from "../../types/api";
@@ -217,6 +218,9 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Berkas/bukti yang menunggu diperiksa (tersembunyi bila kosong) */}
+      <KartuAntrean />
 
       {/* Error State */}
       {isError && (

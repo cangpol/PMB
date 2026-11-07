@@ -15,6 +15,15 @@ import {
   ChevronRight,
   BadgePercent,
   Gift,
+  Globe,
+  UserPlus,
+  LogIn,
+  Banknote,
+  CloudUpload,
+  MonitorCheck,
+  Megaphone,
+  CreditCard,
+  IdCard,
 } from "lucide-react";
 import { Button, Card, EmptyState } from "../../components/common";
 import { SeoHead } from "../../components/common/SeoHead";
@@ -44,6 +53,86 @@ interface TimeLeft {
   minutes: number;
   seconds: number;
 }
+
+interface LangkahAlurPublik {
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  title: string;
+  desc: string;
+  list?: readonly string[];
+  tag: string;
+}
+
+/** Alur resmi PMB UPITRA (sama dengan stepper di portal calon). */
+const ALUR_PMB: readonly LangkahAlurPublik[] = [
+  {
+    icon: UserPlus,
+    title: "Buat Akun PMB",
+    desc: "Buka pmb.upitra.ac.id, klik Daftar, lalu buat akun dengan email aktif Anda.",
+    tag: "Calon",
+  },
+  {
+    icon: Globe,
+    title: "Pilih Jalur & Program Studi",
+    desc: "Login ke portal, lalu pilih jalur masuk, gelombang, dan program studi tujuan. Jalur yang Anda pilih di halaman Jalur Masuk otomatis terisi.",
+    tag: "Calon",
+  },
+  {
+    icon: LogIn,
+    title: "Isi Formulir",
+    desc: "Lengkapi formulir pendaftaran:",
+    list: [
+      "Data diri",
+      "Data sekolah",
+      "Data orang tua",
+      "Tanggal seleksi (sesi CBT)",
+    ],
+    tag: "Calon",
+  },
+  {
+    icon: Banknote,
+    title: "Bayar Formulir & Unggah Bukti",
+    desc: "Bayar biaya formulir melalui VA Mandiri atau QRIS, lalu unggah bukti pembayaran. Admin PMB memeriksa dan menyetujui pembayaran Anda.",
+    tag: "Calon + verifikasi admin",
+  },
+  {
+    icon: CloudUpload,
+    title: "Unggah Berkas",
+    desc: "Setelah pembayaran disetujui, unggah berkas persyaratan:",
+    list: [
+      "Rapor kelas X - XI",
+      "Pas foto berwarna",
+      "Surat rekomendasi sekolah",
+      "Sertifikat (bila ada)",
+      "Surat bebas buta warna (khusus Fisioterapi)",
+      "Surat keterangan sehat (khusus D3 Keperawatan)",
+    ],
+    tag: "Calon + verifikasi admin",
+  },
+  {
+    icon: MonitorCheck,
+    title: "Ujian CBT Online",
+    desc: "Ikuti CBT sesuai jadwal yang dipilih. Sesi online dikerjakan dari rumah; sesi luring di lab kampus.",
+    tag: "Calon",
+  },
+  {
+    icon: Megaphone,
+    title: "Cek Pengumuman",
+    desc: "Cek hasil seleksi sesuai jadwal di portal PMB dan unduh surat penerimaan.",
+    tag: "Panitia PMB",
+  },
+  {
+    icon: CreditCard,
+    title: "Bayar Daftar Ulang",
+    desc: "Bayar sesuai surat penerimaan (jadwal pembayaran & VA Mandiri / QRIS), lalu unggah bukti untuk diverifikasi admin.",
+    tag: "Calon + verifikasi admin",
+  },
+  {
+    icon: IdCard,
+    title: "Registrasi Ulang",
+    desc: "Lengkapi berkas registrasi ulang di sistem dan terima NIM resmi.",
+    tag: "Calon + verifikasi admin",
+  },
+];
 
 export const HomePage: React.FC = () => {
   const shouldReduceMotion = useReducedMotion();
@@ -456,7 +545,10 @@ export const HomePage: React.FC = () => {
 
               {/* Action Buttons (Kontras Tinggi, Mobile Full Width Stacked) */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-                <Link to={HERO_CONTENT.ctaPrimer.href} className="w-full sm:w-auto">
+                <Link
+                  to={HERO_CONTENT.ctaPrimer.href}
+                  className="w-full sm:w-auto"
+                >
                   <Button
                     variant="white"
                     size="lg"
@@ -466,7 +558,10 @@ export const HomePage: React.FC = () => {
                     {HERO_CONTENT.ctaPrimer.label}
                   </Button>
                 </Link>
-                <Link to={HERO_CONTENT.ctaSekunder.href} className="w-full sm:w-auto">
+                <Link
+                  to={HERO_CONTENT.ctaSekunder.href}
+                  className="w-full sm:w-auto"
+                >
                   <Button
                     variant="outline-white"
                     size="lg"
@@ -475,7 +570,10 @@ export const HomePage: React.FC = () => {
                     {HERO_CONTENT.ctaSekunder.label}
                   </Button>
                 </Link>
-                <Link to={HERO_CONTENT.ctaKelulusan.href} className="w-full sm:w-auto">
+                <Link
+                  to={HERO_CONTENT.ctaKelulusan.href}
+                  className="w-full sm:w-auto"
+                >
                   <Button
                     variant="ghost"
                     size="lg"
@@ -533,7 +631,9 @@ export const HomePage: React.FC = () => {
 
                     <div className="rounded-xl bg-biru-950/60 border border-biru-800/80 p-3.5 text-xs text-biru-200 flex items-center gap-2.5">
                       <Calendar className="w-4 h-4 text-biru-400 shrink-0" />
-                      <span>{GELOMBANG_CONTENT.stateDitutup.jadwalBerikutnya}</span>
+                      <span>
+                        {GELOMBANG_CONTENT.stateDitutup.jadwalBerikutnya}
+                      </span>
                     </div>
 
                     <Link
@@ -1007,65 +1107,47 @@ export const HomePage: React.FC = () => {
             Proses Mudah & Transparan
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-biru-950">
-            5 Langkah Alur Pendaftaran PMB
+            Alur Pendaftaran PMB
           </h2>
           <p className="text-sm text-biru-700 leading-relaxed font-sans">
-            Seluruh tahapan seleksi dilakukan secara digital, transparan, dan
-            dapat dipantau langsung melalui portal calon mahasiswa.
+            Sembilan langkah dari pendaftaran online hingga registrasi ulang.
+            Setiap tahap dapat dipantau langsung melalui portal calon mahasiswa.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
-          {[
-            {
-              step: "01",
-              title: "Buat Akun",
-              desc: "Daftar dengan email dan nomor WhatsApp aktif untuk mendapatkan akses portal PMB.",
-            },
-            {
-              step: "02",
-              title: "Biaya Formulir",
-              desc: "Bayar tagihan formulir melalui Virtual Account (BCA, Mandiri, BRI) atau QRIS instan.",
-            },
-            {
-              step: "03",
-              title: "Isi Biodata & Berkas",
-              desc: "Lengkapi formulir dinamis, pilih program studi pilihan, dan unggah dokumen pendukung.",
-            },
-            {
-              step: "04",
-              title: "Ujian CBT Online",
-              desc: "Ikuti tes potensi akademik online dengan sistem CBT modern yang aman dan otomatis.",
-            },
-            {
-              step: "05",
-              title: "Pengumuman & NIM",
-              desc: "Dapatkan Letter of Acceptance (LoA) resmi, registrasi ulang, dan peroleh NIM resmi.",
-            },
-          ].map((item, idx) => (
-            <div
-              key={item.step}
-              className="relative p-5 rounded-2xl border border-biru-200 bg-putih shadow-soft-sm hover:shadow-soft-md transition-all flex flex-col justify-between"
+        <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {ALUR_PMB.map((item, idx) => (
+            <li
+              key={item.title}
+              className="relative p-5 rounded-2xl border border-biru-200 bg-putih shadow-soft-sm hover:shadow-soft-md transition-all flex gap-4"
             >
-              <div className="space-y-3">
-                <span className="font-sans text-3xl font-extrabold text-biru-200 block tabular-nums">
-                  {item.step}
+              <span className="w-12 h-12 shrink-0 rounded-2xl bg-biru-100 text-biru-800 flex items-center justify-center">
+                <item.icon className="w-6 h-6" aria-hidden />
+              </span>
+              <div className="space-y-1.5">
+                <span className="font-sans text-xs font-extrabold text-biru-400 tabular-nums">
+                  {String(idx + 1).padStart(2, "0")}
                 </span>
-                <h3 className="font-serif text-lg font-bold text-biru-950">
+                <h3 className="font-serif text-lg font-bold text-biru-950 leading-tight">
                   {item.title}
                 </h3>
                 <p className="text-xs text-biru-700 leading-relaxed font-sans">
                   {item.desc}
                 </p>
+                {item.list && (
+                  <ul className="text-xs text-biru-700 list-disc list-inside space-y-0.5">
+                    {item.list.map((l) => (
+                      <li key={l}>{l}</li>
+                    ))}
+                  </ul>
+                )}
+                <span className="inline-block text-[11px] font-semibold text-biru-600">
+                  {item.tag}
+                </span>
               </div>
-              <div className="pt-4 text-[11px] font-semibold text-biru-600 flex items-center gap-1 border-t border-biru-50 mt-4">
-                <span>Tahap {idx + 1}</span>
-                <span className="h-1 w-1 rounded-full bg-biru-400" />
-                <span className="text-biru-700">100% Online</span>
-              </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ol>
       </motion.section>
 
       {/* ========================================================================= */}

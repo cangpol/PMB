@@ -201,7 +201,9 @@ impl RplRepository {
 
     pub async fn check_jalur_has_rpl_step(&self, jalur_id: Uuid) -> Result<bool, AppError> {
         let row = sqlx::query_as::<_, (i64,)>(
-            "SELECT COUNT(*) FROM definisi_langkah WHERE jalur_id = $1 AND tipe_langkah = 'rpl'",
+            // Jalur RPL dikenali dari tipe seleksinya, atau dari langkah RPL yang dikonfigurasi admin
+            "SELECT (SELECT COUNT(*) FROM jalur_masuk WHERE id = $1 AND tipe_seleksi = 'RPL')
+                  + (SELECT COUNT(*) FROM definisi_langkah WHERE jalur_id = $1 AND tipe_langkah = 'rpl')",
         )
         .bind(jalur_id)
         .fetch_one(&self.pool)

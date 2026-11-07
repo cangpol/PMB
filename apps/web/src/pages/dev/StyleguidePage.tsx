@@ -1317,11 +1317,11 @@ export const StyleguidePage: React.FC = () => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="left">
                       <DropdownMenuLabel>Pilihan Tindakan</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => alert("Lihat Detail")}>
+                      <DropdownMenuItem onClick={() => toast({ title: "Lihat Detail", variant: "info" })}>
                         <User className="h-4 w-4" />
                         <span>Lihat Biodata</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => alert("Unduh Formulir")}>
+                      <DropdownMenuItem onClick={() => toast({ title: "Unduh Formulir", variant: "info" })}>
                         <Download className="h-4 w-4" />
                         <span>Unduh Bukti PDF</span>
                       </DropdownMenuItem>

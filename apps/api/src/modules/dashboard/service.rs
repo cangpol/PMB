@@ -6,9 +6,10 @@ use crate::{
     error::AppError,
     modules::{
         dashboard::dto::{
-            AdminDashboardResponse, CalonDashboardResponse, DashboardFilterQuery,
-            DistribusiJalurStat, DistribusiProdiStat, ExecutiveDashboardResponse, FunnelStat,
-            ProdiStat, StatusPendaftaranStat, StepperStep, TrenHarianStat,
+            AdminDashboardResponse, AntreanItem, AntreanVerifikasiResponse, CalonDashboardResponse,
+            DashboardFilterQuery, DistribusiJalurStat, DistribusiProdiStat,
+            ExecutiveDashboardResponse, FunnelStat, ProdiStat, StatusPendaftaranStat, StepperStep,
+            TrenHarianStat,
         },
         pendaftaran::repository::PendaftaranRepository,
     },
@@ -23,6 +24,80 @@ pub struct DashboardService {
 }
 
 impl DashboardService {
+    /// Hitung antrean berkas/bukti yang menunggu pemeriksaan. Hanya antrean yang
+    /// diizinkan (`berkas`, `bukti_bayar`, `daftar_ulang`) yang dihitung.
+    pub async fn get_antrean_verifikasi(
+        &self,
+        berkas: bool,
+        bukti_bayar: bool,
+        daftar_ulang: bool,
+        cbt_keputusan: bool,
+    ) -> Result<AntreanVerifikasiResponse, AppError> {
+        let mut res = AntreanVerifikasiResponse::default();
+        // Berkas terbaru per jenis saja: berkas lama yang sudah diunggah ulang tidak ikut dihitung
+        if berkas {
+            res.berkas = self
+                .hitung_antrean(
+                    "SELECT COUNT(*)::bigint, COUNT(DISTINCT pendaftar_id)::bigint, MIN(uploaded_at)
+                     FROM (SELECT DISTINCT ON (pendaftar_id, jenis_berkas)
+                                  pendaftar_id, status_verifikasi, uploaded_at
+                           FROM berkas_pendaftar
+                           ORDER BY pendaftar_id, jenis_berkas, uploaded_at DESC) t
+                     WHERE status_verifikasi = 'PENDING'",
+                )
+                .await?;
+        }
+        if bukti_bayar {
+            res.bukti_bayar = self
+                .hitung_antrean(
+                    "SELECT COUNT(*)::bigint, COUNT(DISTINCT pendaftar_id)::bigint, MIN(created_at)
+                     FROM bukti_pembayaran WHERE status = 'PENDING'",
+                )
+                .await?;
+        }
+        if daftar_ulang {
+            res.daftar_ulang = self
+                .hitung_antrean(
+                    "SELECT COUNT(*)::bigint, COUNT(DISTINCT pendaftar_id)::bigint, MIN(uploaded_at)
+                     FROM (SELECT DISTINCT ON (pendaftar_id, jenis_berkas)
+                                  pendaftar_id, status_verifikasi, uploaded_at
+                           FROM berkas_daftar_ulang
+                           ORDER BY pendaftar_id, jenis_berkas, uploaded_at DESC) t
+                     WHERE status_verifikasi = 'PENDING'",
+                )
+                .await?;
+        }
+        // Hasil CBT terbaru per calon yang belum memenuhi passing grade dan belum diputuskan admin
+        if cbt_keputusan {
+            res.cbt_keputusan = self
+                .hitung_antrean(
+                    "SELECT COUNT(*)::bigint, COUNT(DISTINCT t.pendaftar_id)::bigint, MIN(t.waktu_submit)
+                     FROM (SELECT DISTINCT ON (pendaftar_id) pendaftar_id, is_lulus, waktu_submit
+                           FROM hasil_ujian
+                           ORDER BY pendaftar_id, waktu_submit DESC) t
+                     JOIN pendaftar p ON p.id = t.pendaftar_id
+                     WHERE t.is_lulus = FALSE
+                       AND p.status_pendaftaran IN ('MENUNGGU_UJIAN', 'MENUNGGU_PENGUMUMAN')",
+                )
+                .await?;
+        }
+        res.total = res.berkas.menunggu
+            + res.bukti_bayar.menunggu
+            + res.daftar_ulang.menunggu
+            + res.cbt_keputusan.menunggu;
+        Ok(res)
+    }
+
+    async fn hitung_antrean(&self, sql: &'static str) -> Result<AntreanItem, AppError> {
+        let (menunggu, calon, terlama_sejak): (i64, i64, Option<DateTime<Utc>>) =
+            sqlx::query_as(sql).fetch_one(&self.pool).await?;
+        Ok(AntreanItem {
+            menunggu,
+            calon,
+            terlama_sejak,
+        })
+    }
+
     pub fn new(pool: PgPool) -> Self {
         let pendaftar_repo = PendaftaranRepository::new(pool.clone());
         Self {

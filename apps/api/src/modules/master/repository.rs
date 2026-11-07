@@ -83,7 +83,7 @@ impl MasterRepository {
 
     pub async fn get_all_jalur(&self) -> Result<Vec<JalurMasuk>, AppError> {
         let jalurs = sqlx::query_as::<_, JalurMasuk>(
-            "SELECT id, kode_jalur, nama_jalur, deskripsi, biaya_formulir, is_active, created_at 
+            "SELECT id, kode_jalur, nama_jalur, deskripsi, biaya_formulir, is_active, tipe_seleksi, created_at
              FROM jalur_masuk WHERE is_active = TRUE ORDER BY biaya_formulir ASC",
         )
         .fetch_all(&self.pool)

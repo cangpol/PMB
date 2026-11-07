@@ -45,6 +45,16 @@ export const JadwalSesiPage: React.FC = () => {
   const [formMulai, setFormMulai] = useState<string>("");
   const [formSelesai, setFormSelesai] = useState<string>("");
   const [isCreating, setIsCreating] = useState<boolean>(false);
+  const [formMode, setFormMode] = useState<"ONLINE" | "LURING">("ONLINE");
+  const [formGelombangId, setFormGelombangId] = useState<string>("");
+  const [formJalurId, setFormJalurId] = useState<string>("");
+  const [formDibuka, setFormDibuka] = useState<boolean>(true);
+  const [gelombangList, setGelombangList] = useState<
+    { id: string; nama_gelombang: string }[]
+  >([]);
+  const [jalurList, setJalurList] = useState<
+    { id: string; nama_jalur: string }[]
+  >([]);
 
   // Assign Peserta Form
   const [inputPendaftarIds, setInputPendaftarIds] = useState<string>("");
@@ -61,6 +71,16 @@ export const JadwalSesiPage: React.FC = () => {
       ]);
       setSesiList(sesiRes);
       setPaketList(paketRes);
+      const [gel, jal] = await Promise.all([
+        fetchApi<{ id: string; nama_gelombang: string }[]>(
+          "/api/master/gelombang",
+        ).catch(() => []),
+        fetchApi<{ id: string; nama_jalur: string }[]>(
+          "/api/master/jalur",
+        ).catch(() => []),
+      ]);
+      setGelombangList(gel);
+      setJalurList(jal);
       if (paketRes.length > 0 && !formPaketId) {
         setFormPaketId(paketRes[0].id);
       }
@@ -97,8 +117,13 @@ export const JadwalSesiPage: React.FC = () => {
           nama_sesi: formNamaSesi.trim(),
           jadwal_mulai: new Date(formMulai).toISOString(),
           jadwal_selesai: new Date(formSelesai).toISOString(),
-          ruang: formRuang.trim(),
+          ruang:
+            formMode === "ONLINE" ? "Online (dari rumah)" : formRuang.trim(),
           kuota: formKuota,
+          mode: formMode,
+          gelombang_id: formGelombangId || null,
+          jalur_id: formJalurId || null,
+          is_dibuka_pendaftaran: formDibuka,
         }),
       });
 
@@ -268,7 +293,18 @@ export const JadwalSesiPage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
                     <span>
-                      Ruangan: <strong>{sesi.ruang}</strong>
+                      {sesi.mode === "ONLINE" ? (
+                        <strong>
+                          Online dari rumah (tanpa presensi pengawas)
+                        </strong>
+                      ) : (
+                        <>
+                          Luring - Ruangan: <strong>{sesi.ruang}</strong>
+                        </>
+                      )}
+                      {sesi.is_dibuka_pendaftaran
+                        ? " - dapat dipilih calon"
+                        : ""}
                     </span>
                   </div>
                 </div>
@@ -422,6 +458,83 @@ export const JadwalSesiPage: React.FC = () => {
                     required
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    className="block text-xs font-semibold text-slate-700 mb-1"
+                    htmlFor="sesi-mode"
+                  >
+                    Mode pelaksanaan *
+                  </label>
+                  <select
+                    id="sesi-mode"
+                    value={formMode}
+                    onChange={(e) =>
+                      setFormMode(e.target.value as "ONLINE" | "LURING")
+                    }
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-biru-600"
+                  >
+                    <option value="ONLINE">
+                      Online dari rumah (tanpa presensi)
+                    </option>
+                    <option value="LURING">
+                      Luring di kampus (wajib presensi QR)
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    className="block text-xs font-semibold text-slate-700 mb-1"
+                    htmlFor="sesi-gelombang"
+                  >
+                    Khusus gelombang
+                  </label>
+                  <select
+                    id="sesi-gelombang"
+                    value={formGelombangId}
+                    onChange={(e) => setFormGelombangId(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-biru-600"
+                  >
+                    <option value="">Semua gelombang</option>
+                    {gelombangList.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.nama_gelombang}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    className="block text-xs font-semibold text-slate-700 mb-1"
+                    htmlFor="sesi-jalur"
+                  >
+                    Khusus jalur
+                  </label>
+                  <select
+                    id="sesi-jalur"
+                    value={formJalurId}
+                    onChange={(e) => setFormJalurId(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-biru-600"
+                  >
+                    <option value="">Semua jalur</option>
+                    {jalurList.map((j) => (
+                      <option key={j.id} value={j.id}>
+                        {j.nama_jalur}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-slate-700 sm:pt-6">
+                  <input
+                    type="checkbox"
+                    checked={formDibuka}
+                    onChange={(e) => setFormDibuka(e.target.checked)}
+                    className="accent-biru-700"
+                  />
+                  Dapat dipilih calon sebagai jadwal seleksi
+                </label>
               </div>
 
               <div className="pt-4 border-t border-slate-200 flex justify-end gap-3">

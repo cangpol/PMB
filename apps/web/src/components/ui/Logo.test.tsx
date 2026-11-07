@@ -3,36 +3,36 @@ import "@testing-library/jest-dom/vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Logo } from "./Logo";
 
-describe("Komponen Logo Universitas Pignatelli Triputra", () => {
-  it("merender gambar logo resmi dengan alt text dan dimensi eksplisit", () => {
-    render(<Logo width={220} height={44} />);
+describe("Komponen Logo PMB Universitas Pignatelli Triputra", () => {
+  it("menampilkan lambang logo dengan teks PMB dan nama universitas di sampingnya", () => {
+    render(<Logo height={44} />);
     const img = screen.getByRole("img", {
       name: /Logo Universitas Pignatelli Triputra/i,
     });
-    expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute("width", "220");
+    expect(img).toHaveAttribute("width", "44");
     expect(img).toHaveAttribute("height", "44");
+    expect(screen.getByText("PMB")).toBeInTheDocument();
+    expect(
+      screen.getByText("Universitas Pignatelli Triputra"),
+    ).toBeInTheDocument();
   });
 
-  it("beralih ke fallback monogram & teks nama universitas saat pemuatan gambar gagal", () => {
-    render(<Logo width={220} height={44} />);
-    const img = screen.getByRole("img", {
-      name: /Logo Universitas Pignatelli Triputra/i,
-    });
+  it("showText=false hanya menampilkan lambang", () => {
+    render(<Logo showText={false} />);
+    expect(screen.getByRole("img")).toBeInTheDocument();
+    expect(screen.queryByText("PMB")).not.toBeInTheDocument();
+  });
 
-    // Simulasi gambar error pemuatan
-    fireEvent.error(img);
-
-    // Pastikan fallback monogram UP dan teks universitas dirender
+  it("beralih ke monogram UP saat gambar gagal dimuat, teks tetap ada", () => {
+    render(<Logo height={44} />);
+    fireEvent.error(screen.getByRole("img"));
     expect(screen.getByText("UP")).toBeInTheDocument();
-    expect(screen.getByText("UNIVERSITAS PIGNATELLI")).toBeInTheDocument();
-    expect(screen.getByText("TRIPUTRA")).toBeInTheDocument();
+    expect(screen.getByText("PMB")).toBeInTheDocument();
   });
 
-  it("mendukung mode gelap dengan styling kontras yang sesuai", () => {
-    render(<Logo theme="dark" />);
-    const img = screen.getByRole("img");
-    fireEvent.error(img);
-    expect(screen.getByText("UNIVERSITAS PIGNATELLI")).toHaveClass("text-putih");
+  it("mode gelap memakai teks putih dan alas putih di balik lambang", () => {
+    const { container } = render(<Logo theme="dark" />);
+    expect(screen.getByText("PMB")).toHaveClass("text-putih");
+    expect(container.querySelector("span.bg-putih")).not.toBeNull();
   });
 });

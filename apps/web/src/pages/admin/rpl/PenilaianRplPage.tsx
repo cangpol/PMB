@@ -21,33 +21,14 @@ import {
   CardSkeleton,
 } from "../../../components/common";
 import { fetchApi } from "../../../services/api";
+import type { components } from "@/types/api";
 
-interface RiwayatPendidikanItem {
-  jenjang: string;
-  nama_institusi: string;
-  program_studi: string;
-  tahun_lulus: number;
-  ipk_nilai?: number | null;
-  nomor_ijazah?: string | null;
-}
+type RiwayatPendidikanItem = components["schemas"]["RiwayatPendidikanItem"];
+type PengalamanKerjaItem = components["schemas"]["PengalamanKerjaItem"];
+type BerkasRplItem = components["schemas"]["BerkasRplItem"];
 
-interface PengalamanKerjaItem {
-  nama_perusahaan: string;
-  jabatan: string;
-  deskripsi_pekerjaan: string;
-  tanggal_mulai: string;
-  tanggal_selesai?: string | null;
-  masih_bekerja: boolean;
-  bukti_dokumen_url?: string | null;
-}
-
-interface BerkasRplItem {
-  jenis_dokumen: string;
-  nama_file: string;
-  url: string;
-  ukuran_bytes: number;
-  keterangan?: string | null;
-}
+const periodeKerja = (k: PengalamanKerjaItem) =>
+  `${k.tanggal_mulai || "?"} s.d. ${k.masih_bekerja ? "sekarang" : k.tanggal_selesai || "?"}`;
 
 interface MataKuliahDiajukanDetail {
   id: string;
@@ -458,18 +439,10 @@ export const PenilaianRplPage: React.FC = () => {
                   <div className="font-semibold text-biru-950">
                     {krj.jabatan} di {krj.nama_perusahaan}
                   </div>
+                  <div className="text-biru-700 text-[11px]">
+                    {periodeKerja(krj)}
+                  </div>
                   <div className="text-biru-800">{krj.deskripsi_pekerjaan}</div>
-                  {krj.bukti_dokumen_url && (
-                    <a
-                      href={krj.bukti_dokumen_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-biru-700 hover:text-biru-950 inline-flex items-center gap-1 font-semibold mt-1"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      <span>Buka Bukti SK / Portofolio</span>
-                    </a>
-                  )}
                 </div>
               ))
             ) : (
@@ -484,7 +457,7 @@ export const PenilaianRplPage: React.FC = () => {
         <Card className="p-5 space-y-3">
           <div className="flex items-center gap-2 font-serif font-bold text-sm text-biru-950 border-b border-biru-100 pb-2">
             <FileText className="w-4 h-4 text-biru-700" />
-            <h3>Tautan Berkas & Portofolio Pendukung</h3>
+            <h3>Dokumen & Portofolio Pendukung</h3>
           </div>
 
           <div className="space-y-2 text-xs max-h-60 overflow-y-auto pr-1">
@@ -503,15 +476,22 @@ export const PenilaianRplPage: React.FC = () => {
                       {b.jenis_dokumen}
                     </div>
                   </div>
-                  <a
-                    href={b.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-1 text-biru-700 hover:text-biru-950"
-                    title="Buka dokumen"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
+                  {b.url_unduh ? (
+                    <a
+                      href={b.url_unduh}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-1 text-biru-700 hover:text-biru-950"
+                      title="Buka dokumen"
+                      aria-label={`Buka ${b.nama_file}`}
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  ) : (
+                    <span className="text-[11px] text-biru-700/70">
+                      Tidak tersedia
+                    </span>
+                  )}
                 </div>
               ))
             ) : (

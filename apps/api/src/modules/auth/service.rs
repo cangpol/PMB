@@ -7,9 +7,9 @@ use crate::{
     error::AppError,
     modules::auth::{
         dto::{
-            AuthResponse, ChangePasswordRequest, ForgotPasswordRequest, LoginRequest,
-            RegisterRequest, ResetPasswordRequest, UpdateUserRoleRequest, UserListItemResponse,
-            VerifyEmailRequest,
+            AturPeranMassalRequest, AturPeranMassalResponse, AuthResponse, ChangePasswordRequest,
+            ForgotPasswordRequest, LoginRequest, PeranDilewati, RegisterRequest,
+            ResetPasswordRequest, UpdateUserRoleRequest, UserListItemResponse, VerifyEmailRequest,
         },
         repository::UserRepository,
     },
@@ -21,6 +21,7 @@ pub struct AuthService {
     user_repo: UserRepository,
     session_store: SessionStore,
     mail_sender: Arc<dyn MailSender>,
+    kirim_kode_verifikasi: bool,
 }
 
 impl AuthService {
@@ -33,7 +34,14 @@ impl AuthService {
             user_repo,
             session_store,
             mail_sender,
+            kirim_kode_verifikasi: false,
         }
+    }
+
+    /// Aktifkan pengiriman kode verifikasi email saat registrasi.
+    pub fn dengan_kode_verifikasi(mut self, aktif: bool) -> Self {
+        self.kirim_kode_verifikasi = aktif;
+        self
     }
 
     pub async fn register(&self, req: RegisterRequest) -> Result<(AuthResponse, String), AppError> {
@@ -44,7 +52,11 @@ impl AuthService {
             ));
         }
 
-        let sumber = req.sumber_informasi.as_deref().map(str::trim).filter(|s| !s.is_empty());
+        let sumber = req
+            .sumber_informasi
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty());
         if let Some(s) = sumber {
             if !crate::modules::auth::dto::SUMBER_INFORMASI
                 .iter()
@@ -88,30 +100,21 @@ impl AuthService {
             .await?;
         }
 
-        // Buat token verifikasi email (aktif 24 jam)
-        let token_raw = Uuid::new_v4().to_string();
-        let expires_at = Utc::now() + Duration::hours(24);
-        let _ = self
-            .user_repo
-            .create_verification_token(user.id, &token_raw, "VERIFIKASI_EMAIL", expires_at)
-            .await;
-
-        // Kirim email verifikasi via MailSender abstraction
-        let email_subject = "Verifikasi Akun PMB Universitas Pignatelli Triputra";
-        let email_body = format!(
-            "Halo {},\n\nTerima kasih telah mendaftar di PMB Universitas Pignatelli Triputra.\n\
-            Kode/Token verifikasi email Anda adalah:\n\n{}\n\n\
-            Token ini berlaku selama 24 jam. Silakan masukkan token ini pada halaman verifikasi.\n\n\
-            Salam hangat,\nPanitia PMB Universitas Pignatelli Triputra",
-            user.nama_lengkap, token_raw
-        );
-
-        if let Err(e) = self
-            .mail_sender
-            .send_email(&user.email, email_subject, &email_body)
-            .await
+        // Kirim kode verifikasi 6 digit. Pendaftaran tetap berhasil bila email gagal
+        // terkirim; calon dapat meminta kode baru di halaman verifikasi.
+        // Hanya bila verifikasi email diaktifkan (WAJIB_VERIFIKASI_EMAIL=true).
+        if !self.kirim_kode_verifikasi {
+            tracing::debug!("Verifikasi email nonaktif; kode tidak dikirim");
+        } else if let Err(e) = crate::modules::auth::kode_verifikasi::terbitkan_dan_kirim(
+            self.user_repo.pool(),
+            self.mail_sender.as_ref(),
+            user.id,
+            &user.email,
+            &user.nama_lengkap,
+        )
+        .await
         {
-            tracing::warn!("Gagal mengirim email verifikasi ke {}: {}", user.email, e);
+            tracing::warn!("Gagal mengirim kode verifikasi ke {}: {}", user.email, e);
         }
 
         let session_user = SessionUser {
@@ -135,27 +138,22 @@ impl AuthService {
         Ok((res, session_id))
     }
 
-    pub async fn verify_email(&self, req: VerifyEmailRequest) -> Result<(), AppError> {
-        let token = self
-            .user_repo
-            .find_active_token(&req.token, "VERIFIKASI_EMAIL")
-            .await?
-            .ok_or_else(|| {
-                AppError::BadRequest(
-                    "Token verifikasi tidak valid, telah kedaluwarsa, atau sudah digunakan"
-                        .to_string(),
-                )
-            })?;
+    pub async fn verify_email(
+        &self,
+        user_id: Uuid,
+        req: VerifyEmailRequest,
+    ) -> Result<(), AppError> {
+        crate::modules::auth::kode_verifikasi::verifikasi(self.user_repo.pool(), user_id, &req.kode)
+            .await
+    }
 
-        self.user_repo.verify_user_email(token.user_id).await?;
-        self.user_repo.mark_token_used(token.id).await?;
-
-        tracing::info!(
-            "AUDIT: Email terverifikasi untuk user_id: {}",
-            token.user_id
-        );
-
-        Ok(())
+    pub async fn kirim_ulang_kode_verifikasi(&self, user_id: Uuid) -> Result<(), AppError> {
+        crate::modules::auth::kode_verifikasi::kirim_ulang(
+            self.user_repo.pool(),
+            self.mail_sender.as_ref(),
+            user_id,
+        )
+        .await
     }
 
     pub async fn login(&self, req: LoginRequest) -> Result<(AuthResponse, String), AppError> {
@@ -364,8 +362,12 @@ impl AuthService {
         Ok(())
     }
 
-    pub async fn list_users(&self) -> Result<Vec<UserListItemResponse>, AppError> {
-        let users = self.user_repo.list_users().await?;
+    pub async fn list_users(
+        &self,
+        cari: Option<&str>,
+        role: Option<&str>,
+    ) -> Result<Vec<UserListItemResponse>, AppError> {
+        let users = self.user_repo.list_users(cari, role).await?;
         let res = users
             .into_iter()
             .map(|u| UserListItemResponse {
@@ -431,6 +433,82 @@ impl AuthService {
             is_active: updated.is_active,
             is_email_verified: updated.is_email_verified,
             created_at: updated.created_at,
+        })
+    }
+
+    /// Peran yang boleh diberikan Super Admin lewat penetapan massal.
+    /// `super_admin` sengaja tidak termasuk agar tidak bisa diberikan massal.
+    pub const PERAN_MASSAL: [&'static str; 5] = [
+        "admin_pmb",
+        "keuangan",
+        "calon_mahasiswa",
+        "pengawas_ujian",
+        "asesor_rpl",
+    ];
+
+    pub async fn atur_peran_massal(
+        &self,
+        operator_id: Uuid,
+        operator_email: &str,
+        req: AturPeranMassalRequest,
+    ) -> Result<AturPeranMassalResponse, AppError> {
+        if !Self::PERAN_MASSAL.contains(&req.role.as_str()) {
+            return Err(AppError::BadRequest(format!(
+                "Peran '{}' tidak dapat ditetapkan massal. Pilihan: {:?}",
+                req.role,
+                Self::PERAN_MASSAL
+            )));
+        }
+        let mut ids = req.user_ids;
+        ids.sort();
+        ids.dedup();
+
+        let diubah = self
+            .user_repo
+            .update_role_massal(&ids, &req.role, operator_id)
+            .await?;
+
+        // Cabut sesi lama agar peran baru langsung berlaku
+        for u in &diubah {
+            self.session_store.destroy_sessions_by_user_id(&u.id).await;
+        }
+
+        let dilewati = ids
+            .iter()
+            .filter(|id| !diubah.iter().any(|u| &u.id == *id))
+            .map(|id| PeranDilewati {
+                id: *id,
+                alasan: if *id == operator_id {
+                    "Akun Anda sendiri tidak dapat diubah".to_string()
+                } else {
+                    "Pengguna tidak ditemukan atau berperan Super Admin".to_string()
+                },
+            })
+            .collect();
+
+        tracing::info!(
+            "AUDIT: Operator {} menetapkan peran {} untuk {} pengguna",
+            operator_email,
+            req.role,
+            diubah.len()
+        );
+
+        Ok(AturPeranMassalResponse {
+            role: req.role,
+            diubah: diubah
+                .into_iter()
+                .map(|u| UserListItemResponse {
+                    id: u.id,
+                    email: u.email,
+                    role: u.role,
+                    nama_lengkap: u.nama_lengkap,
+                    no_hp: u.no_hp,
+                    is_active: u.is_active,
+                    is_email_verified: u.is_email_verified,
+                    created_at: u.created_at,
+                })
+                .collect(),
+            dilewati,
         })
     }
 }

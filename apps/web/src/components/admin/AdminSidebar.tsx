@@ -24,9 +24,20 @@ import {
   ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
+  Receipt,
+  Landmark,
+  ShieldCheck,
+  ClipboardCheck,
+  Hash,
 } from "lucide-react";
 import { useAuth } from "@/context";
-import logoPlaceholder from "../../assets/logo-placeholder.svg";
+import {
+  useAntreanVerifikasi,
+  type JenisAntrean,
+} from "@/hooks/useAntreanVerifikasi";
+import { useFitur } from "@/hooks/useFitur";
+import { LencanaAntrean } from "./LencanaAntrean";
+import { Logo } from "../ui/Logo";
 
 export interface NavSubItem {
   id: string;
@@ -34,6 +45,8 @@ export interface NavSubItem {
   path: string;
   icon: React.ComponentType<{ className?: string }>;
   roles?: string[];
+  /** Antrean pemeriksaan yang ditandai dengan lencana angka pada menu ini. */
+  antrean?: JenisAntrean;
 }
 
 export interface NavGroup {
@@ -78,6 +91,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
         id: "berkas",
         label: "Verifikasi Berkas PMB",
         path: "/admin/berkas",
+        antrean: "berkas",
         icon: FileCheck2,
       },
       {
@@ -108,6 +122,14 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
         icon: UserCheck,
       },
       {
+        id: "cbt-hasil",
+        label: "Hasil Pengerjaan CBT",
+        path: "/admin/cbt/hasil",
+        antrean: "cbt_keputusan",
+        icon: ClipboardCheck,
+        roles: ["admin_pmb", "super_admin"],
+      },
+      {
         id: "cbt-soal",
         label: "Bank Soal CBT",
         path: "/admin/cbt/bank-soal",
@@ -123,10 +145,23 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
     roles: ["admin_pmb", "super_admin", "keuangan"],
     items: [
       {
+        id: "keuangan-bukti",
+        label: "Verifikasi Bukti Bayar",
+        path: "/admin/verifikasi-pembayaran",
+        antrean: "bukti_bayar",
+        icon: Receipt,
+      },
+      {
         id: "keuangan-verif",
         label: "Verifikasi Keuangan",
         path: "/admin/keuangan",
         icon: CreditCard,
+      },
+      {
+        id: "keuangan-rekening",
+        label: "Rekening VA & QRIS",
+        path: "/admin/rekening-pembayaran",
+        icon: Landmark,
       },
     ],
   },
@@ -147,6 +182,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
         id: "daftar-ulang",
         label: "Verifikasi Daftar Ulang (NIM)",
         path: "/admin/daftar-ulang",
+        antrean: "daftar_ulang",
         icon: FileCheck2,
       },
     ],
@@ -249,10 +285,31 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
         icon: Layers,
       },
       {
+        id: "cfg-rumus-nim",
+        label: "Rumus NIM",
+        path: "/admin/konfigurasi/rumus-nim",
+        icon: Hash,
+      },
+      {
         id: "cfg-pengaturan",
         label: "Pengaturan Sistem",
         path: "/admin/konfigurasi/pengaturan",
         icon: Sliders,
+      },
+    ],
+  },
+  {
+    id: "super-admin",
+    title: "Super Admin",
+    description: "Pengguna, Akses & Fitur",
+    icon: ShieldCheck,
+    roles: ["super_admin"],
+    items: [
+      {
+        id: "pengguna-akses",
+        label: "Pengguna & Akses",
+        path: "/admin/pengguna",
+        icon: ShieldCheck,
       },
     ],
   },
@@ -275,9 +332,22 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const location = useLocation();
   const currentRole = user?.role || "";
 
+  // Sakelar fitur pengawas CBT (diatur Super Admin). Selama belum diketahui dianggap aktif.
+  const { data: fitur } = useFitur();
+  const pengawasCbtAktif = fitur?.pengawas_cbt_aktif ?? true;
+
   // Filter groups according to user role
   const visibleGroups = React.useMemo(() => {
     return ADMIN_NAV_GROUPS.map((group) => {
+      // Fitur pengawas dimatikan: pengawas tak punya menu CBT sama sekali,
+      // dan menu meja presensi disembunyikan untuk semua peran.
+      if (
+        !pengawasCbtAktif &&
+        group.id === "cbt" &&
+        currentRole === "pengawas_ujian"
+      ) {
+        return null;
+      }
       // Check group role
       if (
         group.roles &&
@@ -288,6 +358,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       }
       // Filter sub-items by role
       const items = group.items.filter((item) => {
+        if (!pengawasCbtAktif && item.id === "cbt-presensi") return false;
         if (!item.roles) return true;
         return (
           item.roles.includes(currentRole) || currentRole === "super_admin"
@@ -296,7 +367,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       if (items.length === 0) return null;
       return { ...group, items };
     }).filter(Boolean) as NavGroup[];
-  }, [currentRole]);
+  }, [currentRole, pengawasCbtAktif]);
+
+  // Lencana: jumlah berkas/bukti yang menunggu diperiksa
+  const { data: antrean } = useAntreanVerifikasi();
+  const jumlahItem = (item: NavSubItem): number =>
+    item.antrean && antrean ? antrean[item.antrean].menunggu : 0;
+  const jumlahGrup = (group: NavGroup): number =>
+    group.items.reduce((n, item) => n + jumlahItem(item), 0);
 
   // Determine which group has the active item
   const activeGroupId = React.useMemo(() => {
@@ -382,21 +460,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           className="flex items-center gap-2.5 min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-biru-500 rounded-lg p-1"
           title="Ke Beranda Dashboard"
         >
-          <img
-            src={logoPlaceholder}
-            alt="Logo UPITRA"
-            className="h-8 w-8 object-contain shrink-0"
-          />
-          {!collapsed && (
-            <div className="min-w-0">
-              <span className="font-serif font-bold text-sm tracking-tight text-biru-950 block truncate leading-tight">
-                UPITRA PMB
-              </span>
-              <span className="text-[10px] text-biru-600 font-semibold uppercase tracking-wider block truncate">
-                Admin Panel
-              </span>
-            </div>
-          )}
+          <Logo height={36} showText={!collapsed} />
+          <span className="sr-only">Admin Panel</span>
         </Link>
 
         {/* Tombol Collapse / Expand */}
@@ -441,6 +506,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   }`}
                 >
                   <GroupIcon className="w-[18px] h-[18px] shrink-0" />
+                  {jumlahGrup(group) > 0 && (
+                    <span
+                      className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-rose-600 ring-2 ring-putih"
+                      title={`${jumlahGrup(group)} menunggu diperiksa`}
+                      aria-label={`${jumlahGrup(group)} menunggu diperiksa`}
+                    />
+                  )}
                 </button>
 
                 {/* Flyout Submenu Popover saat hover di Mode Rail */}
@@ -470,6 +542,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                         >
                           <ItemIcon className="w-3.5 h-3.5 shrink-0 text-biru-600" />
                           <span className="truncate">{item.label}</span>
+                          <LencanaAntrean
+                            jumlah={jumlahItem(item)}
+                            keterangan="menunggu diperiksa"
+                            className="ml-auto"
+                          />
                         </Link>
                       );
                     })}
@@ -498,11 +575,20 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                     {group.title}
                   </span>
                 </div>
-                {isGroupOpen ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-biru-500 shrink-0" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-biru-400 shrink-0" />
-                )}
+                <span className="flex items-center gap-1.5 shrink-0">
+                  {/* Saat grup tertutup, tetap tampilkan ada pekerjaan di dalamnya */}
+                  {!isGroupOpen && (
+                    <LencanaAntrean
+                      jumlah={jumlahGrup(group)}
+                      keterangan="menunggu diperiksa"
+                    />
+                  )}
+                  {isGroupOpen ? (
+                    <ChevronDown className="w-3.5 h-3.5 text-biru-500 shrink-0" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5 text-biru-400 shrink-0" />
+                  )}
+                </span>
               </button>
 
               {/* Sub-item Navigasi */}
@@ -532,6 +618,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                           }`}
                         />
                         <span className="truncate">{item.label}</span>
+                        <LencanaAntrean
+                          jumlah={jumlahItem(item)}
+                          keterangan="menunggu diperiksa"
+                          className="ml-auto"
+                        />
                       </Link>
                     );
                   })}

@@ -11,10 +11,12 @@ import {
 } from "../../../components/common";
 import { SeoHead } from "../../../components/common/SeoHead";
 import type { components } from "../../../types/api";
+import { useDialog } from "@/components/ui/useDialog";
 
 type CmsPage = components["schemas"]["CmsPageResponse"];
 
 export const KelolaHalamanPage: React.FC = () => {
+  const dialog = useDialog();
   const queryClient = useQueryClient();
   const [editingPage, setEditingPage] = useState<CmsPage | null>(null);
 
@@ -58,7 +60,12 @@ export const KelolaHalamanPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-cms-pages"] });
-      alert("Halaman berhasil diperbarui!");
+      void dialog.hasil({
+        nada: "sukses",
+        judul: "Halaman diperbarui",
+        deskripsi: "Perubahan halaman berhasil disimpan.",
+        autoTutupMs: 2200,
+      });
       setEditingPage(null);
     },
   });

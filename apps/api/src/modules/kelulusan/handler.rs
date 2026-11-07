@@ -17,12 +17,13 @@ use crate::{
     modules::{
         kelulusan::{
             dto::{
-                ApprovalSidangRequest, CekKelulusanCalonResponse, CekKelulusanPublikQuery,
-                CekKelulusanPublikResponse, DaftarUlangInfoResponse, DrafKelulusanResponse,
-                EksporSiakadItemDto, GenerateNimResponse, HasilKelulusanResponse,
-                MahasiswaDaftarUlangDto, ProsesRankingRequest, UpdateRumusRequest,
-                UpdateStatusKandidatRequest, UploadBerkasDaftarUlangRequest,
-                VerifikasiBerkasDaftarUlangRequest,
+                ApprovalSidangRequest, ArahkanPilihan2Request, ArahkanPilihan2Response,
+                CekKelulusanCalonResponse, CekKelulusanPublikQuery, CekKelulusanPublikResponse,
+                DaftarUlangInfoResponse, DrafKelulusanResponse, EksporSiakadItemDto,
+                GenerateNimResponse, HasilKelulusanResponse, MahasiswaDaftarUlangDto,
+                PratinjauRumusNimResponse, ProsesRankingRequest, RumusNimResponse,
+                SimpanRumusNimRequest, UpdateRumusRequest, UpdateStatusKandidatRequest,
+                UploadBerkasDaftarUlangRequest, VerifikasiBerkasDaftarUlangRequest,
             },
             model::{BerkasDaftarUlang, RumusPenilaianJalur, SidangKelulusan},
             repository::KelulusanRepository,
@@ -40,6 +41,10 @@ use crate::{
         get_cek_kelulusan_publik_handler,
         get_cek_kelulusan_calon_handler,
         download_loa_pdf_handler,
+        get_rumus_nim_handler,
+        arahkan_pilihan_2_handler,
+        simpan_rumus_nim_handler,
+        pratinjau_rumus_nim_handler,
         get_daftar_ulang_info_handler,
         upload_berkas_daftar_ulang_handler,
         get_rumus_penilaian_handler,
@@ -62,6 +67,11 @@ use crate::{
         HasilKelulusanResponse,
         CekKelulusanCalonResponse,
         CekKelulusanPublikResponse,
+        RumusNimResponse,
+        SimpanRumusNimRequest,
+        ArahkanPilihan2Request,
+        ArahkanPilihan2Response,
+        PratinjauRumusNimResponse,
         DaftarUlangInfoResponse,
         MahasiswaDaftarUlangDto,
         DrafKelulusanResponse,
@@ -89,13 +99,29 @@ pub fn kelulusan_router() -> Router<AppState> {
         .route("/cek", get(get_cek_kelulusan_calon_handler))
         .route("/my-status", get(get_my_kelulusan_handler))
         .route("/loa/pdf", get(download_loa_pdf_handler))
+        .route("/verifikasi-qr", get(verifikasi_qr_handler))
         .route("/daftar-ulang", get(get_daftar_ulang_info_handler))
         .route(
             "/daftar-ulang/berkas",
             post(upload_berkas_daftar_ulang_handler),
         )
-        .merge(super::bukti_bayar::bukti_bayar_router())
+        .route(
+            "/daftar-ulang/berkas/presign",
+            post(presign_berkas_daftar_ulang_handler),
+        )
+        .route(
+            "/admin/daftar-ulang/berkas/{berkas_id}/unduh",
+            get(unduh_berkas_daftar_ulang_admin_handler),
+        )
         // Admin Kelulusan & Seleksi
+        .route(
+            "/admin/rumus-nim",
+            get(get_rumus_nim_handler).put(simpan_rumus_nim_handler),
+        )
+        .route(
+            "/admin/rumus-nim/pratinjau",
+            post(pratinjau_rumus_nim_handler),
+        )
         .route("/admin/rumus", get(get_rumus_penilaian_handler))
         .route(
             "/admin/rumus/{jalur_id}",
@@ -108,6 +134,7 @@ pub fn kelulusan_router() -> Router<AppState> {
         .route("/admin/draf", get(get_draf_kelulusan_handler))
         .route("/admin/approve/{sidang_id}", post(approve_sidang_handler))
         .route("/admin/publish/{sidang_id}", post(publish_sidang_handler))
+        .route("/admin/arahkan-pilihan-2", post(arahkan_pilihan_2_handler))
         .route(
             "/admin/kandidat/status",
             post(update_status_kandidat_handler),
@@ -221,6 +248,27 @@ pub async fn download_loa_pdf_handler(
     Ok(response)
 }
 
+/// QR Code (SVG) tautan verifikasi dokumen milik calon yang sedang login;
+/// isinya sama dengan QR pada PDF LoA sehingga tampilan web dan cetak konsisten.
+pub async fn verifikasi_qr_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+) -> Result<Response, AppError> {
+    let pendaftar = PendaftaranRepository::new(state.db.clone())
+        .find_by_user_id(auth_user.user_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Data pendaftar tidak ditemukan".to_string()))?;
+    let svg = crate::pdfkit::qr_svg(&format!(
+        "https://pmb.pignatelli.ac.id/verifikasi-loa/{}",
+        pendaftar.id
+    ));
+    Response::builder()
+        .header(header::CONTENT_TYPE, "image/svg+xml")
+        .header(header::CACHE_CONTROL, "private, max-age=3600")
+        .body(Body::from(svg))
+        .map_err(|e| AppError::Internal(e.to_string()))
+}
+
 #[utoipa::path(
     get,
     path = "/api/kelulusan/daftar-ulang",
@@ -262,6 +310,87 @@ pub async fn upload_berkas_daftar_ulang_handler(
         .upload_berkas_daftar_ulang(auth_user.user_id, payload)
         .await?;
     Ok(Json(res))
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct PresignBerkasDaftarUlangRequest {
+    pub jenis_berkas: String,
+    #[validate(length(min = 1, max = 200))]
+    pub file_name: String,
+}
+
+pub const JENIS_BERKAS_DAFTAR_ULANG: [&str; 4] = [
+    "SURAT_PERNYATAAN_MABA",
+    "SURAT_BEBAS_NARKOBA",
+    "AKTA_KELAHIRAN",
+    "IJAZAH_LEGALISIR",
+];
+
+/// URL unggah berkas registrasi ulang (key berawalan `daftar_ulang/{pendaftar_id}/`).
+pub async fn presign_berkas_daftar_ulang_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<PresignBerkasDaftarUlangRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    req.validate()
+        .map_err(|e| AppError::BadRequest(e.to_string()))?;
+    if !JENIS_BERKAS_DAFTAR_ULANG.contains(&req.jenis_berkas.as_str()) {
+        return Err(AppError::BadRequest(
+            "Jenis berkas daftar ulang tidak dikenal".to_string(),
+        ));
+    }
+    let pendaftar =
+        crate::modules::pendaftaran::repository::PendaftaranRepository::new(state.db.clone())
+            .find_by_user_id(auth_user.user_id)
+            .await?
+            .ok_or_else(|| {
+                AppError::NotFound("Formulir pendaftaran tidak ditemukan".to_string())
+            })?;
+    crate::modules::pendaftaran::alur::pastikan_status(
+        &pendaftar.status_pendaftaran,
+        &[crate::modules::pendaftaran::alur::status::DAFTAR_ULANG_LUNAS],
+        "Berkas registrasi ulang dapat diunggah setelah pembayaran daftar ulang disetujui admin PMB.",
+    )?;
+    let ext = req
+        .file_name
+        .rsplit('.')
+        .next()
+        .unwrap_or("")
+        .to_lowercase();
+    if !["pdf", "jpg", "jpeg", "png"].contains(&ext.as_str()) {
+        return Err(AppError::BadRequest(
+            "Berkas harus berupa PDF, JPG, atau PNG".to_string(),
+        ));
+    }
+    let key = format!(
+        "daftar_ulang/{}/{}_{}.{}",
+        pendaftar.id,
+        req.jenis_berkas,
+        Uuid::new_v4(),
+        ext
+    );
+    Ok(Json(
+        crate::modules::pembayaran::bukti::storage(&state).generate_presigned_put_url(&key, 900),
+    ))
+}
+
+/// URL unduh berkas registrasi ulang untuk verifikasi admin (10 menit).
+pub async fn unduh_berkas_daftar_ulang_admin_handler(
+    auth_user: AuthUser,
+    Path(berkas_id): Path<Uuid>,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    if !auth_user.is_admin() {
+        return Err(AppError::Forbidden("Akses ditolak".to_string()));
+    }
+    let key: String = sqlx::query_scalar("SELECT file_key FROM berkas_daftar_ulang WHERE id = $1")
+        .bind(berkas_id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Berkas tidak ditemukan".to_string()))?;
+    Ok(Json(
+        crate::modules::pembayaran::bukti::storage(&state).generate_presigned_get_url(&key, 600),
+    ))
 }
 
 // =========================================================================
@@ -661,5 +790,115 @@ pub async fn admin_list_kelulusan_handler(
     }
     let service = create_service(&state);
     let res = service.list_all().await?;
+    Ok(Json(res))
+}
+
+fn wajib_admin(u: &AuthUser) -> Result<(), AppError> {
+    if !u.is_admin() {
+        return Err(AppError::Forbidden(
+            "Hanya Admin PMB atau Super Admin yang dapat mengatur rumus NIM".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/kelulusan/admin/rumus-nim",
+    tag = "Kelulusan Admin",
+    responses(
+        (status = 200, description = "Rumus penomoran NIM yang berlaku", body = RumusNimResponse),
+        (status = 403, description = "Bukan admin", body = ApiErrorResponse)
+    )
+)]
+pub async fn get_rumus_nim_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    wajib_admin(&auth_user)?;
+    Ok(Json(create_service(&state).get_rumus_nim().await?))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/kelulusan/admin/rumus-nim/pratinjau",
+    tag = "Kelulusan Admin",
+    request_body = SimpanRumusNimRequest,
+    responses(
+        (status = 200, description = "Validasi rumus dan contoh NIM per prodi (tidak disimpan)", body = PratinjauRumusNimResponse),
+        (status = 403, description = "Bukan admin", body = ApiErrorResponse)
+    )
+)]
+pub async fn pratinjau_rumus_nim_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Json(req): Json<SimpanRumusNimRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    wajib_admin(&auth_user)?;
+    Ok(Json(
+        create_service(&state)
+            .pratinjau_rumus_nim(&req.template, &req.lingkup_urut)
+            .await?,
+    ))
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/kelulusan/admin/rumus-nim",
+    tag = "Kelulusan Admin",
+    request_body = SimpanRumusNimRequest,
+    responses(
+        (status = 200, description = "Rumus NIM disimpan; berlaku untuk NIM yang terbit berikutnya", body = RumusNimResponse),
+        (status = 400, description = "Rumus tidak valid", body = ApiErrorResponse),
+        (status = 403, description = "Bukan admin", body = ApiErrorResponse)
+    )
+)]
+pub async fn simpan_rumus_nim_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    crate::extractors::ValidatedJson(req): crate::extractors::ValidatedJson<SimpanRumusNimRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    wajib_admin(&auth_user)?;
+    let service = create_service(&state);
+    let sebelum = service.get_rumus_nim().await?;
+    let hasil = service.simpan_rumus_nim(req, auth_user.user_id).await?;
+    let _ = crate::security::record_audit_log(
+        &state.db,
+        Some(auth_user.user_id),
+        "RUMUS_NIM_DIUBAH",
+        "pengaturan_nim",
+        None,
+        Some(serde_json::json!({ "template": sebelum.template, "lingkup": sebelum.lingkup_urut })),
+        Some(serde_json::json!({ "template": hasil.template, "lingkup": hasil.lingkup_urut })),
+    )
+    .await;
+    Ok(Json(hasil))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/kelulusan/admin/arahkan-pilihan-2",
+    tag = "Kelulusan Admin",
+    request_body = ArahkanPilihan2Request,
+    responses(
+        (status = 200, description = "Calon diarahkan ke program studi pilihan kedua", body = ArahkanPilihan2Response),
+        (status = 400, description = "Calon tidak punya pilihan kedua", body = ApiErrorResponse),
+        (status = 409, description = "Status calon tidak memungkinkan pengalihan", body = ApiErrorResponse)
+    )
+)]
+pub async fn arahkan_pilihan_2_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    crate::extractors::ValidatedJson(req): crate::extractors::ValidatedJson<ArahkanPilihan2Request>,
+) -> Result<impl IntoResponse, AppError> {
+    if !auth_user.is_admin() {
+        return Err(AppError::Forbidden(
+            "Hanya Admin PMB atau Super Admin yang dapat mengarahkan calon ke pilihan kedua"
+                .to_string(),
+        ));
+    }
+    let res = create_service(&state)
+        .arahkan_ke_pilihan_2(req, auth_user.user_id, &auth_user.nama_lengkap)
+        .await?;
     Ok(Json(res))
 }

@@ -14,14 +14,15 @@ use crate::{
     extractors::{AuthUser, RequireAdmin, ValidatedJson},
     modules::pendaftaran::{
         dto::{
-            BerkasCalonItem, BerkasDetailItem, BerkasResponse, CreateDefinisiBerkasRequest,
-            CreateDefinisiFieldRequest, CreateDefinisiLangkahRequest, DashboardSummaryResponse,
-            KonfirmasiUploadRequest, LangkahProgressItem, PendaftarDetailResponse,
-            PendaftaranOfflineRequest, PendaftaranOfflineResponse, PilihProdiRequest,
-            PresignUploadRequest, PresignedUrlResponse, ReorderFieldsRequest,
-            SubmitAkademikRequest, SubmitBiodataRequest, SubmitDinamisRequest,
-            UpdateDefinisiBerkasRequest, UpdateDefinisiFieldRequest, UpdateDefinisiLangkahRequest,
-            UploadBerkasRequest, VerifikasiBerkasRequest,
+            BerkasCalonItem, BerkasCalonRingkasan, BerkasDetailItem, BerkasResponse,
+            CreateDefinisiBerkasRequest, CreateDefinisiFieldRequest, CreateDefinisiLangkahRequest,
+            DashboardSummaryResponse, HasilSahkanCalon, KonfirmasiUploadRequest,
+            LangkahProgressItem, PendaftarDetailResponse, PendaftaranOfflineRequest,
+            PendaftaranOfflineResponse, PilihProdiRequest, PresignUploadRequest,
+            PresignedUrlResponse, ReorderFieldsRequest, SahkanSemuaBerkasRequest,
+            SahkanSemuaBerkasResponse, SubmitAkademikRequest, SubmitBiodataRequest,
+            SubmitDinamisRequest, UpdateDefinisiBerkasRequest, UpdateDefinisiFieldRequest,
+            UpdateDefinisiLangkahRequest, UploadBerkasRequest, VerifikasiBerkasRequest,
         },
         model::{DefinisiBerkas, DefinisiField, DefinisiLangkah},
         repository::PendaftaranRepository,
@@ -61,15 +62,21 @@ use crate::{
         admin_update_definisi_langkah_handler,
         admin_delete_definisi_langkah_handler,
         admin_list_berkas_handler,
+        admin_list_berkas_per_calon_handler,
         admin_verifikasi_berkas_handler,
+        admin_sahkan_semua_berkas_handler,
         submit_biodata_handler,
         submit_akademik_handler,
         upload_berkas_handler,
         get_presigned_url_handler,
         finalisasi_handler,
+        get_alur_handler,
         admin_list_pendaftar_handler
     ),
     components(schemas(
+        crate::modules::pendaftaran::alur::AlurResponse,
+        crate::modules::pendaftaran::alur::LangkahAlur,
+        crate::modules::pendaftaran::alur::StatusLangkah,
         SubmitDinamisRequest,
         PresignUploadRequest,
         KonfirmasiUploadRequest,
@@ -79,6 +86,10 @@ use crate::{
         DashboardSummaryResponse,
         BerkasCalonItem,
         BerkasDetailItem,
+        BerkasCalonRingkasan,
+        SahkanSemuaBerkasRequest,
+        SahkanSemuaBerkasResponse,
+        HasilSahkanCalon,
         LangkahProgressItem,
         CreateDefinisiFieldRequest,
         UpdateDefinisiFieldRequest,
@@ -123,6 +134,8 @@ pub struct FieldFilterQuery {
 pub struct BerkasFilterQuery {
     pub status: Option<String>,
     pub search: Option<String>,
+    /// Batasi pada berkas milik satu calon (untuk tampilan detail).
+    pub pendaftar_id: Option<Uuid>,
 }
 
 pub fn pendaftaran_router() -> Router<AppState> {
@@ -141,6 +154,7 @@ pub fn pendaftaran_router() -> Router<AppState> {
             get(presign_download_berkas_handler),
         )
         .route("/langkah", get(get_langkah_progress_handler))
+        .route("/alur", get(get_alur_handler))
         // Admin Form Builder (Fields)
         .route(
             "/admin/form-builder/fields",
@@ -175,6 +189,14 @@ pub fn pendaftaran_router() -> Router<AppState> {
         )
         // Admin Verifikasi Berkas
         .route("/admin/berkas-list", get(admin_list_berkas_handler))
+        .route(
+            "/admin/berkas-per-calon",
+            get(admin_list_berkas_per_calon_handler),
+        )
+        .route(
+            "/admin/verifikasi-berkas-semua",
+            post(admin_sahkan_semua_berkas_handler),
+        )
         .route(
             "/admin/verifikasi-berkas",
             post(admin_verifikasi_berkas_handler),
@@ -659,7 +681,8 @@ pub async fn admin_delete_definisi_langkah_handler(
     tag = "Pendaftaran Admin",
     params(
         ("status" = Option<String>, Query, description = "Filter status (PENDING, VALID, INVALID, DITERIMA, DITOLAK)"),
-        ("search" = Option<String>, Query, description = "Pencarian nama / nomor pendaftaran")
+        ("search" = Option<String>, Query, description = "Pencarian nama / nomor pendaftaran"),
+        ("pendaftar_id" = Option<Uuid>, Query, description = "Hanya berkas milik calon ini")
     ),
     responses(
         (status = 200, description = "Daftar seluruh berkas pendaftar untuk verifikasi", body = Vec<BerkasDetailItem>),
@@ -673,9 +696,69 @@ pub async fn admin_list_berkas_handler(
 ) -> Result<impl IntoResponse, AppError> {
     let service = make_service(&state);
     let list = service
-        .admin_list_berkas(query.status, query.search)
+        .admin_list_berkas(query.status, query.search, query.pendaftar_id)
         .await?;
     Ok(Json(list))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/pendaftaran/admin/berkas-per-calon",
+    tag = "Pendaftaran Admin",
+    params(
+        ("status" = Option<String>, Query, description = "PENDING (ada yang menunggu), INVALID (ada yang ditolak), VALID (semua sah), atau kosong untuk semua"),
+        ("search" = Option<String>, Query, description = "Pencarian nama / nomor pendaftaran / email")
+    ),
+    responses(
+        (status = 200, description = "Calon beserta ringkasan berkasnya; yang perlu diperiksa di atas", body = Vec<BerkasCalonRingkasan>),
+        (status = 403, description = "Hanya admin PMB yang berhak mengakses", body = ApiErrorResponse)
+    )
+)]
+pub async fn admin_list_berkas_per_calon_handler(
+    _admin: RequireAdmin,
+    State(state): State<AppState>,
+    Query(query): Query<BerkasFilterQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let service = make_service(&state);
+    let list = service
+        .admin_list_berkas_per_calon(query.status, query.search)
+        .await?;
+    Ok(Json(list))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/pendaftaran/admin/verifikasi-berkas-semua",
+    tag = "Pendaftaran Admin",
+    request_body = SahkanSemuaBerkasRequest,
+    responses(
+        (status = 200, description = "Berkas yang menunggu milik calon terpilih disahkan", body = SahkanSemuaBerkasResponse),
+        (status = 400, description = "Jumlah calon harus 1 sampai 100", body = ApiErrorResponse),
+        (status = 403, description = "Hanya admin PMB yang berhak memverifikasi", body = ApiErrorResponse)
+    )
+)]
+pub async fn admin_sahkan_semua_berkas_handler(
+    admin: RequireAdmin,
+    State(state): State<AppState>,
+    Json(req): Json<SahkanSemuaBerkasRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let service = make_service(&state);
+    let payload = serde_json::to_value(&req).ok();
+    let res = service
+        .sahkan_semua_berkas_admin(admin.user_id, req)
+        .await?;
+
+    let _ = crate::security::record_audit_log(
+        &state.db,
+        Some(admin.user_id),
+        "VERIFIKASI_BERKAS_SEMUA",
+        "berkas_pendaftar",
+        None,
+        None,
+        payload,
+    )
+    .await;
+    Ok(Json(res))
 }
 
 #[utoipa::path(
@@ -841,7 +924,8 @@ pub async fn get_presigned_url_handler(
     tag = "Pendaftaran",
     responses(
         (status = 200, description = "Finalisasi pendaftaran berhasil"),
-        (status = 400, description = "Berkas wajib belum diunggah", body = ApiErrorResponse)
+        (status = 409, description = "Formulir sudah dikirim / kuota sesi CBT penuh", body = ApiErrorResponse),
+        (status = 422, description = "Sesi CBT belum dipilih", body = ApiErrorResponse)
     )
 )]
 pub async fn finalisasi_handler(
@@ -849,11 +933,33 @@ pub async fn finalisasi_handler(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
     let service = make_service(&state);
-    service.finalisasi(auth_user.user_id).await?;
+    let gratis = service.finalisasi(auth_user.user_id).await?;
+    let pesan = if gratis {
+        "Formulir terkirim. Jalur Anda tanpa biaya formulir; lanjutkan dengan unggah berkas."
+    } else {
+        "Formulir terkirim. Lanjutkan pembayaran biaya formulir melalui VA Mandiri atau QRIS."
+    };
     Ok(Json(serde_json::json!({
         "status": "ok",
-        "pesan": "Formulir pendaftaran berhasil difinalisasi. Berkas Anda akan diverifikasi oleh panitia PMB."
+        "biaya_gratis": gratis,
+        "pesan": pesan
     })))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/pendaftaran/alur",
+    tag = "Pendaftaran",
+    responses(
+        (status = 200, description = "Stepper alur PMB 9 langkah untuk calon", body = crate::modules::pendaftaran::alur::AlurResponse)
+    )
+)]
+pub async fn get_alur_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let service = make_service(&state);
+    Ok(Json(service.get_alur(auth_user.user_id).await?))
 }
 
 #[utoipa::path(

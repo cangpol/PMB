@@ -8,5 +8,6 @@ pub mod error;
 pub mod extractors;
 pub mod modules;
 pub mod openapi;
+pub mod pdfkit;
 pub mod security;
 pub mod state;

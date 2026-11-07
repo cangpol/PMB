@@ -18,10 +18,12 @@ import {
 } from "../../../components/common";
 import { SeoHead } from "../../../components/common/SeoHead";
 import type { components } from "../../../types/api";
+import { useDialog } from "@/components/ui/useDialog";
 
 type CmsPost = components["schemas"]["CmsPostResponse"];
 
 export const KelolaBeritaPage: React.FC = () => {
+  const dialog = useDialog();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
@@ -53,12 +55,35 @@ export const KelolaBeritaPage: React.FC = () => {
     },
   });
 
-  const handleDelete = (id: string, judul: string) => {
-    if (
-      window.confirm(`Apakah Anda yakin ingin menghapus artikel "${judul}"?`)
-    ) {
-      deleteMutation.mutate(id);
-    }
+  const handleDelete = async (id: string, judul: string) => {
+    const ya = await dialog.konfirmasi({
+      judul: "Hapus artikel?",
+      deskripsi: (
+        <>
+          Artikel{" "}
+          <strong className="text-biru-950">&ldquo;{judul}&rdquo;</strong> akan
+          dihapus permanen dan tidak dapat dikembalikan.
+        </>
+      ),
+      nada: "bahaya",
+      labelYa: "Ya, Hapus",
+    });
+    if (!ya) return;
+    deleteMutation.mutate(id, {
+      onSuccess: () =>
+        void dialog.hasil({
+          nada: "sukses",
+          judul: "Artikel dihapus",
+          deskripsi: `"${judul}" berhasil dihapus.`,
+          autoTutupMs: 2200,
+        }),
+      onError: (e: Error) =>
+        void dialog.hasil({
+          nada: "gagal",
+          judul: "Artikel gagal dihapus",
+          deskripsi: e.message,
+        }),
+    });
   };
 
   const filteredPosts = (posts || []).filter((p) => {

@@ -50,8 +50,10 @@ import type {
   UpdateGelombangRequest,
   CreateTahunAkademikRequest,
 } from "@/types";
+import { useDialog } from "@/components/ui/useDialog";
 
 export const TahunGelombangPage: React.FC = () => {
+  const dialog = useDialog();
   const [activeTab, setActiveTab] = useState<string>("gelombang");
 
   // State Gelombang
@@ -275,9 +277,19 @@ export const TahunGelombangPage: React.FC = () => {
         await fetchTahunData();
       }
       setDeleteTarget(null);
+      void dialog.hasil({
+        nada: "sukses",
+        judul: "Data dihapus",
+        deskripsi: "Data berhasil dihapus.",
+        autoTutupMs: 2000,
+      });
     } catch (err: unknown) {
       const e = err as { pesan?: string };
-      alert(e.pesan || "Gagal menghapus data");
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Penghapusan gagal",
+        deskripsi: e.pesan || "Gagal menghapus data",
+      });
     } finally {
       setIsSubmitting(false);
     }

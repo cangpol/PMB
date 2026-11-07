@@ -33,6 +33,8 @@ pub struct SesiCalonInfoResponse {
     pub jadwal_mulai: Option<DateTime<Utc>>,
     pub jadwal_selesai: Option<DateTime<Utc>>,
     pub ruang: Option<String>,
+    /// `ONLINE` / `LURING`
+    pub mode: Option<String>,
     pub durasi_menit: i32,
     pub total_soal: i32,
     pub passing_grade: f64,
@@ -206,9 +208,131 @@ pub struct CreateSesiRequest {
     pub jadwal_selesai: DateTime<Utc>,
     pub ruang: String,
     pub kuota: i32,
+    /// `ONLINE` (default) atau `LURING`
+    #[serde(default = "default_mode_sesi")]
+    pub mode: String,
+    #[serde(default)]
+    pub gelombang_id: Option<Uuid>,
+    #[serde(default)]
+    pub jalur_id: Option<Uuid>,
+    #[serde(default = "default_true")]
+    pub is_dibuka_pendaftaran: bool,
+}
+
+fn default_mode_sesi() -> String {
+    "ONLINE".to_string()
+}
+
+fn default_true() -> bool {
+    true
+}
+
+/// Sesi CBT yang dapat dipilih calon sebagai jadwal seleksi di formulir.
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, ToSchema)]
+pub struct SesiTersediaItem {
+    pub id: Uuid,
+    pub nama_sesi: String,
+    pub jadwal_mulai: DateTime<Utc>,
+    pub jadwal_selesai: DateTime<Utc>,
+    pub mode: String,
+    pub ruang: String,
+    pub kuota: i32,
+    pub terisi: i64,
 }
 
 #[derive(Debug, Clone, Deserialize, ToSchema, Validate)]
 pub struct AssignPesertaRequest {
     pub pendaftar_ids: Vec<Uuid>,
+}
+
+/// Satu baris riwayat pengerjaan CBT calon (per sesi yang diikuti).
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, ToSchema)]
+pub struct RiwayatCbtItem {
+    pub peserta_sesi_id: Uuid,
+    pub nama_sesi: String,
+    pub nama_paket: String,
+    /// ONLINE atau LURING
+    pub mode: String,
+    pub ruang: String,
+    pub nomor_peserta: String,
+    pub jadwal_mulai: DateTime<Utc>,
+    pub jadwal_selesai: DateTime<Utc>,
+    /// MENUNGGU, SEDANG_MENGERJAKAN, SELESAI, WAKTU_HABIS
+    pub status_ujian: String,
+    pub status_presensi: String,
+    /// Waktu calon mulai mengerjakan
+    pub waktu_mulai: Option<DateTime<Utc>>,
+    /// Waktu jawaban dikirim (atau waktu habis)
+    pub waktu_selesai: Option<DateTime<Utc>>,
+    /// Lama pengerjaan dalam detik
+    pub durasi_detik: Option<i64>,
+    pub total_soal: Option<i32>,
+    pub jumlah_benar: Option<i32>,
+    pub jumlah_salah: Option<i32>,
+    pub jumlah_kosong: Option<i32>,
+    /// Skor 0-100; terisi setelah jawaban dinilai
+    pub nilai_akhir: Option<f64>,
+    pub passing_grade: f64,
+    pub is_lulus: Option<bool>,
+    pub jumlah_pelanggaran: i64,
+}
+
+/// Satu baris rekap hasil CBT untuk admin (semua sesi).
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, sqlx::FromRow)]
+pub struct HasilCbtAdminItem {
+    pub peserta_sesi_id: Uuid,
+    pub pendaftar_id: Uuid,
+    pub nomor_peserta: String,
+    pub nama_peserta: String,
+    pub email: String,
+    pub sesi_id: Uuid,
+    pub nama_sesi: String,
+    pub status_ujian: String,
+    pub total_soal: Option<i32>,
+    pub total_dijawab: Option<i32>,
+    pub jumlah_benar: Option<i32>,
+    pub jumlah_salah: Option<i32>,
+    pub jumlah_kosong: Option<i32>,
+    pub nilai_akhir: Option<f64>,
+    pub is_lulus: Option<bool>,
+    pub waktu_submit: Option<DateTime<Utc>>,
+    /// Admin menyetujui peserta ini walau nilai di bawah passing grade
+    pub disetujui_admin: Option<bool>,
+    pub disetujui_alasan: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Validate, ToSchema)]
+pub struct SetujuiHasilCbtRequest {
+    /// Wajib (min. 5 karakter) bila hasil di bawah passing grade; opsional bila sudah lulus.
+    #[validate(length(max = 500, message = "Alasan maksimal 500 karakter"))]
+    pub alasan: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Validate, ToSchema)]
+pub struct UjianUlangCbtRequest {
+    #[validate(length(min = 5, max = 500, message = "Alasan wajib diisi (5-500 karakter)"))]
+    pub alasan: String,
+    /// Kosong = ulang di sesi yang sama (jadwalnya harus masih berlangsung).
+    /// Isi untuk memindahkan peserta ke sesi lain; riwayat percobaan lama tetap tersimpan.
+    pub sesi_id: Option<Uuid>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AksiHasilCbtResponse {
+    pub pesan: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct HasilCbtAdminResponse {
+    pub total: usize,
+    pub selesai: usize,
+    pub rata_rata: Option<f64>,
+    pub items: Vec<HasilCbtAdminItem>,
+}
+
+#[derive(Debug, Deserialize, utoipa::IntoParams)]
+pub struct HasilCbtQuery {
+    /// Cari nama, email, atau nomor peserta
+    pub q: Option<String>,
+    pub sesi_id: Option<Uuid>,
 }

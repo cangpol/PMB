@@ -10,6 +10,7 @@ import {
 import { BerkasUploader } from "../../components/berkas/BerkasUploader";
 import type { BerkasItem } from "../../components/berkas/BerkasUploader";
 import { useToast } from "@/components/ui/useToast";
+import { AlurStepper, useAlur } from "../../components/pendaftaran/AlurStepper";
 
 export const UploadBerkasPage: React.FC = () => {
   const { toast } = useToast();
@@ -18,6 +19,8 @@ export const UploadBerkasPage: React.FC = () => {
   const [berkasList, setBerkasList] = useState<BerkasItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
+  const { alur, isLoading: alurLoading, muatUlang: muatAlur } = useAlur();
+  const langkahBerkas = alur?.langkah.find((l) => l.kode === "berkas");
 
   const fetchBerkasSyarat = async () => {
     try {
@@ -60,7 +63,28 @@ export const UploadBerkasPage: React.FC = () => {
       .filter((b) => b.wajib)
       .every((b) => b.id && b.status_verifikasi !== "BELUM_UNGGAH");
 
-  if (isLoading) {
+  if (!alurLoading && langkahBerkas?.status === "TERKUNCI") {
+    return (
+      <div className="p-6 md:p-8 space-y-6 max-w-5xl mx-auto">
+        {alur && <AlurStepper alur={alur} ringkas />}
+        <ErrorState
+          title="Unggah Berkas Belum Dibuka"
+          message={langkahBerkas.pesan}
+          onRetry={muatAlur}
+          retryLabel="Periksa Ulang"
+        >
+          <Button
+            onClick={() => navigate("/portal/pembayaran")}
+            className="bg-biru-900 text-putih hover:bg-biru-950 font-semibold"
+          >
+            Ke Pembayaran Formulir
+          </Button>
+        </ErrorState>
+      </div>
+    );
+  }
+
+  if (isLoading || alurLoading) {
     return (
       <div className="p-6 md:p-8 space-y-6 max-w-5xl mx-auto">
         <div className="h-8 w-64 bg-biru-100 animate-pulse rounded-md" />
@@ -95,7 +119,7 @@ export const UploadBerkasPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-biru-100 pb-6">
         <div>
           <span className="text-xs font-semibold text-biru-800 tracking-wider uppercase">
-            Portal Calon Mahasiswa • Tahap 3
+            Portal Calon Mahasiswa • Langkah 5 dari 9
           </span>
           <h1 className="font-serif text-3xl font-bold text-biru-950 mt-1">
             Unggah Berkas Persyaratan
@@ -118,15 +142,28 @@ export const UploadBerkasPage: React.FC = () => {
 
           {semuaWajibTerunggah && (
             <Button
-              onClick={() => navigate("/portal/pembayaran")}
+              onClick={() => navigate("/portal/dashboard")}
               className="bg-biru-900 text-putih hover:bg-biru-950 font-semibold px-4 py-2 text-xs flex items-center gap-1.5 shadow-sm"
             >
-              <span>Lanjut ke Pembayaran</span>
+              <span>Lihat Status Verifikasi</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           )}
         </div>
       </div>
+
+      {langkahBerkas && langkahBerkas.status !== "AKTIF" && (
+        <div
+          role="status"
+          className={`p-4 rounded-xl border text-sm ${
+            langkahBerkas.status === "DITOLAK"
+              ? "bg-rose-50 border-rose-200 text-rose-900"
+              : "bg-biru-50 border-biru-200 text-biru-950"
+          }`}
+        >
+          {langkahBerkas.pesan}
+        </div>
+      )}
 
       {/* Info Status Kelengkapan */}
       {berkasList.length > 0 && (
@@ -166,6 +203,7 @@ export const UploadBerkasPage: React.FC = () => {
               "Dokumen telah berhasil diunggah langsung ke penyimpanan berkas.",
           });
           fetchBerkasSyarat();
+          muatAlur();
         }}
       />
     </div>

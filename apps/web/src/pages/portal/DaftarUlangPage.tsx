@@ -1,14 +1,5 @@
-import React, { useState, useEffect } from "react";
-import {
-  CheckCircle2,
-  Upload,
-  CreditCard,
-  FileCheck,
-  Printer,
-  ChevronRight,
-  Sparkles,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { Upload, CreditCard, FileCheck, Printer, Lock } from "lucide-react";
 import {
   Card,
   Button,
@@ -17,8 +8,19 @@ import {
   ErrorState,
 } from "../../components/common";
 import { fetchApi } from "../../services/api";
-import { BuktiBayarCard } from "../../components/daftar-ulang/BuktiBayarCard";
-import logoPlaceholder from "../../assets/logo-placeholder.svg";
+import {
+  BuktiPembayaranCard,
+  rupiah,
+  type BuktiPembayaranItem,
+} from "../../components/pembayaran/BuktiPembayaranCard";
+import { AlurStepper, useAlur } from "../../components/pendaftaran/AlurStepper";
+import { KartuMahasiswa } from "../../components/dokumen/KartuMahasiswa";
+import {
+  atributAccept,
+  periksaFormatBerkas,
+  unggahKeStorage,
+} from "@/lib/unggahBerkas";
+import { PopupFormatSalah } from "@/components/berkas/PopupFormatSalah";
 
 interface TagihanDto {
   id: string;
@@ -30,6 +32,8 @@ interface TagihanDto {
   metode_pembayaran: string;
   payment_url?: string | null;
   va_number?: string | null;
+  tgl_jatuh_tempo?: string | null;
+  rincian?: { komponen: string; nominal: number }[];
 }
 
 interface BerkasDaftarUlang {
@@ -86,9 +90,16 @@ const REQUIRED_DOCS = [
   },
 ];
 
+const TIPE_BERKAS = ["application/pdf", "image/jpeg", "image/png"];
+const MAKS_BERKAS = 5 * 1024 * 1024;
+
 export const DaftarUlangPage: React.FC = () => {
-  const navigate = useNavigate();
+  const { alur, muatUlang: muatAlur } = useAlur();
   const [data, setData] = useState<DaftarUlangResponse | null>(null);
+  const [formatSalah, setFormatSalah] = useState<string | null>(null);
+  const [buktiList, setBuktiList] = useState<BuktiPembayaranItem[]>([]);
+  const [berkasError, setBerkasError] = useState<string | null>(null);
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -98,10 +109,13 @@ export const DaftarUlangPage: React.FC = () => {
     setIsLoading(true);
     setIsError(false);
     try {
-      const res = await fetchApi<DaftarUlangResponse>(
-        "/api/kelulusan/daftar-ulang",
-      );
+      const [res, bukti] = await Promise.all([
+        fetchApi<DaftarUlangResponse>("/api/kelulusan/daftar-ulang"),
+        fetchApi<BuktiPembayaranItem[]>("/api/pembayaran/bukti/my"),
+      ]);
       setData(res);
+      setBuktiList(bukti);
+      await muatAlur();
     } catch (err: unknown) {
       const e = err as { pesan?: string };
       setErrorMessage(
@@ -117,24 +131,42 @@ export const DaftarUlangPage: React.FC = () => {
     loadData();
   }, []);
 
-  const handleSimulatedUpload = async (jenis: string) => {
+  const unggahBerkas = async (jenis: string, file: File) => {
+    setBerkasError(null);
+    const cek = await periksaFormatBerkas(file, TIPE_BERKAS);
+    if (!cek.ok) {
+      setFormatSalah(cek.alasan);
+      return;
+    }
+    const mime = cek.mime;
+    if (file.size > MAKS_BERKAS) {
+      setBerkasError("Ukuran berkas maksimal 5 MB.");
+      return;
+    }
     setUploadingJenis(jenis);
     try {
-      const fakeFileName = `${jenis.toLowerCase()}_pmb_2026.pdf`;
+      const presign = await fetchApi<{ upload_url: string; file_key: string }>(
+        "/api/kelulusan/daftar-ulang/berkas/presign",
+        {
+          method: "POST",
+          body: JSON.stringify({ jenis_berkas: jenis, file_name: file.name }),
+        },
+      );
+      await unggahKeStorage(presign.upload_url, file, mime);
       await fetchApi("/api/kelulusan/daftar-ulang/berkas", {
         method: "POST",
         body: JSON.stringify({
           jenis_berkas: jenis,
-          file_name: fakeFileName,
-          mime_type: "application/pdf",
-          file_size_bytes: 524288,
-          file_key: `daftar_ulang/${data?.pendaftar_id}/${fakeFileName}`,
+          file_name: file.name,
+          mime_type: mime,
+          file_size_bytes: file.size,
+          file_key: presign.file_key,
         }),
       });
       await loadData();
     } catch (err: unknown) {
-      const e = err as { pesan?: string };
-      alert(e.pesan || "Gagal mengunggah berkas");
+      const e = err as { pesan?: string; message?: string };
+      setBerkasError(e.pesan || e.message || "Gagal mengunggah berkas.");
     } finally {
       setUploadingJenis(null);
     }
@@ -158,9 +190,17 @@ export const DaftarUlangPage: React.FC = () => {
   const isTerdaftarMaba =
     data?.status_daftar_ulang === "TERDAFTAR_SEBAGAI_MAHASISWA";
 
+  const buktiDu = data?.tagihan
+    ? (buktiList.find((b) => b.tagihan_id === data.tagihan?.id) ?? null)
+    : null;
+
   return (
     <div className="space-y-6">
       {/* Header */}
+      <PopupFormatSalah
+        alasan={formatSalah}
+        onTutup={() => setFormatSalah(null)}
+      />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-biru-200">
         <div>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-biru-950">
@@ -204,164 +244,39 @@ export const DaftarUlangPage: React.FC = () => {
 
       {!isLoading && !isError && data && (
         <div className="space-y-6">
-          {/* Stepper Progres */}
-          <Card className="p-4 sm:p-6 border-biru-200 bg-putih rounded-2xl shadow-sm">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-600 text-putih flex items-center justify-center font-bold text-xs">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-biru-700">Langkah 1</p>
-                  <p className="text-xs font-bold text-biru-950">
-                    Lulus Seleksi
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                    isLunas
-                      ? "bg-emerald-600 text-putih"
-                      : "bg-biru-100 text-biru-900 border border-biru-300"
-                  }`}
-                >
-                  {isLunas ? <CheckCircle2 className="w-5 h-5" /> : "2"}
-                </div>
-                <div>
-                  <p className="text-[11px] text-biru-700">Langkah 2</p>
-                  <p className="text-xs font-bold text-biru-950">
-                    Pembayaran UKT
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                    isBerkasLengkap
-                      ? "bg-emerald-600 text-putih"
-                      : isLunas
-                        ? "bg-biru-900 text-putih"
-                        : "bg-biru-100 text-biru-600 border border-biru-300"
-                  }`}
-                >
-                  {isBerkasLengkap ? <CheckCircle2 className="w-5 h-5" /> : "3"}
-                </div>
-                <div>
-                  <p className="text-[11px] text-biru-700">Langkah 3</p>
-                  <p className="text-xs font-bold text-biru-950">Berkas Maba</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                    isTerdaftarMaba
-                      ? "bg-amber-400 text-biru-950 font-extrabold"
-                      : "bg-biru-100 text-biru-600 border border-biru-300"
-                  }`}
-                >
-                  {isTerdaftarMaba ? <Sparkles className="w-5 h-5" /> : "4"}
-                </div>
-                <div>
-                  <p className="text-[11px] text-biru-700">Langkah 4</p>
-                  <p className="text-xs font-bold text-biru-950">
-                    Terbit NIM Resmi
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Card>
+          {alur && <AlurStepper alur={alur} ringkas />}
 
           {/* Kartu Mahasiswa Sementara (Jika Sudah Terbit NIM Resmi) */}
           {isTerdaftarMaba && data.nim_resmi && (
-            <Card className="bg-gradient-to-br from-biru-900 via-biru-950 to-biru-900 text-putih p-8 rounded-3xl shadow-2xl border-2 border-amber-400/60 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-80 h-80 bg-biru-700/10 rounded-full blur-3xl pointer-events-none" />
-
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b border-biru-800">
-                <div className="flex items-center gap-4 text-center sm:text-left">
-                  <img
-                    src={logoPlaceholder}
-                    alt="Logo UPT"
-                    className="h-14 w-auto object-contain bg-putih/10 p-1 rounded-xl"
-                  />
-                  <div>
-                    <h3 className="font-serif text-lg font-bold uppercase tracking-wider text-amber-300">
-                      Universitas Pignatelli Triputra
-                    </h3>
-                    <p className="text-xs text-biru-200">
-                      Kartu Tanda Mahasiswa Sementara (KTMS) PMB 2026
-                    </p>
-                  </div>
-                </div>
-                <div className="text-center sm:text-right">
-                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-xs font-semibold">
-                    TERDAFTAR RESMI
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
-                <div className="flex flex-col items-center justify-center p-4 bg-putih/5 border border-biru-800 rounded-2xl">
-                  <div className="w-24 h-28 bg-biru-800/60 rounded-xl flex items-center justify-center border border-biru-700 text-biru-300 text-xs">
-                    [Pasfoto 3x4]
-                  </div>
-                  <p className="text-[11px] text-biru-300 mt-2 font-mono">
-                    {data.nomor_pendaftaran}
+            <section className="space-y-3" aria-label="Kartu Tanda Mahasiswa">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-biru-950">
+                    Kartu Tanda Mahasiswa Sementara
+                  </h3>
+                  <p className="text-xs text-biru-800">
+                    Terdaftar resmi sebagai mahasiswa baru. Cetak kartu untuk
+                    kegiatan orientasi.
                   </p>
                 </div>
-
-                <div className="md:col-span-2 space-y-3 flex flex-col justify-center">
-                  <div>
-                    <p className="text-xs text-biru-300 font-medium">
-                      Nomor Induk Mahasiswa (NIM)
-                    </p>
-                    <p className="text-3xl sm:text-4xl font-extrabold font-mono text-amber-300 tracking-wider">
-                      {data.nim_resmi}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-2">
-                    <div>
-                      <p className="text-biru-300">Nama Lengkap</p>
-                      <p className="font-bold text-putih text-sm uppercase">
-                        {data.nama_lengkap}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-biru-300">Program Studi</p>
-                      <p className="font-bold text-putih">
-                        {data.jenjang} {data.prodi_diterima}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-biru-300">Fakultas</p>
-                      <p className="font-medium text-putih">{data.fakultas}</p>
-                    </div>
-                    <div>
-                      <p className="text-biru-300">Tahun Akademik Masuk</p>
-                      <p className="font-medium text-putih">
-                        2026/2027 (Ganjil)
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-6 mt-6 border-t border-biru-800 flex justify-end">
                 <Button
-                  variant="secondary"
+                  variant="primary"
                   size="sm"
                   onClick={() => window.print()}
-                  className="bg-putih/10 hover:bg-putih/20 text-putih border-biru-700 gap-1.5 text-xs"
+                  className="gap-1.5 text-xs"
                 >
                   <Printer className="w-4 h-4" />
                   <span>Cetak Kartu Tanda Mahasiswa</span>
                 </Button>
               </div>
-            </Card>
+              <KartuMahasiswa
+                nim={data.nim_resmi}
+                nama={data.nama_lengkap}
+                prodi={`${data.jenjang} ${data.prodi_diterima}`}
+                fakultas={data.fakultas}
+                nomorPendaftaran={data.nomor_pendaftaran}
+              />
+            </section>
           )}
 
           {/* Section 1: Tagihan Pembayaran UKT */}
@@ -408,31 +323,39 @@ export const DaftarUlangPage: React.FC = () => {
                   </div>
                 </div>
 
-                {!isLunas && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                    <div className="text-xs text-amber-950">
-                      <p className="font-bold">
-                        Nomor Virtual Account Pembayaran:
-                      </p>
-                      <p className="font-mono text-base font-extrabold text-biru-950 mt-0.5">
-                        {data.tagihan.va_number || "880812345678"} (Bank Mandiri
-                        / BCA / BNI)
-                      </p>
-                    </div>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() =>
-                        navigate(
-                          `/portal/pembayaran?invoice=${data.tagihan?.nomor_tagihan}`,
-                        )
-                      }
-                      className="bg-biru-900 hover:bg-biru-950 text-putih gap-1.5"
-                    >
-                      <span>Buka Gerbang Pembayaran</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </div>
+                {data.tagihan.rincian && data.tagihan.rincian.length > 0 && (
+                  <table className="w-full text-xs">
+                    <caption className="text-left font-bold text-biru-950 pb-2">
+                      Rincian biaya daftar ulang
+                    </caption>
+                    <tbody>
+                      {data.tagihan.rincian.map((r) => (
+                        <tr
+                          key={r.komponen}
+                          className="border-b border-biru-100"
+                        >
+                          <td className="py-1.5 text-biru-800">{r.komponen}</td>
+                          <td className="py-1.5 text-right font-mono text-biru-950">
+                            {rupiah(r.nominal)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+                {data.tagihan.tgl_jatuh_tempo && !isLunas && (
+                  <p className="text-xs font-semibold text-biru-950 p-3 rounded-xl bg-biru-50 border border-biru-200">
+                    Batas pembayaran daftar ulang:{" "}
+                    {new Date(data.tagihan.tgl_jatuh_tempo).toLocaleString(
+                      "id-ID",
+                      {
+                        dateStyle: "full",
+                        timeStyle: "short",
+                        timeZone: "Asia/Jakarta",
+                      },
+                    )}{" "}
+                    WIB
+                  </p>
                 )}
               </div>
             ) : (
@@ -442,14 +365,18 @@ export const DaftarUlangPage: React.FC = () => {
             )}
           </Card>
 
-          <BuktiBayarCard
-            nomorRegistrasi={data.nomor_registrasi}
-            statusBukti={data.status_bukti_bayar}
-            catatanBukti={data.catatan_bukti_bayar}
-            nominal={data.tagihan?.nominal_akhir}
-            sudahLunas={Boolean(isLunas)}
-            onUploaded={loadData}
-          />
+          {data.tagihan && (
+            <BuktiPembayaranCard
+              tagihanId={data.tagihan.id}
+              nomorTagihan={data.tagihan.nomor_tagihan}
+              nominal={data.tagihan.nominal_akhir}
+              judul="Pembayaran Daftar Ulang"
+              buktiTerakhir={buktiDu}
+              sudahDisetujui={Boolean(isLunas)}
+              beritaTransfer={data.nomor_registrasi}
+              onTerkirim={loadData}
+            />
+          )}
 
           {/* Section 2: Unggah Berkas Registrasi Mahasiswa Baru */}
           <Card className="p-6 border-biru-200 bg-putih rounded-2xl shadow-sm space-y-4">
@@ -464,6 +391,19 @@ export const DaftarUlangPage: React.FC = () => {
                 Wajib dilengkapi seluruhnya untuk penerbitan NIM
               </span>
             </div>
+
+            {!isLunas && (
+              <p className="flex items-center gap-2 text-xs text-biru-900 p-3 rounded-xl bg-biru-50 border border-biru-200">
+                <Lock className="w-4 h-4 shrink-0" />
+                Unggah berkas registrasi ulang dibuka setelah pembayaran daftar
+                ulang disetujui admin PMB.
+              </p>
+            )}
+            {berkasError && (
+              <p className="text-xs font-semibold text-rose-700" role="alert">
+                {berkasError}
+              </p>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {REQUIRED_DOCS.map((doc) => {
@@ -517,27 +457,45 @@ export const DaftarUlangPage: React.FC = () => {
                         </div>
                       ) : (
                         <span className="text-[11px] text-biru-600 italic">
-                          Format PDF maks 5MB
+                          PDF/JPG/PNG maks 5 MB
                         </span>
                       )}
 
-                      {!isValid && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          disabled={uploadingJenis === doc.jenis}
-                          onClick={() => handleSimulatedUpload(doc.jenis)}
-                          className="gap-1 text-[11px] px-3 py-1"
-                        >
-                          <Upload className="w-3.5 h-3.5 text-biru-700" />
-                          <span>
-                            {uploadingJenis === doc.jenis
-                              ? "Mengunggah..."
-                              : isUploaded
-                                ? "Unggah Ulang"
-                                : "Unggah Dokumen"}
-                          </span>
-                        </Button>
+                      {!isValid && isLunas && (
+                        <>
+                          <input
+                            ref={(el) => {
+                              inputRefs.current[doc.jenis] = el;
+                            }}
+                            type="file"
+                            accept={atributAccept(TIPE_BERKAS)}
+                            className="hidden"
+                            aria-label={`Unggah ${doc.title}`}
+                            onChange={(e) => {
+                              const f = e.currentTarget.files?.[0];
+                              e.currentTarget.value = "";
+                              if (f) unggahBerkas(doc.jenis, f);
+                            }}
+                          />
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={uploadingJenis === doc.jenis}
+                            onClick={() =>
+                              inputRefs.current[doc.jenis]?.click()
+                            }
+                            className="gap-1 text-[11px] px-3 py-1"
+                          >
+                            <Upload className="w-3.5 h-3.5 text-biru-700" />
+                            <span>
+                              {uploadingJenis === doc.jenis
+                                ? "Mengunggah..."
+                                : isUploaded
+                                  ? "Unggah Ulang"
+                                  : "Unggah Dokumen"}
+                            </span>
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>

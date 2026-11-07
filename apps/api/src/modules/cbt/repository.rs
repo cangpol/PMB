@@ -232,29 +232,70 @@ impl CbtRepository {
 
     pub async fn create_sesi(
         &self,
-        paket_id: Uuid,
-        nama_sesi: &str,
-        mulai: DateTime<Utc>,
-        selesai: DateTime<Utc>,
-        ruang: &str,
-        kuota: i32,
+        req: &crate::modules::cbt::dto::CreateSesiRequest,
     ) -> Result<SesiUjian, AppError> {
         let row = sqlx::query_as::<_, SesiUjian>(
             r#"
-            INSERT INTO sesi_ujian (paket_id, nama_sesi, jadwal_mulai, jadwal_selesai, ruang, kuota)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO sesi_ujian (paket_id, nama_sesi, jadwal_mulai, jadwal_selesai, ruang, kuota,
+                                    mode, gelombang_id, jalur_id, is_dibuka_pendaftaran)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             RETURNING *
             "#,
         )
-        .bind(paket_id)
-        .bind(nama_sesi)
-        .bind(mulai)
-        .bind(selesai)
-        .bind(ruang)
-        .bind(kuota)
+        .bind(req.paket_id)
+        .bind(&req.nama_sesi)
+        .bind(req.jadwal_mulai)
+        .bind(req.jadwal_selesai)
+        .bind(&req.ruang)
+        .bind(req.kuota)
+        .bind(&req.mode)
+        .bind(req.gelombang_id)
+        .bind(req.jalur_id)
+        .bind(req.is_dibuka_pendaftaran)
         .fetch_one(&self.pool)
         .await?;
         Ok(row)
+    }
+
+    /// Sesi yang bisa dipilih calon: dibuka, belum dimulai, cakupan cocok, beserta jumlah terisi.
+    pub async fn list_sesi_tersedia(
+        &self,
+        gelombang_id: Option<Uuid>,
+        jalur_id: Option<Uuid>,
+    ) -> Result<Vec<crate::modules::cbt::dto::SesiTersediaItem>, AppError> {
+        let rows = sqlx::query_as::<_, crate::modules::cbt::dto::SesiTersediaItem>(
+            r#"
+            SELECT s.id, s.nama_sesi, s.jadwal_mulai, s.jadwal_selesai, s.mode, s.ruang, s.kuota,
+                   (SELECT COUNT(*) FROM peserta_sesi ps WHERE ps.sesi_id = s.id) AS terisi
+            FROM sesi_ujian s
+            WHERE s.is_dibuka_pendaftaran = TRUE
+              -- Masih bisa dipilih selama sesi belum berakhir (sesi online sering dibuka berjam-jam)
+              AND s.jadwal_selesai > NOW()
+              AND s.status NOT IN ('DIBATALKAN', 'SELESAI')
+              AND (s.gelombang_id IS NULL OR $1::uuid IS NULL OR s.gelombang_id = $1)
+              AND (s.jalur_id IS NULL OR $2::uuid IS NULL OR s.jalur_id = $2)
+            ORDER BY s.jadwal_mulai ASC
+            "#,
+        )
+        .bind(gelombang_id)
+        .bind(jalur_id)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows)
+    }
+
+    /// Presensi otomatis untuk sesi ONLINE saat calon menekan "Mulai Ujian".
+    pub async fn presensi_online(&self, peserta_sesi_id: Uuid) -> Result<(), AppError> {
+        sqlx::query(
+            "UPDATE peserta_sesi
+             SET status_presensi = 'HADIR', waktu_presensi = NOW(), metode_presensi = 'ONLINE_OTOMATIS',
+                 updated_at = NOW()
+             WHERE id = $1 AND status_presensi <> 'HADIR'",
+        )
+        .bind(peserta_sesi_id)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
     }
 
     pub async fn list_sesi(&self) -> Result<Vec<SesiUjian>, AppError> {
@@ -292,6 +333,16 @@ impl CbtRepository {
                 format!("CBT-{}", Uuid::new_v4().to_string()[..8].to_uppercase())
             });
 
+            // Pindah sesi: lepas kursi di sesi lain yang belum dikerjakan
+            sqlx::query(
+                "DELETE FROM peserta_sesi
+                 WHERE pendaftar_id = $1 AND sesi_id <> $2 AND status_ujian = 'MENUNGGU'",
+            )
+            .bind(p_id)
+            .bind(sesi_id)
+            .execute(&mut *tx)
+            .await?;
+
             let res = sqlx::query(
                 r#"
                 INSERT INTO peserta_sesi (sesi_id, pendaftar_id, nomor_peserta)
@@ -302,6 +353,14 @@ impl CbtRepository {
             .bind(sesi_id)
             .bind(p_id)
             .bind(&nomor_peserta)
+            .execute(&mut *tx)
+            .await?;
+
+            sqlx::query(
+                "UPDATE pendaftar SET sesi_ujian_id = $1, updated_at = NOW() WHERE id = $2",
+            )
+            .bind(sesi_id)
+            .bind(p_id)
             .execute(&mut *tx)
             .await?;
 
@@ -523,12 +582,11 @@ impl CbtRepository {
     }
 
     pub async fn count_pelanggaran(&self, peserta_sesi_id: Uuid) -> Result<i64, AppError> {
-        let n: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM pelanggaran_ujian WHERE peserta_sesi_id = $1",
-        )
-        .bind(peserta_sesi_id)
-        .fetch_one(&self.pool)
-        .await?;
+        let n: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM pelanggaran_ujian WHERE peserta_sesi_id = $1")
+                .bind(peserta_sesi_id)
+                .fetch_one(&self.pool)
+                .await?;
         Ok(n)
     }
 
@@ -640,20 +698,25 @@ impl CbtRepository {
         .fetch_one(&mut *tx)
         .await?;
 
-        // Update status pendaftar ke MENUNGGU_PENGUMUMAN
+        // Setelah CBT selesai peserta berhenti di MENUNGGU_UJIAN:
+        // - memenuhi passing grade -> peserta menekan tombol "Lanjut" (`lanjut_setelah_cbt`)
+        // - di bawah passing grade -> tertahan sampai admin memutuskan ujian ulang / persetujuan
         sqlx::query(
-            "UPDATE pendaftar SET status_pendaftaran = 'MENUNGGU_PENGUMUMAN', updated_at = NOW() WHERE id = $1",
+            "UPDATE pendaftar SET status_pendaftaran = 'MENUNGGU_UJIAN', updated_at = NOW() WHERE id = $1",
         )
         .bind(pendaftar_id)
         .execute(&mut *tx)
         .await?;
 
-        // Tandai langkah ujian SELESAI di pendaftar_langkah_status
+        // Tandai langkah ujian SELESAI pada state_langkah_pendaftar
         sqlx::query(
             r#"
-            UPDATE pendaftar_langkah_status
+            INSERT INTO state_langkah_pendaftar (pendaftar_id, langkah_id, status, selesai_at)
+            SELECT $1, dl.id, 'SELESAI', NOW()
+            FROM definisi_langkah dl
+            WHERE dl.tipe_langkah = 'ujian' AND dl.is_active = TRUE
+            ON CONFLICT (pendaftar_id, langkah_id) DO UPDATE
             SET status = 'SELESAI', selesai_at = NOW(), updated_at = NOW()
-            WHERE pendaftar_id = $1 AND kode_langkah = 'ujian'
             "#,
         )
         .bind(pendaftar_id)
@@ -662,6 +725,39 @@ impl CbtRepository {
 
         tx.commit().await?;
         Ok(row)
+    }
+
+    /// Riwayat pengerjaan CBT seorang calon, terbaru di atas.
+    pub async fn list_riwayat_pendaftar(
+        &self,
+        pendaftar_id: Uuid,
+    ) -> Result<Vec<crate::modules::cbt::dto::RiwayatCbtItem>, AppError> {
+        let rows = sqlx::query_as::<_, crate::modules::cbt::dto::RiwayatCbtItem>(
+            r#"
+            SELECT ps.id AS peserta_sesi_id,
+                   s.nama_sesi, pu.nama_paket, s.mode, s.ruang, ps.nomor_peserta,
+                   s.jadwal_mulai, s.jadwal_selesai,
+                   ps.status_ujian, ps.status_presensi,
+                   ps.waktu_mulai,
+                   COALESCE(h.waktu_submit, ps.waktu_selesai) AS waktu_selesai,
+                   EXTRACT(EPOCH FROM (COALESCE(h.waktu_submit, ps.waktu_selesai) - ps.waktu_mulai))::bigint
+                       AS durasi_detik,
+                   h.total_soal, h.jumlah_benar, h.jumlah_salah, h.jumlah_kosong,
+                   h.nilai_akhir, pu.passing_grade, h.is_lulus,
+                   (SELECT COUNT(*) FROM pelanggaran_ujian pl WHERE pl.peserta_sesi_id = ps.id)
+                       AS jumlah_pelanggaran
+            FROM peserta_sesi ps
+            JOIN sesi_ujian s ON s.id = ps.sesi_id
+            JOIN paket_ujian pu ON pu.id = s.paket_id
+            LEFT JOIN hasil_ujian h ON h.peserta_sesi_id = ps.id
+            WHERE ps.pendaftar_id = $1
+            ORDER BY COALESCE(ps.waktu_mulai, s.jadwal_mulai) DESC
+            "#,
+        )
+        .bind(pendaftar_id)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows)
     }
 
     pub async fn get_hasil_by_pendaftar(
@@ -761,6 +857,312 @@ impl CbtRepository {
         }
 
         Ok(items)
+    }
+}
+
+impl CbtRepository {
+    /// Rekap hasil pengerjaan CBT semua peserta (yang sudah selesai tampil dengan nilai).
+    pub async fn list_hasil_admin(
+        &self,
+        cari: Option<&str>,
+        sesi_id: Option<Uuid>,
+    ) -> Result<Vec<crate::modules::cbt::dto::HasilCbtAdminItem>, AppError> {
+        let pola = cari
+            .map(str::trim)
+            .filter(|c| !c.is_empty())
+            .map(|c| format!("%{}%", c.replace('%', "\\%").replace('_', "\\_")));
+        let rows = sqlx::query_as::<_, crate::modules::cbt::dto::HasilCbtAdminItem>(
+            r#"
+            SELECT ps.id AS peserta_sesi_id, ps.pendaftar_id, ps.nomor_peserta,
+                   u.nama_lengkap AS nama_peserta, u.email,
+                   s.id AS sesi_id, s.nama_sesi, ps.status_ujian,
+                   h.total_soal, h.total_dijawab, h.jumlah_benar, h.jumlah_salah,
+                   h.jumlah_kosong, h.nilai_akhir, h.is_lulus, h.waktu_submit,
+                   h.disetujui_admin, h.disetujui_alasan
+            FROM peserta_sesi ps
+            JOIN sesi_ujian s ON s.id = ps.sesi_id
+            JOIN pendaftar p ON p.id = ps.pendaftar_id
+            JOIN users u ON u.id = p.user_id
+            LEFT JOIN hasil_ujian h ON h.peserta_sesi_id = ps.id
+            WHERE ($1::uuid IS NULL OR ps.sesi_id = $1)
+              AND ($2::text IS NULL OR u.nama_lengkap ILIKE $2 OR u.email ILIKE $2
+                   OR ps.nomor_peserta ILIKE $2)
+            ORDER BY h.waktu_submit DESC NULLS LAST, s.jadwal_mulai DESC, ps.nomor_peserta
+            LIMIT 500
+            "#,
+        )
+        .bind(sesi_id)
+        .bind(pola)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows)
+    }
+}
+
+impl CbtRepository {
+    /// Peserta yang lulus CBT menekan "Lanjut": buka tahap pengumuman. Idempoten.
+    pub async fn lanjut_setelah_cbt(&self, pendaftar_id: Uuid) -> Result<(), AppError> {
+        let mut tx = self.pool.begin().await?;
+        let status: Option<(String,)> =
+            sqlx::query_as("SELECT status_pendaftaran FROM pendaftar WHERE id = $1 FOR UPDATE")
+                .bind(pendaftar_id)
+                .fetch_optional(&mut *tx)
+                .await?;
+        let (status,) =
+            status.ok_or_else(|| AppError::NotFound("Data pendaftar tidak ditemukan".into()))?;
+        // Sudah di tahap setelah CBT (pengumuman, lulus, daftar ulang, dst): tidak ada yang perlu dibuka
+        let sudah_lewat = matches!(
+            status.as_str(),
+            "LULUS"
+                | "CADANGAN"
+                | "TIDAK_LULUS"
+                | "MENUNGGU_VERIFIKASI_DAFTAR_ULANG"
+                | "DAFTAR_ULANG_LUNAS"
+                | "TERDAFTAR"
+        );
+        if sudah_lewat {
+            return Ok(());
+        }
+        if status == "MENUNGGU_PENGUMUMAN" {
+            tx.commit().await?;
+            crate::modules::kelulusan::repository::terbitkan_kelulusan_dari_cbt(
+                &self.pool,
+                Some(pendaftar_id),
+            )
+            .await?;
+            return Ok(());
+        }
+        if status != "MENUNGGU_UJIAN" {
+            return Err(AppError::Conflict(
+                "Anda belum menyelesaikan ujian CBT atau tahap ini sudah terlewati".into(),
+            ));
+        }
+        let lulus: Option<bool> = sqlx::query_scalar(
+            "SELECT is_lulus FROM hasil_ujian WHERE pendaftar_id = $1
+             ORDER BY waktu_submit DESC LIMIT 1",
+        )
+        .bind(pendaftar_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+        if lulus != Some(true) {
+            return Err(AppError::Conflict(
+                "Nilai CBT belum memenuhi passing grade. Tunggu keputusan panitia (ujian ulang atau persetujuan)."
+                    .into(),
+            ));
+        }
+        sqlx::query(
+            "UPDATE pendaftar SET status_pendaftaran = 'MENUNGGU_PENGUMUMAN', updated_at = NOW()
+             WHERE id = $1",
+        )
+        .bind(pendaftar_id)
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        // Lulus CBT -> LoA terbit otomatis dan tahap daftar ulang terbuka
+        crate::modules::kelulusan::repository::terbitkan_kelulusan_dari_cbt(
+            &self.pool,
+            Some(pendaftar_id),
+        )
+        .await?;
+        Ok(())
+    }
+}
+
+impl CbtRepository {
+    /// Setujui hasil CBT oleh admin.
+    /// - Hasil di bawah passing grade: diubah menjadi lulus (alasan wajib) dan peserta lanjut ke pengumuman.
+    /// - Hasil yang sudah lulus: hanya ditandai "disetujui admin" (alasan opsional).
+    ///
+    /// Mengembalikan (pendaftar_id, nilai_akhir, sebelumnya_lulus).
+    pub async fn setujui_hasil(
+        &self,
+        peserta_sesi_id: Uuid,
+        admin_id: Uuid,
+        alasan: Option<&str>,
+    ) -> Result<(Uuid, f64, bool), AppError> {
+        let mut tx = self.pool.begin().await?;
+        let cur: Option<(Uuid, f64, bool, bool, String)> = sqlx::query_as(
+            "SELECT h.pendaftar_id, h.nilai_akhir, h.is_lulus, h.disetujui_admin,
+                    p.status_pendaftaran
+             FROM hasil_ujian h JOIN pendaftar p ON p.id = h.pendaftar_id
+             WHERE h.peserta_sesi_id = $1 FOR UPDATE OF h, p",
+        )
+        .bind(peserta_sesi_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+        let (pendaftar_id, nilai, lulus, sudah, status) =
+            cur.ok_or_else(|| AppError::NotFound("Peserta belum memiliki hasil CBT".into()))?;
+        if status != "MENUNGGU_PENGUMUMAN" && status != "MENUNGGU_UJIAN" {
+            return Err(AppError::Conflict(
+                "Hasil seleksi sudah diumumkan. Gunakan koreksi kandidat di menu Seleksi & Kelulusan."
+                    .into(),
+            ));
+        }
+        if sudah {
+            return Err(AppError::Conflict("Hasil ini sudah disetujui admin".into()));
+        }
+        let alasan = alasan.map(str::trim).filter(|a| !a.is_empty());
+        if !lulus && alasan.map(|a| a.chars().count() < 5).unwrap_or(true) {
+            return Err(AppError::BadRequest(
+                "Alasan wajib diisi (minimal 5 karakter) untuk menyetujui hasil di bawah passing grade"
+                    .into(),
+            ));
+        }
+        sqlx::query(
+            "UPDATE hasil_ujian
+             SET is_lulus = TRUE, disetujui_admin = TRUE, disetujui_oleh = $2,
+                 disetujui_alasan = $3, disetujui_pada = NOW()
+             WHERE peserta_sesi_id = $1",
+        )
+        .bind(peserta_sesi_id)
+        .bind(admin_id)
+        .bind(alasan.unwrap_or("Disetujui admin"))
+        .execute(&mut *tx)
+        .await?;
+        // Lanjut ke tahap pengumuman (peserta yang tertahan di bawah passing grade)
+        sqlx::query(
+            "UPDATE pendaftar SET status_pendaftaran = 'MENUNGGU_PENGUMUMAN', updated_at = NOW()
+             WHERE id = $1 AND status_pendaftaran = 'MENUNGGU_UJIAN'",
+        )
+        .bind(pendaftar_id)
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        // Disetujui admin -> LoA terbit otomatis (bila belum ada hasil kelulusan)
+        crate::modules::kelulusan::repository::terbitkan_kelulusan_dari_cbt(
+            &self.pool,
+            Some(pendaftar_id),
+        )
+        .await?;
+        Ok((pendaftar_id, nilai, lulus))
+    }
+
+    /// Izinkan peserta mengulang CBT. Mengembalikan (pendaftar_id, ringkasan hasil lama).
+    pub async fn izinkan_ujian_ulang(
+        &self,
+        peserta_sesi_id: Uuid,
+        sesi_baru: Option<Uuid>,
+    ) -> Result<(Uuid, serde_json::Value), AppError> {
+        let mut tx = self.pool.begin().await?;
+        #[allow(clippy::type_complexity)]
+        let cur: Option<(
+            Uuid,
+            Uuid,
+            String,
+            String,
+            String,
+            Option<f64>,
+            Option<i32>,
+            Option<i32>,
+            Option<i32>,
+        )> = sqlx::query_as(
+            "SELECT ps.sesi_id, ps.pendaftar_id, ps.nomor_peserta, ps.status_ujian,
+                        p.status_pendaftaran, h.nilai_akhir, h.jumlah_benar, h.jumlah_salah,
+                        h.jumlah_kosong
+                 FROM peserta_sesi ps
+                 JOIN pendaftar p ON p.id = ps.pendaftar_id
+                 LEFT JOIN hasil_ujian h ON h.peserta_sesi_id = ps.id
+                 WHERE ps.id = $1 FOR UPDATE OF ps, p",
+        )
+        .bind(peserta_sesi_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+        let (
+            sesi_lama,
+            pendaftar_id,
+            nomor,
+            status_ujian,
+            status_pend,
+            nilai,
+            benar,
+            salah,
+            kosong,
+        ) = cur.ok_or_else(|| AppError::NotFound("Peserta sesi tidak ditemukan".into()))?;
+
+        if status_ujian != "SELESAI" && status_ujian != "WAKTU_HABIS" {
+            return Err(AppError::Conflict(
+                "Peserta belum menyelesaikan ujian, tidak ada yang perlu diulang".into(),
+            ));
+        }
+        if status_pend != "MENUNGGU_PENGUMUMAN" && status_pend != "MENUNGGU_UJIAN" {
+            return Err(AppError::Conflict(
+                "Hasil seleksi sudah diumumkan atau status peserta tidak memungkinkan ujian ulang"
+                    .into(),
+            ));
+        }
+
+        let target = sesi_baru.unwrap_or(sesi_lama);
+        let sesi: Option<(DateTime<Utc>, i32)> =
+            sqlx::query_as("SELECT jadwal_selesai, kuota FROM sesi_ujian WHERE id = $1")
+                .bind(target)
+                .fetch_optional(&mut *tx)
+                .await?;
+        let (selesai, kuota) =
+            sesi.ok_or_else(|| AppError::NotFound("Sesi tujuan tidak ditemukan".into()))?;
+        if selesai <= Utc::now() {
+            return Err(AppError::BadRequest(
+                "Jadwal sesi tujuan sudah berakhir. Pilih sesi lain yang masih berlangsung.".into(),
+            ));
+        }
+
+        let ringkasan = serde_json::json!({
+            "sesi_id": sesi_lama, "status_ujian": status_ujian, "nilai_akhir": nilai,
+            "benar": benar, "salah": salah, "kosong": kosong,
+        });
+
+        if target == sesi_lama {
+            sqlx::query("DELETE FROM hasil_ujian WHERE peserta_sesi_id = $1")
+                .bind(peserta_sesi_id)
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("DELETE FROM jawaban_peserta WHERE peserta_sesi_id = $1")
+                .bind(peserta_sesi_id)
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("DELETE FROM pelanggaran_ujian WHERE peserta_sesi_id = $1")
+                .bind(peserta_sesi_id)
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query(
+                "UPDATE peserta_sesi
+                 SET status_ujian = 'MENUNGGU', waktu_mulai = NULL, batas_waktu = NULL,
+                     waktu_selesai = NULL, urutan_soal_ids = NULL, seed_acak = 1, updated_at = NOW()
+                 WHERE id = $1",
+            )
+            .bind(peserta_sesi_id)
+            .execute(&mut *tx)
+            .await?;
+        } else {
+            let terisi: i64 =
+                sqlx::query_scalar("SELECT COUNT(*) FROM peserta_sesi WHERE sesi_id = $1")
+                    .bind(target)
+                    .fetch_one(&mut *tx)
+                    .await?;
+            if terisi >= kuota as i64 {
+                return Err(AppError::Conflict("Kuota sesi tujuan sudah penuh".into()));
+            }
+            // Percobaan lama tetap tersimpan sebagai riwayat; tambah kursi di sesi baru
+            sqlx::query(
+                "INSERT INTO peserta_sesi (sesi_id, pendaftar_id, nomor_peserta)
+                 VALUES ($1, $2, $3) ON CONFLICT (sesi_id, pendaftar_id) DO NOTHING",
+            )
+            .bind(target)
+            .bind(pendaftar_id)
+            .bind(&nomor)
+            .execute(&mut *tx)
+            .await?;
+        }
+
+        sqlx::query(
+            "UPDATE pendaftar SET status_pendaftaran = 'BERKAS_VERIFIED', sesi_ujian_id = $2,
+                    updated_at = NOW() WHERE id = $1",
+        )
+        .bind(pendaftar_id)
+        .bind(target)
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        Ok((pendaftar_id, ringkasan))
     }
 }
 

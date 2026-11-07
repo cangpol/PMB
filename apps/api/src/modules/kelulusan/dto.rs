@@ -48,6 +48,23 @@ pub struct CekKelulusanCalonResponse {
     pub is_pengumuman_buka: bool,
     pub status_daftar_ulang: String,
     pub pesan: String,
+    /// Hasil CBT terbaru calon (tampil di halaman hasil kelulusan sebelum pengumuman resmi).
+    pub hasil_cbt: Option<HasilCbtCalon>,
+}
+
+/// Ringkasan hasil CBT untuk calon mahasiswa.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, sqlx::FromRow)]
+pub struct HasilCbtCalon {
+    pub nilai_akhir: f64,
+    pub jumlah_benar: i32,
+    pub jumlah_salah: i32,
+    pub jumlah_kosong: i32,
+    pub passing_grade: f64,
+    /// Memenuhi passing grade atau disetujui admin.
+    pub memenuhi_passing_grade: bool,
+    /// Hasil di bawah passing grade yang disetujui panitia.
+    pub disetujui_admin: bool,
+    pub waktu_submit: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Deserialize, ToSchema, Validate)]
@@ -152,7 +169,18 @@ pub struct TagihanDaftarUlangDto {
     pub status: String, // 'PENDING', 'PAID', 'EXPIRED', 'FAILED'
     pub metode_pembayaran: String,
     pub payment_url: Option<String>,
+    /// Nomor VA Mandiri kampus (rekening aktif) untuk transfer daftar ulang
     pub va_number: Option<String>,
+    pub tgl_jatuh_tempo: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default)]
+    pub rincian: Vec<RincianBiayaDto>,
+}
+
+/// Satu komponen biaya daftar ulang (dari matriks biaya prodi x jalur x gelombang).
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct RincianBiayaDto {
+    pub komponen: String,
+    pub nominal: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -240,4 +268,73 @@ pub struct MahasiswaDaftarUlangDto {
     pub status_ukt: String,
     pub total_berkas_valid: i64,
     pub total_berkas_pending: i64,
+}
+
+// ---------------------------------------------------------------------------
+// Rumus penomoran NIM
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct TokenNimInfo {
+    pub token: String,
+    pub keterangan: String,
+    pub contoh: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct LingkupNimInfo {
+    pub kode: String,
+    pub keterangan: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct RumusNimResponse {
+    pub template: String,
+    pub lingkup_urut: String,
+    pub template_bawaan: String,
+    pub diperbarui_oleh: Option<String>,
+    pub diperbarui_pada: Option<DateTime<Utc>>,
+    pub token: Vec<TokenNimInfo>,
+    pub lingkup_pilihan: Vec<LingkupNimInfo>,
+    pub panjang_maks: i32,
+}
+
+#[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
+pub struct SimpanRumusNimRequest {
+    #[validate(length(min = 1, max = 100, message = "Rumus NIM 1-100 karakter"))]
+    pub template: String,
+    #[validate(length(min = 1, message = "Lingkup nomor urut wajib dipilih"))]
+    pub lingkup_urut: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ContohNimItem {
+    pub prodi: String,
+    pub kode_prodi: String,
+    /// Hasil bila NIM diterbitkan sekarang (memakai nomor urut berikutnya)
+    pub nim: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct PratinjauRumusNimResponse {
+    pub valid: bool,
+    pub pesan: Option<String>,
+    pub contoh: Vec<ContohNimItem>,
+}
+
+#[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
+pub struct ArahkanPilihan2Request {
+    pub pendaftar_id: Uuid,
+    #[validate(length(min = 5, max = 500, message = "Catatan wajib diisi (5-500 karakter)"))]
+    pub catatan: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ArahkanPilihan2Response {
+    pub pesan: String,
+    pub prodi_baru: String,
+    pub status_kelulusan: String,
+    pub nomor_surat_loa: Option<String>,
+    /// `true` bila hasil sudah langsung terlihat oleh calon di halaman kelulusan
+    pub sudah_tampil_ke_calon: bool,
 }

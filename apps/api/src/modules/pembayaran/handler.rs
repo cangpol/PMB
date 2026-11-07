@@ -82,6 +82,7 @@ pub fn pembayaran_router() -> Router<AppState> {
         .route("/admin/rekonsiliasi/{id}", post(admin_rekonsiliasi_handler))
         .route("/admin/list", get(admin_list_pembayaran_handler))
         .route("/admin/ekspor", get(admin_ekspor_transaksi_handler))
+        .merge(super::bukti::bukti_router())
 }
 
 #[utoipa::path(
@@ -96,14 +97,25 @@ pub fn pembayaran_router() -> Router<AppState> {
     )
 )]
 pub async fn cek_voucher_handler(
+    auth_user: AuthUser,
     State(state): State<AppState>,
-    ValidatedJson(req): ValidatedJson<CekVoucherRequest>,
+    ValidatedJson(mut req): ValidatedJson<CekVoucherRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let service = PembayaranService::new(
-        PembayaranRepository::new(state.db.clone()),
-        state.payment_gateway.clone(),
-    );
-    let res = service.cek_voucher(req, None, None).await?;
+    let repo = PembayaranRepository::new(state.db.clone());
+    // Pratinjau memakai biaya & batasan jalur/prodi milik calon, sama seperti saat
+    // tagihan diterbitkan, agar hasil pratinjau tidak berbeda dengan tagihan.
+    let pendaftar = PendaftaranRepository::new(state.db.clone())
+        .find_by_user_id(auth_user.user_id)
+        .await?;
+    let (jalur, prodi) = match &pendaftar {
+        Some(p) => {
+            req.nominal_asli = repo.get_biaya_formulir_jalur(p.jalur_id).await?;
+            (Some(p.jalur_id), Some(p.prodi_pilihan_1))
+        }
+        None => (None, None),
+    };
+    let service = PembayaranService::new(repo, state.payment_gateway.clone());
+    let res = service.cek_voucher(req, jalur, prodi).await?;
     Ok(Json(res))
 }
 
@@ -160,6 +172,13 @@ pub async fn buat_tagihan_formulir_handler(
                 "Silakan isi tahap awal formulir pendaftaran terlebih dahulu".to_string(),
             )
         })?;
+
+    if pendaftar.status_pendaftaran == crate::modules::pendaftaran::alur::status::DRAFT {
+        return Err(AppError::Conflict(
+            "Kirim formulir pendaftaran terlebih dahulu sebelum membayar biaya formulir."
+                .to_string(),
+        ));
+    }
 
     let service = PembayaranService::new(
         PembayaranRepository::new(state.db.clone()),
@@ -288,7 +307,7 @@ pub async fn mock_webhook_handler(
     State(state): State<AppState>,
     Json(payload): Json<MockWebhookPayload>,
 ) -> Result<impl IntoResponse, AppError> {
-    if state.payment_gateway.provider_name() != "mock" {
+    if !mode_simulasi_diizinkan(&state) {
         return Err(AppError::Forbidden(
             "Mock webhook dinonaktifkan pada provider gateway aktif".to_string(),
         ));
@@ -331,7 +350,7 @@ pub async fn simulasi_va_bayar_handler(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    if state.payment_gateway.provider_name() != "mock" {
+    if !mode_simulasi_diizinkan(&state) {
         return Err(AppError::Forbidden(
             "Simulasi pembayaran hanya diizinkan pada mode Mock Gateway (lingkungan dev/pengujian)"
                 .to_string(),
@@ -546,4 +565,14 @@ pub async fn admin_ekspor_transaksi_handler(
         )
         .body(csv)
         .unwrap())
+}
+
+/// Simulasi/mock webhook hanya boleh aktif pada provider MOCK **dan** di luar production,
+/// agar deploy production yang belum memakai gateway nyata tidak bisa "melunasi" tagihan gratis.
+fn mode_simulasi_diizinkan(state: &AppState) -> bool {
+    state
+        .payment_gateway
+        .provider_name()
+        .eq_ignore_ascii_case("mock")
+        && !state.config.app_env.eq_ignore_ascii_case("production")
 }

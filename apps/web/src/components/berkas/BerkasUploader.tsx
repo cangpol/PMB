@@ -10,6 +10,14 @@ import {
 } from "lucide-react";
 import { Button, Card, StatusBadge, EmptyState } from "../common";
 import { useToast } from "@/components/ui/useToast";
+import {
+  atributAccept,
+  labelFormat,
+  mimeDariDaftar,
+  periksaFormatBerkas,
+  unggahKeStorage,
+} from "@/lib/unggahBerkas";
+import { PopupFormatSalah } from "./PopupFormatSalah";
 
 export interface BerkasItem {
   id?: string | null;
@@ -45,6 +53,7 @@ export const BerkasUploader: React.FC<BerkasUploaderProps> = ({
   );
   const [uploadError, setUploadError] = useState<Record<string, string>>({});
   const [isUploading, setIsUploading] = useState<Record<string, boolean>>({});
+  const [formatSalah, setFormatSalah] = useState<string | null>(null);
 
   // State untuk modal pratinjau dokumen
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -57,36 +66,28 @@ export const BerkasUploader: React.FC<BerkasUploaderProps> = ({
     item: BerkasItem,
   ) => {
     const file = e.target.files?.[0];
+    // Kosongkan input agar berkas yang sama dapat dipilih ulang
+    e.target.value = "";
     if (!file) return;
 
     // Reset error
     setUploadError((prev) => ({ ...prev, [item.definisi_berkas_id]: "" }));
 
-    // 1. Validasi Ukuran File (KB ke Bytes)
+    // 1. Validasi format: ekstensi + isi berkas (pop up bila salah)
+    const mimeDiizinkan = mimeDariDaftar(item.tipe_file);
+    const cek = await periksaFormatBerkas(file, mimeDiizinkan);
+    if (!cek.ok) {
+      setFormatSalah(cek.alasan);
+      return;
+    }
+    const mime = cek.mime;
+
+    // 2. Validasi Ukuran File (KB ke Bytes)
     const maxBytes = item.ukuran_maks_kb * 1024;
     if (file.size > maxBytes) {
       setUploadError((prev) => ({
         ...prev,
         [item.definisi_berkas_id]: `Ukuran berkas (${(file.size / 1024).toFixed(0)} KB) melebihi batas maksimal ${item.ukuran_maks_kb} KB`,
-      }));
-      return;
-    }
-
-    // 2. Validasi Tipe File
-    const allowedTypes = item.tipe_file
-      .split(",")
-      .map((t) => t.trim().toLowerCase());
-    const fileMime = file.type.toLowerCase();
-    const fileExt = file.name.split(".").pop()?.toLowerCase();
-
-    const isMimeAllowed = allowedTypes.some(
-      (t) => t === fileMime || t.includes(fileExt || ""),
-    );
-
-    if (allowedTypes.length > 0 && !isMimeAllowed) {
-      setUploadError((prev) => ({
-        ...prev,
-        [item.definisi_berkas_id]: `Format berkas tidak diizinkan. Format yang diterima: ${item.tipe_file}`,
       }));
       return;
     }
@@ -102,7 +103,7 @@ export const BerkasUploader: React.FC<BerkasUploaderProps> = ({
         body: JSON.stringify({
           definisi_berkas_id: item.definisi_berkas_id,
           file_name: file.name,
-          mime_type: file.type || "application/octet-stream",
+          mime_type: mime,
           file_size_bytes: file.size,
         }),
       });
@@ -117,41 +118,13 @@ export const BerkasUploader: React.FC<BerkasUploaderProps> = ({
       const { upload_url, file_key } = await presignRes.json();
       setUploadProgress((prev) => ({ ...prev, [item.definisi_berkas_id]: 30 }));
 
-      // 4. Unggah Langsung ke MinIO Storage via PUT XMLHttpRequest (dengan Progress Bar)
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("PUT", upload_url, true);
-        xhr.setRequestHeader(
-          "Content-Type",
-          file.type || "application/octet-stream",
-        );
-
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const percent = Math.round(30 + (event.loaded / event.total) * 60);
-            setUploadProgress((prev) => ({
-              ...prev,
-              [item.definisi_berkas_id]: percent,
-            }));
-          }
-        };
-
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
-          } else {
-            reject(
-              new Error(
-                `Unggah ke server penyimpanan gagal (Status: ${xhr.status})`,
-              ),
-            );
-          }
-        };
-
-        xhr.onerror = () =>
-          reject(new Error("Koneksi ke MinIO storage terputus"));
-        xhr.send(file);
-      });
+      // 4. Unggah langsung ke penyimpanan berkas (dengan progress bar)
+      await unggahKeStorage(upload_url, file, mime, (persen) =>
+        setUploadProgress((prev) => ({
+          ...prev,
+          [item.definisi_berkas_id]: Math.round(30 + persen * 0.6),
+        })),
+      );
 
       setUploadProgress((prev) => ({ ...prev, [item.definisi_berkas_id]: 95 }));
 
@@ -163,13 +136,14 @@ export const BerkasUploader: React.FC<BerkasUploaderProps> = ({
           definisi_berkas_id: item.definisi_berkas_id,
           file_key,
           file_name: file.name,
-          mime_type: file.type || "application/octet-stream",
+          mime_type: mime,
           file_size_bytes: file.size,
         }),
       });
 
       if (!confirmRes.ok) {
-        throw new Error("Gagal mengonfirmasi rekaman berkas ke database");
+        const errJson = await confirmRes.json().catch(() => ({}));
+        throw new Error(errJson.pesan || "Gagal menyimpan data berkas");
       }
 
       setUploadProgress((prev) => ({
@@ -297,7 +271,9 @@ export const BerkasUploader: React.FC<BerkasUploaderProps> = ({
                   )}
 
                   <div className="flex items-center gap-4 text-xs text-biru-700 pt-1">
-                    <span>Format: {item.tipe_file}</span>
+                    <span>
+                      Format: {labelFormat(mimeDariDaftar(item.tipe_file))}
+                    </span>
                     <span>•</span>
                     <span>
                       Maks: {(item.ukuran_maks_kb / 1024).toFixed(1)} MB
@@ -328,7 +304,10 @@ export const BerkasUploader: React.FC<BerkasUploaderProps> = ({
 
                   {/* Error Message */}
                   {errorMsg && (
-                    <p className="text-xs text-biru-700 font-medium pt-2">
+                    <p
+                      className="text-xs text-rose-700 font-semibold pt-2"
+                      role="alert"
+                    >
                       {errorMsg}
                     </p>
                   )}
@@ -371,6 +350,7 @@ export const BerkasUploader: React.FC<BerkasUploaderProps> = ({
                   <label className="cursor-pointer">
                     <input
                       type="file"
+                      accept={atributAccept(mimeDariDaftar(item.tipe_file))}
                       className="hidden"
                       disabled={uploading || isValid}
                       onChange={(e) => handleFileSelect(e, item)}
@@ -402,6 +382,11 @@ export const BerkasUploader: React.FC<BerkasUploaderProps> = ({
           );
         })}
       </div>
+
+      <PopupFormatSalah
+        alasan={formatSalah}
+        onTutup={() => setFormatSalah(null)}
+      />
 
       {/* Modal Pratinjau Dokumen Berkas */}
       {previewUrl && (

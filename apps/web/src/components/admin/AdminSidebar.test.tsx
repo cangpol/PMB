@@ -10,6 +10,28 @@ import {
 } from "../../context/authContextDef";
 import type { AuthResponse } from "../../types";
 
+// Data antrean pemeriksaan dikendalikan tes (tanpa jaringan)
+const antreanMock = vi.hoisted(() => ({ data: undefined as unknown }));
+vi.mock("@/hooks/useAntreanVerifikasi", async (asli) => ({
+  ...(await asli<typeof import("@/hooks/useAntreanVerifikasi")>()),
+  useAntreanVerifikasi: () => ({ data: antreanMock.data, refetch: vi.fn() }),
+  useNotifikasiAntrean: () => undefined,
+}));
+
+// Sakelar fitur pengawas CBT dikendalikan tes
+const fiturMock = vi.hoisted(() => ({ pengawasCbtAktif: true }));
+vi.mock("@/hooks/useFitur", () => ({
+  useFitur: () => ({
+    data: { pengawas_cbt_aktif: fiturMock.pengawasCbtAktif },
+  }),
+}));
+
+const item = (menunggu: number) => ({
+  menunggu,
+  calon: menunggu,
+  terlama_sejak: null,
+});
+
 const mockAuthContext = (
   role = "super_admin",
   userOverrides: Partial<AuthResponse> = {},
@@ -27,7 +49,9 @@ const mockAuthContext = (
   login: vi.fn(),
   register: vi.fn(),
   logout: vi.fn(),
+  baruLogout: false,
   verifyEmail: vi.fn(),
+  kirimUlangKode: vi.fn(),
   forgotPassword: vi.fn(),
   resetPassword: vi.fn(),
   changePassword: vi.fn(),
@@ -39,6 +63,8 @@ describe("AdminSidebar Component", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
+    antreanMock.data = undefined;
+    fiturMock.pengawasCbtAktif = true;
   });
 
   afterEach(() => {
@@ -55,8 +81,10 @@ describe("AdminSidebar Component", () => {
       </AuthContext.Provider>,
     );
 
-    expect(screen.getByText("UPITRA PMB")).toBeInTheDocument();
-    expect(screen.getByText("Admin Panel")).toBeInTheDocument();
+    expect(screen.getByText("PMB")).toBeInTheDocument();
+    expect(
+      screen.getByText("Universitas Pignatelli Triputra"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Ringkasan")).toBeInTheDocument();
     expect(screen.getByText("Pendaftaran & Berkas")).toBeInTheDocument();
     expect(screen.getByText("Ujian Seleksi (CBT)")).toBeInTheDocument();
@@ -196,7 +224,7 @@ describe("AdminSidebar Component", () => {
       expect(screen.queryByText("Pengaturan PMB")).not.toBeInTheDocument();
     });
 
-    it("menampilkan seluruh 8 grup menu untuk peran 'super_admin'", () => {
+    it("menampilkan seluruh 9 grup menu untuk peran 'super_admin'", () => {
       const ctx = mockAuthContext("super_admin");
       render(
         <AuthContext.Provider value={ctx}>
@@ -214,6 +242,58 @@ describe("AdminSidebar Component", () => {
       expect(screen.getByText("Jalur Rekognisi (RPL)")).toBeInTheDocument();
       expect(screen.getByText("Konten Publik (CMS)")).toBeInTheDocument();
       expect(screen.getByText("Pengaturan PMB")).toBeInTheDocument();
+      expect(screen.getByText("Super Admin")).toBeInTheDocument();
+    });
+
+    it("grup 'Super Admin' hanya tampil untuk super_admin, tidak untuk admin_pmb", () => {
+      render(
+        <AuthContext.Provider value={mockAuthContext("admin_pmb")}>
+          <MemoryRouter initialEntries={["/admin/dashboard"]}>
+            <AdminSidebar collapsed={false} onToggleCollapse={vi.fn()} />
+          </MemoryRouter>
+        </AuthContext.Provider>,
+      );
+      expect(screen.getByText("Pengaturan PMB")).toBeInTheDocument();
+      expect(screen.queryByText("Super Admin")).not.toBeInTheDocument();
+    });
+
+    it("fitur pengawas dimatikan: pengawas_ujian tidak punya menu CBT", () => {
+      fiturMock.pengawasCbtAktif = false;
+      render(
+        <AuthContext.Provider value={mockAuthContext("pengawas_ujian")}>
+          <MemoryRouter initialEntries={["/admin/dashboard"]}>
+            <AdminSidebar collapsed={false} onToggleCollapse={vi.fn()} />
+          </MemoryRouter>
+        </AuthContext.Provider>,
+      );
+      expect(screen.getByText("Ringkasan")).toBeInTheDocument();
+      expect(screen.queryByText("Ujian Seleksi (CBT)")).not.toBeInTheDocument();
+    });
+
+    it("fitur pengawas dimatikan: admin tetap punya CBT tetapi tanpa Meja Presensi", () => {
+      fiturMock.pengawasCbtAktif = false;
+      render(
+        <AuthContext.Provider value={mockAuthContext("admin_pmb")}>
+          <MemoryRouter initialEntries={["/admin/cbt/sesi"]}>
+            <AdminSidebar collapsed={false} onToggleCollapse={vi.fn()} />
+          </MemoryRouter>
+        </AuthContext.Provider>,
+      );
+      expect(screen.getByText("Jadwal & Sesi CBT")).toBeInTheDocument();
+      expect(
+        screen.queryByText("Meja Presensi Pengawas"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("fitur pengawas menyala: Meja Presensi tampil", () => {
+      render(
+        <AuthContext.Provider value={mockAuthContext("admin_pmb")}>
+          <MemoryRouter initialEntries={["/admin/cbt/sesi"]}>
+            <AdminSidebar collapsed={false} onToggleCollapse={vi.fn()} />
+          </MemoryRouter>
+        </AuthContext.Provider>,
+      );
+      expect(screen.getByText("Meja Presensi Pengawas")).toBeInTheDocument();
     });
 
     it("menutup akses menu admin sensitif jika pengguna anonim / peran kosong (fail-closed)", () => {
@@ -353,5 +433,73 @@ describe("AdminLayout Component & Mobile Drawer", () => {
     expect(
       screen.queryByPlaceholderText(/Cari menu, konfigurasi, atau fitur PMB/i),
     ).not.toBeInTheDocument();
+  });
+
+  describe("penanda berkas yang perlu diperiksa admin", () => {
+    const renderDi = (rute: string, role = "super_admin") =>
+      render(
+        <AuthContext.Provider value={mockAuthContext(role)}>
+          <MemoryRouter initialEntries={[rute]}>
+            <AdminSidebar collapsed={false} onToggleCollapse={vi.fn()} />
+          </MemoryRouter>
+        </AuthContext.Provider>,
+      );
+
+    it("menampilkan lencana jumlah pada menu Verifikasi Berkas", () => {
+      antreanMock.data = {
+        berkas: item(3),
+        bukti_bayar: item(0),
+        daftar_ulang: item(0),
+        cbt_keputusan: item(0),
+        total: 3,
+      };
+      renderDi("/admin/berkas");
+      const lencana = screen.getByLabelText("3 menunggu diperiksa");
+      expect(lencana).toHaveTextContent("3");
+      expect(
+        screen.getByRole("link", { name: /Verifikasi Berkas PMB/ }),
+      ).toContainElement(lencana);
+    });
+
+    it("grup yang tertutup tetap menandai ada pekerjaan di dalamnya", () => {
+      antreanMock.data = {
+        berkas: item(0),
+        bukti_bayar: item(7),
+        daftar_ulang: item(0),
+        cbt_keputusan: item(0),
+        total: 7,
+      };
+      // Rute di grup lain: grup Keuangan tertutup, lencana ada di judul grupnya
+      renderDi("/admin/dashboard");
+      expect(screen.getByLabelText("7 menunggu diperiksa")).toBeInTheDocument();
+    });
+
+    it("tanpa antrean tidak ada lencana", () => {
+      antreanMock.data = {
+        berkas: item(0),
+        bukti_bayar: item(0),
+        daftar_ulang: item(0),
+        cbt_keputusan: item(0),
+        total: 0,
+      };
+      renderDi("/admin/berkas");
+      expect(
+        screen.queryByLabelText(/menunggu diperiksa/),
+      ).not.toBeInTheDocument();
+    });
+
+    it("jumlah besar dipadatkan menjadi 99+", () => {
+      antreanMock.data = {
+        berkas: item(250),
+        bukti_bayar: item(0),
+        daftar_ulang: item(0),
+        cbt_keputusan: item(0),
+        total: 250,
+      };
+      renderDi("/admin/berkas");
+      expect(screen.getByLabelText("250 menunggu diperiksa")).toHaveTextContent(
+        "99+",
+      );
+    });
   });
 });

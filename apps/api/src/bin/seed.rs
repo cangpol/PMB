@@ -474,6 +474,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         jalur_ids.push(j_id);
     }
 
+    // Kurikulum RPL & langkah RPL bergantung pada prodi dan jalur di atas, yang
+    // dibuat setelah migrasi berjalan. Jalankan ulang file migrasinya (idempoten).
+    sqlx::raw_sql(include_str!(
+        "../../migrations/20261107000015_rpl_kurikulum_dan_langkah.sql"
+    ))
+    .execute(&pool)
+    .await?;
+
     // 6. Seeding Gelombang Pendaftaran & Kuota Gelombang [CONTOH]
     println!("[6/9] Melakukan seeding Gelombang Pendaftaran & Kuota Prodi [CONTOH]...");
     let gelombang_row = sqlx::query_scalar::<_, Uuid>(
@@ -618,21 +626,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("[8/9] Melakukan seeding Voucher Diskon [CONTOH]...");
     let list_voucher = vec![
         (
-            "[CONTOH] TRIPUTRA50",
+            "CONTOH-TRIPUTRA50",
             "NOMINAL",
             50000i64,
             100,
             "Potongan 50rb biaya formulir",
         ),
         (
-            "[CONTOH] EARLYBIRD50",
+            "CONTOH-EARLYBIRD50",
             "PERCENT",
             50i64,
             100,
             "Diskon 50% biaya formulir early bird",
         ),
         (
-            "[CONTOH] BEASISWA100",
+            "CONTOH-BEASISWA100",
             "PERCENT",
             100i64,
             50,
@@ -864,6 +872,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .bind(pendaftar_id)
     .bind(sidang_id)
     .bind(prodi_if_id)
+    .execute(&pool)
+    .await?;
+
+    // Data contoh di atas memakai nomor tetap (mis. PMB-2026-0001); majukan
+    // sequence nomor agar pendaftar/tagihan baru tidak bentrok dengannya.
+    sqlx::raw_sql(include_str!(
+        "../../migrations/20261107000017_sequence_nomor.sql"
+    ))
     .execute(&pool)
     .await?;
 

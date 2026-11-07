@@ -45,6 +45,12 @@ pub struct SesiUjian {
     pub ruang: String,
     pub kuota: i32,
     pub status: String,
+    /// `ONLINE` (dari rumah, tanpa presensi pengawas) atau `LURING` (wajib presensi QR)
+    pub mode: String,
+    pub gelombang_id: Option<Uuid>,
+    pub jalur_id: Option<Uuid>,
+    /// Sesi tampil sebagai pilihan jadwal seleksi di formulir calon
+    pub is_dibuka_pendaftaran: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

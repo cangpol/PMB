@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Clock,
   CheckCircle2,
@@ -27,6 +27,7 @@ import {
   type JenisPelanggaran,
 } from "@/hooks/useCbtAntiCheat";
 import type { components } from "@/types/api";
+import { RiwayatCbtCard } from "../../components/cbt/RiwayatCbtCard";
 
 type SesiCalonInfo = components["schemas"]["SesiCalonInfoResponse"];
 type MulaiUjianCbtResponse = components["schemas"]["MulaiUjianCbtResponse"];
@@ -36,6 +37,27 @@ type SubmitUjianResponse = components["schemas"]["SubmitUjianResponse"];
 
 export const UjianCbtPage: React.FC = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [melanjutkan, setMelanjutkan] = useState(false);
+
+  // Calon yang lulus CBT menekan tombol ini untuk membuka tahap berikutnya (pengumuman)
+  const lanjutKeTahapBerikutnya = async () => {
+    try {
+      setMelanjutkan(true);
+      await fetchApi("/api/cbt/lanjut", { method: "POST" });
+      navigate("/portal/hasil");
+    } catch (err: unknown) {
+      toast({
+        title: "Belum dapat melanjutkan",
+        description:
+          (err as ApiError).pesan ||
+          "Tahap berikutnya belum dapat dibuka. Silakan coba lagi.",
+        type: "error",
+      });
+    } finally {
+      setMelanjutkan(false);
+    }
+  };
 
   // State Utama Sesi
   const [loading, setLoading] = useState<boolean>(true);
@@ -57,6 +79,7 @@ export const UjianCbtPage: React.FC = () => {
   const [hasilUjian, setHasilUjian] = useState<SubmitUjianResponse | null>(
     null,
   );
+  const [errorSkor, setErrorSkor] = useState(false);
 
   // Ref untuk interval timer server
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -84,6 +107,21 @@ export const UjianCbtPage: React.FC = () => {
       // Jika peserta ternyata sedang mengerjakan, langsung otomatis pulihkan sesi
       if (res.status_ujian === "SEDANG_MENGERJAKAN") {
         await startOrResumeExam();
+      } else if (
+        res.status_ujian === "SELESAI" ||
+        res.status_ujian === "WAKTU_HABIS"
+      ) {
+        // Ujian sudah berakhir (muat ulang halaman / ditutup otomatis): ambil skornya.
+        // Endpoint submit idempoten: untuk ujian yang sudah selesai ia hanya mengembalikan hasil.
+        try {
+          setHasilUjian(
+            await fetchApi<SubmitUjianResponse>("/api/cbt/submit", {
+              method: "POST",
+            }),
+          );
+        } catch {
+          setErrorSkor(true);
+        }
       }
     } catch (err: unknown) {
       const apiErr = err as ApiError;
@@ -322,7 +360,12 @@ export const UjianCbtPage: React.FC = () => {
     [handleAutoSubmitOnExpiry, toast],
   );
 
-  const { isFullscreen, masukFullscreen } = useCbtAntiCheat({
+  const {
+    isFullscreen,
+    masukFullscreen,
+    gagalFullscreen,
+    lanjutTanpaLayarPenuh,
+  } = useCbtAntiCheat({
     aktif: ujianActive,
     onPelanggaran: handlePelanggaran,
   });
@@ -382,9 +425,13 @@ export const UjianCbtPage: React.FC = () => {
   // =========================================================================
   // VIEW: UJIAN SELESAI / HASIL
   // =========================================================================
-  if (hasilUjian || sesiInfo?.status_ujian === "SELESAI") {
+  if (
+    hasilUjian ||
+    sesiInfo?.status_ujian === "SELESAI" ||
+    sesiInfo?.status_ujian === "WAKTU_HABIS"
+  ) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-12">
+      <div className="max-w-3xl mx-auto px-4 py-12 space-y-6">
         <Card className="text-center p-8 bg-white border border-biru-200 shadow-sm">
           <div className="w-16 h-16 bg-biru-50 text-biru-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 className="w-10 h-10" />
@@ -426,13 +473,75 @@ export const UjianCbtPage: React.FC = () => {
             </div>
             <div>
               <p className="text-xs text-slate-500 uppercase tracking-wider">
-                Hasil Akhir
+                Skor
               </p>
-              <p className="text-sm font-semibold text-biru-950 mt-1">
-                Sesuai Jadwal
+              <p className="text-xl font-bold text-biru-950">
+                {hasilUjian
+                  ? hasilUjian.nilai_akhir.toFixed(2)
+                  : errorSkor
+                    ? "Gagal dimuat"
+                    : "Memuat..."}
               </p>
             </div>
           </div>
+
+          {hasilUjian && (
+            <p className="-mt-4 mb-8 text-sm text-slate-600">
+              Benar{" "}
+              <strong className="text-biru-950">
+                {hasilUjian.jumlah_benar}
+              </strong>
+              {" · "}Salah{" "}
+              <strong className="text-biru-950">
+                {hasilUjian.jumlah_salah}
+              </strong>
+              {" · "}Kosong{" "}
+              <strong className="text-biru-950">
+                {hasilUjian.jumlah_kosong}
+              </strong>
+              {" · "}Batas lulus {hasilUjian.passing_grade}
+            </p>
+          )}
+
+          {hasilUjian && (
+            <div
+              role="status"
+              className={`mx-auto mb-8 max-w-xl rounded-xl border p-4 text-left text-sm ${
+                hasilUjian.is_lulus
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                  : "border-amber-200 bg-amber-50 text-amber-900"
+              }`}
+            >
+              {hasilUjian.is_lulus ? (
+                <>
+                  <p className="font-bold">Memenuhi passing grade</p>
+                  <p>
+                    Nilai Anda mencapai batas lulus CBT. Tekan tombol di bawah
+                    untuk membuka tahap berikutnya: pengumuman hasil seleksi.
+                  </p>
+                  <Button
+                    variant="primary"
+                    className="mt-3 gap-2"
+                    isLoading={melanjutkan}
+                    onClick={() => void lanjutKeTahapBerikutnya()}
+                  >
+                    Lanjut ke Tahap Berikutnya{" "}
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="font-bold">Belum memenuhi passing grade</p>
+                  <p>
+                    Nilai Anda di bawah batas lulus ({hasilUjian.passing_grade}
+                    ). Panitia akan memutuskan apakah Anda mengikuti ujian ulang
+                    atau melanjutkan proses. Pantau halaman ini; bila ujian
+                    ulang diizinkan, tombol mulai akan muncul kembali.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/portal/dashboard">
@@ -442,16 +551,83 @@ export const UjianCbtPage: React.FC = () => {
             </Link>
           </div>
         </Card>
+        <RiwayatCbtCard muatUlangKey={hasilUjian} />
       </div>
     );
   }
 
   // =========================================================================
-  // VIEW: GATEKEEPER PRESENSI (BELUM HADIR DI MEJA PENGAWAS)
+  // VIEW: TERKUNCI OLEH ALUR (berkas belum diverifikasi / belum ada sesi)
   // =========================================================================
-  if (sesiInfo && sesiInfo.status_presensi !== "HADIR") {
+  const isSesiOnline = sesiInfo?.mode === "ONLINE";
+  const sudahHadir = isSesiOnline || sesiInfo?.status_presensi === "HADIR";
+  if (
+    sesiInfo &&
+    !sesiInfo.can_start &&
+    sesiInfo.status_ujian === "MENUNGGU" &&
+    (sudahHadir || !sesiInfo.sesi_id)
+  ) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-12">
+      <div className="max-w-3xl mx-auto px-4 py-12 space-y-6">
+        <Card className="p-8 border border-biru-200 bg-white shadow-sm space-y-4">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-biru-50 text-biru-700 rounded-xl">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-serif font-bold text-biru-950">
+                Ujian CBT Belum Dapat Diakses
+              </h2>
+              <p className="text-sm text-biru-900">
+                {sesiInfo.pesan ||
+                  "Akses ujian dibuka setelah seluruh berkas Anda diverifikasi admin PMB."}
+              </p>
+              {sesiInfo.jadwal_mulai && (
+                <p className="text-sm text-biru-900">
+                  Jadwal Anda:{" "}
+                  <strong>
+                    {sesiInfo.nama_sesi} -{" "}
+                    {new Date(sesiInfo.jadwal_mulai).toLocaleString("id-ID", {
+                      dateStyle: "full",
+                      timeStyle: "short",
+                      timeZone: "Asia/Jakarta",
+                    })}{" "}
+                    WIB ({isSesiOnline ? "online dari rumah" : sesiInfo.ruang})
+                  </strong>
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              variant="primary"
+              onClick={loadMySesi}
+              disabled={loading}
+              className="gap-2"
+            >
+              <RotateCw
+                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+              />
+              Periksa Ulang
+            </Button>
+            <Link to="/portal/dashboard">
+              <Button variant="outline" className="w-full">
+                Kembali ke Dashboard
+              </Button>
+            </Link>
+          </div>
+        </Card>
+        <RiwayatCbtCard muatUlangKey={hasilUjian} />
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // VIEW: GATEKEEPER PRESENSI (sesi LURING, belum scan QR di meja pengawas)
+  // =========================================================================
+  if (sesiInfo && !sudahHadir) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-12 space-y-6">
         <Card className="p-8 border-l-4 border-l-amber-500 border border-slate-200 bg-white shadow-sm">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-amber-50 text-amber-700 rounded-xl">
@@ -539,6 +715,7 @@ export const UjianCbtPage: React.FC = () => {
             </div>
           </div>
         </Card>
+        <RiwayatCbtCard muatUlangKey={hasilUjian} />
       </div>
     );
   }
@@ -548,11 +725,13 @@ export const UjianCbtPage: React.FC = () => {
   // =========================================================================
   if (sesiInfo && !ujianActive) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-12">
+      <div className="max-w-3xl mx-auto px-4 py-12 space-y-6">
         <Card className="p-8 border border-biru-200 bg-white shadow-sm">
           <div className="text-center max-w-xl mx-auto mb-8">
             <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full mb-3">
-              Kehadiran Terverifikasi ✓
+              {isSesiOnline
+                ? "Ujian Online dari Rumah"
+                : "Kehadiran Terverifikasi ✓"}
             </span>
             <h1 className="text-2xl font-serif font-bold text-biru-950 mb-2">
               Ujian Seleksi CBT PMB
@@ -650,6 +829,7 @@ export const UjianCbtPage: React.FC = () => {
             </Button>
           </div>
         </Card>
+        <RiwayatCbtCard muatUlangKey={hasilUjian} />
       </div>
     );
   }
@@ -675,9 +855,21 @@ export const UjianCbtPage: React.FC = () => {
               Soal disembunyikan hingga Anda kembali ke layar penuh. Waktu ujian
               tetap berjalan di server.
             </p>
-            <Button variant="primary" onClick={masukFullscreen}>
+            <Button variant="primary" onClick={() => void masukFullscreen()}>
               Kembali ke Layar Penuh
             </Button>
+            {gagalFullscreen && (
+              <div className="space-y-2 pt-2 border-t border-biru-800">
+                <p className="text-xs text-amber-300">
+                  Browser Anda menolak mode layar penuh. Tekan F11 (Windows)
+                  atau Ctrl+Cmd+F (Mac) lalu coba lagi. Jika tetap gagal, Anda
+                  dapat melanjutkan, namun hal ini tercatat sebagai pelanggaran.
+                </p>
+                <Button variant="outline-white" onClick={lanjutTanpaLayarPenuh}>
+                  Lanjutkan Tanpa Layar Penuh
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}

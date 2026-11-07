@@ -27,12 +27,24 @@ pub struct CmsPostResponse {
 
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 pub struct CreateCmsPostRequest {
-    #[validate(length(min = 3, max = 200, message = "Judul minimal 3 karakter (3-200 karakter)"))]
+    #[validate(length(
+        min = 3,
+        max = 200,
+        message = "Judul minimal 3 karakter (3-200 karakter)"
+    ))]
     pub judul: String,
     pub kategori: String,
-    #[validate(length(min = 5, max = 1000, message = "Ringkasan minimal 5 karakter (maks 1000)"))]
+    #[validate(length(
+        min = 5,
+        max = 1000,
+        message = "Ringkasan minimal 5 karakter (maks 1000)"
+    ))]
     pub ringkasan: String,
-    #[validate(length(min = 10, max = 500000, message = "Konten minimal 10 karakter (maks 500.000 karakter)"))]
+    #[validate(length(
+        min = 10,
+        max = 500000,
+        message = "Konten minimal 10 karakter (maks 500.000 karakter)"
+    ))]
     pub konten: String,
     pub gambar_url: Option<String>,
     pub tags: Option<Vec<String>>,
@@ -41,12 +53,24 @@ pub struct CreateCmsPostRequest {
 
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 pub struct UpdateCmsPostRequest {
-    #[validate(length(min = 3, max = 200, message = "Judul minimal 3 karakter (3-200 karakter)"))]
+    #[validate(length(
+        min = 3,
+        max = 200,
+        message = "Judul minimal 3 karakter (3-200 karakter)"
+    ))]
     pub judul: String,
     pub kategori: String,
-    #[validate(length(min = 5, max = 1000, message = "Ringkasan minimal 5 karakter (maks 1000)"))]
+    #[validate(length(
+        min = 5,
+        max = 1000,
+        message = "Ringkasan minimal 5 karakter (maks 1000)"
+    ))]
     pub ringkasan: String,
-    #[validate(length(min = 10, max = 500000, message = "Konten minimal 10 karakter (maks 500.000 karakter)"))]
+    #[validate(length(
+        min = 10,
+        max = 500000,
+        message = "Konten minimal 10 karakter (maks 500.000 karakter)"
+    ))]
     pub konten: String,
     pub gambar_url: Option<String>,
     pub tags: Option<Vec<String>>,
@@ -72,7 +96,11 @@ pub struct CmsBannerResponse {
 
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 pub struct CreateCmsBannerRequest {
-    #[validate(length(min = 3, max = 200, message = "Judul banner minimal 3 karakter (3-200 karakter)"))]
+    #[validate(length(
+        min = 3,
+        max = 200,
+        message = "Judul banner minimal 3 karakter (3-200 karakter)"
+    ))]
     pub judul: String,
     pub subjudul: Option<String>,
     #[validate(length(min = 3, message = "URL gambar banner wajib diisi"))]
@@ -84,7 +112,11 @@ pub struct CreateCmsBannerRequest {
 
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 pub struct UpdateCmsBannerRequest {
-    #[validate(length(min = 3, max = 200, message = "Judul banner minimal 3 karakter (3-200 karakter)"))]
+    #[validate(length(
+        min = 3,
+        max = 200,
+        message = "Judul banner minimal 3 karakter (3-200 karakter)"
+    ))]
     pub judul: String,
     pub subjudul: Option<String>,
     #[validate(length(min = 3, message = "URL gambar banner wajib diisi"))]
@@ -153,9 +185,17 @@ pub struct CmsPageResponse {
 pub struct CreateCmsPageRequest {
     #[validate(length(min = 2, message = "Slug minimal 2 karakter"))]
     pub slug: String,
-    #[validate(length(min = 3, max = 200, message = "Judul halaman minimal 3 karakter (3-200 karakter)"))]
+    #[validate(length(
+        min = 3,
+        max = 200,
+        message = "Judul halaman minimal 3 karakter (3-200 karakter)"
+    ))]
     pub judul: String,
-    #[validate(length(min = 10, max = 500000, message = "Konten halaman minimal 10 karakter (maks 500.000 karakter)"))]
+    #[validate(length(
+        min = 10,
+        max = 500000,
+        message = "Konten halaman minimal 10 karakter (maks 500.000 karakter)"
+    ))]
     pub konten: String,
     pub meta_title: Option<String>,
     pub meta_description: Option<String>,
@@ -164,9 +204,17 @@ pub struct CreateCmsPageRequest {
 
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 pub struct UpdateCmsPageRequest {
-    #[validate(length(min = 3, max = 200, message = "Judul halaman minimal 3 karakter (3-200 karakter)"))]
+    #[validate(length(
+        min = 3,
+        max = 200,
+        message = "Judul halaman minimal 3 karakter (3-200 karakter)"
+    ))]
     pub judul: String,
-    #[validate(length(min = 10, max = 500000, message = "Konten halaman minimal 10 karakter (maks 500.000 karakter)"))]
+    #[validate(length(
+        min = 10,
+        max = 500000,
+        message = "Konten halaman minimal 10 karakter (maks 500.000 karakter)"
+    ))]
     pub konten: String,
     pub meta_title: Option<String>,
     pub meta_description: Option<String>,
@@ -179,7 +227,11 @@ pub struct UpdateCmsPageRequest {
 
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 pub struct PresignMediaUploadRequest {
-    #[validate(length(min = 1, max = 200, message = "Nama file wajib diisi (maks 200 karakter)"))]
+    #[validate(length(
+        min = 1,
+        max = 200,
+        message = "Nama file wajib diisi (maks 200 karakter)"
+    ))]
     pub file_name: String,
 }
 

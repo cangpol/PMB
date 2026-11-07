@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, Outlet } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Award, BookOpen } from "lucide-react";
-import logoSvg from "../../assets/logo-placeholder.svg";
+import { Logo } from "../ui/Logo";
 
 interface AuthLayoutProps {
   children?: React.ReactNode;
@@ -41,11 +41,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
         {/* Top Branding */}
         <div className="relative z-10">
           <Link to="/" className="inline-block">
-            <img
-              src={logoSvg}
-              alt="Logo Universitas Pignatelli Triputra"
-              className="h-12 w-auto object-contain brightness-110"
-            />
+            <Logo theme="dark" height={52} />
           </Link>
         </div>
 
@@ -114,11 +110,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           {/* Mobile branding header */}
           <div className="lg:hidden mb-6">
             <Link to="/" className="inline-block">
-              <img
-                src={logoSvg}
-                alt="Logo Universitas Pignatelli Triputra"
-                className="h-10 w-auto object-contain"
-              />
+              <Logo height={44} />
             </Link>
           </div>
 

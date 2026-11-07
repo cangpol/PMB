@@ -324,6 +324,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users/peran-massal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["admin_atur_peran_massal_handler"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/users/{id}/role": {
         parameters: {
             query?: never;
@@ -468,6 +484,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/verify-email/kirim-ulang": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["kirim_ulang_kode_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cbt/admin/bank-soal": {
         parameters: {
             query?: never;
@@ -478,6 +510,54 @@ export interface paths {
         get: operations["list_bank_soal_handler"];
         put?: never;
         post: operations["create_bank_soal_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/admin/hasil": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_hasil_admin_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/admin/hasil/{id}/setujui": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["setujui_hasil_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/admin/hasil/{id}/ujian-ulang": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ujian_ulang_handler"];
         delete?: never;
         options?: never;
         head?: never;
@@ -564,6 +644,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cbt/lanjut": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["lanjut_setelah_cbt_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cbt/mulai": {
         parameters: {
             query?: never;
@@ -588,6 +684,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get_my_sesi_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/riwayat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_riwayat_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cbt/sesi-tersedia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_sesi_tersedia_handler"];
         put?: never;
         post?: never;
         delete?: never;
@@ -852,6 +980,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dashboard/admin/antrean": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_antrean_verifikasi_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dashboard/admin/export-excel": {
         parameters: {
             query?: never;
@@ -900,6 +1044,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fitur": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_fitur_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fitur/pengawas-cbt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["set_pengawas_cbt_handler"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -926,6 +1102,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["approve_sidang_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/arahkan-pilihan-2": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["arahkan_pilihan_2_handler"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1124,6 +1316,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/kelulusan/admin/rumus-nim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_rumus_nim_handler"];
+        put: operations["simpan_rumus_nim_handler"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kelulusan/admin/rumus-nim/pratinjau": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["pratinjau_rumus_nim_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/kelulusan/admin/rumus/{jalur_id}": {
         parameters: {
             query?: never;
@@ -1316,6 +1540,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pembayaran/admin/bukti": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_bukti_admin_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/admin/bukti/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["review_bukti_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pembayaran/admin/ekspor": {
         parameters: {
             query?: never;
@@ -1412,6 +1668,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pembayaran/bukti": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["submit_bukti_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/bukti/my": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["my_bukti_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/bukti/presign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["presign_bukti_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pembayaran/cek-voucher": {
         parameters: {
             query?: never;
@@ -1452,6 +1756,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get_my_tagihan_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pembayaran/rekening": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_rekening_handler"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1516,6 +1836,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["admin_list_berkas_handler"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/admin/berkas-per-calon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin_list_berkas_per_calon_handler"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1678,6 +2014,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["admin_verifikasi_berkas_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/admin/verifikasi-berkas-semua": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin_sahkan_semua_berkas_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pendaftaran/alur": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_alur_handler"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2084,6 +2452,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rpl/berkas/presign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["presign_berkas_rpl_handler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rpl/mata-kuliah/{prodi_id}": {
         parameters: {
             query?: never;
@@ -2173,6 +2557,55 @@ export interface components {
             /** Format: date-time */
             waktu_dibuat: string;
         };
+        AksiHasilCbtResponse: {
+            pesan: string;
+        };
+        AlurResponse: {
+            /** @description Jalur calon adalah Jalur RPL; menu Portofolio & RPL hanya terbuka bila true. */
+            jalur_rpl: boolean;
+            langkah: components["schemas"]["LangkahAlur"][];
+            /** @description Kode langkah pertama yang belum selesai (None bila seluruh alur tuntas). */
+            langkah_aktif?: string | null;
+            nomor_pendaftaran?: string | null;
+            status_pendaftaran: string;
+        };
+        /** @description Satu antrean pekerjaan yang menunggu pemeriksaan panitia. */
+        AntreanItem: {
+            /**
+             * Format: int64
+             * @description Jumlah calon yang berkasnya menunggu (satu calon bisa punya beberapa berkas).
+             */
+            calon: number;
+            /**
+             * Format: int64
+             * @description Jumlah berkas/bukti yang menunggu diperiksa.
+             */
+            menunggu: number;
+            /**
+             * Format: date-time
+             * @description Waktu unggah paling lama yang masih menunggu (untuk menandai antrean yang tertahan).
+             */
+            terlama_sejak?: string | null;
+        };
+        /**
+         * @description Ringkasan semua antrean pemeriksaan untuk penanda/notifikasi di panel admin.
+         *     Antrean yang bukan wewenang peran pemanggil dikembalikan kosong (0).
+         */
+        AntreanVerifikasiResponse: {
+            /** @description Berkas persyaratan pendaftaran (Verifikasi Berkas PMB). */
+            berkas: components["schemas"]["AntreanItem"];
+            /** @description Bukti pembayaran formulir dan daftar ulang (Verifikasi Bukti Bayar). */
+            bukti_bayar: components["schemas"]["AntreanItem"];
+            /** @description Hasil CBT di bawah passing grade yang menunggu keputusan admin (ujian ulang / setujui). */
+            cbt_keputusan: components["schemas"]["AntreanItem"];
+            /** @description Berkas daftar ulang (Verifikasi Daftar Ulang). */
+            daftar_ulang: components["schemas"]["AntreanItem"];
+            /**
+             * Format: int64
+             * @description Jumlah seluruh berkas/bukti/keputusan yang menunggu.
+             */
+            total: number;
+        };
         ApiErrorResponse: {
             detail: string[];
             kode: string;
@@ -2181,6 +2614,19 @@ export interface components {
         ApprovalSidangRequest: {
             catatan?: string | null;
         };
+        ArahkanPilihan2Request: {
+            catatan: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+        };
+        ArahkanPilihan2Response: {
+            nomor_surat_loa?: string | null;
+            pesan: string;
+            prodi_baru: string;
+            status_kelulusan: string;
+            /** @description `true` bila hasil sudah langsung terlihat oleh calon di halaman kelulusan */
+            sudah_tampil_ke_calon: boolean;
+        };
         AssignAsesorRequest: {
             /** Format: uuid */
             asesor_id: string;
@@ -2188,6 +2634,20 @@ export interface components {
         };
         AssignPesertaRequest: {
             pendaftar_ids: string[];
+        };
+        AturFiturRequest: {
+            aktif: boolean;
+        };
+        AturPeranMassalRequest: {
+            /** @description admin_pmb | keuangan | calon_mahasiswa | pengawas_ujian | asesor_rpl */
+            role: string;
+            /** @description Pengguna yang dicentang (1-200). */
+            user_ids: string[];
+        };
+        AturPeranMassalResponse: {
+            dilewati: components["schemas"]["PeranDilewati"][];
+            diubah: components["schemas"]["UserListItemResponse"][];
+            role: string;
         };
         AuditKelulusan: {
             /** Format: uuid */
@@ -2198,8 +2658,11 @@ export interface components {
             created_at: string;
             /** Format: uuid */
             id: string;
-            /** Format: uuid */
-            pendaftar_id: string;
+            /**
+             * Format: uuid
+             * @description NULL untuk audit tingkat sidang (draf/approve/publish), terisi untuk audit per calon.
+             */
+            pendaftar_id?: string | null;
             /** Format: uuid */
             prodi_baru_id?: string | null;
             /** Format: uuid */
@@ -2274,6 +2737,47 @@ export interface components {
             urutan: number;
             wajib: boolean;
         };
+        /**
+         * @description Ringkasan berkas satu calon untuk daftar verifikasi (dikelompokkan per calon).
+         *     Hanya unggahan terbaru tiap jenis berkas yang dihitung.
+         */
+        BerkasCalonRingkasan: {
+            /**
+             * Format: int64
+             * @description Berkas yang ditolak (menunggu unggah ulang calon).
+             */
+            ditolak: number;
+            email: string;
+            /**
+             * Format: int64
+             * @description Berkas yang menunggu diperiksa.
+             */
+            menunggu: number;
+            /**
+             * Format: date-time
+             * @description Unggahan paling lama yang masih menunggu diperiksa.
+             */
+            menunggu_sejak?: string | null;
+            nama_jalur: string;
+            nama_lengkap: string;
+            nama_prodi?: string | null;
+            nomor_pendaftaran: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            status_pendaftaran: string;
+            /** Format: date-time */
+            terakhir_unggah: string;
+            /**
+             * Format: int64
+             * @description Jumlah jenis berkas yang sudah diunggah.
+             */
+            total: number;
+            /**
+             * Format: int64
+             * @description Berkas yang sudah disahkan.
+             */
+            valid: number;
+        };
         BerkasDaftarUlang: {
             catatan?: string | null;
             file_key: string;
@@ -2336,13 +2840,19 @@ export interface components {
             /** Format: date-time */
             uploaded_at: string;
         };
+        /** @description Dokumen portofolio RPL yang diunggah ke object storage. */
         BerkasRplItem: {
+            /** @description Kunci objek hasil presign `POST /api/rpl/berkas/presign` */
             file_key: string;
-            file_name: string;
+            /** @description Contoh: IJAZAH, TRANSKRIP, SERTIFIKAT, SURAT_KETERANGAN_KERJA, PORTOFOLIO, LAINNYA */
+            jenis_dokumen: string;
+            keterangan?: string | null;
+            mime_type?: string;
+            nama_file: string;
             /** Format: int64 */
-            file_size_bytes: number;
-            jenis_berkas: string;
-            mime_type: string;
+            ukuran_bytes?: number;
+            /** @description URL unduh sementara (diisi server saat menampilkan; dikosongkan saat disimpan) */
+            url_unduh?: string | null;
         };
         BiayaItemDetail: {
             bisa_dicicil: boolean;
@@ -2357,6 +2867,43 @@ export interface components {
             /** Format: int64 */
             nominal: number;
         };
+        BuktiPembayaranItem: {
+            catatan?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            download_url?: string | null;
+            file_name: string;
+            /** Format: int64 */
+            file_size_bytes: number;
+            /** Format: uuid */
+            id: string;
+            jenis_tagihan: string;
+            metode?: string | null;
+            mime_type: string;
+            nama_lengkap: string;
+            /**
+             * Format: int64
+             * @description Nominal yang diklaim calon pada bukti
+             */
+            nominal_dibayar?: number | null;
+            /**
+             * Format: int64
+             * @description Nominal yang harus dibayar (dari tagihan)
+             */
+            nominal_tagihan?: number | null;
+            nomor_pendaftaran: string;
+            nomor_registrasi?: string | null;
+            nomor_tagihan?: string | null;
+            /** Format: uuid */
+            pendaftar_id: string;
+            /** Format: date-time */
+            reviewed_at?: string | null;
+            status: string;
+            /** Format: uuid */
+            tagihan_id?: string | null;
+            /** Format: date */
+            tgl_bayar?: string | null;
+        };
         CalonDashboardResponse: {
             berkas_terverifikasi: boolean;
             hasil_kelulusan?: string | null;
@@ -2370,6 +2917,7 @@ export interface components {
         CekKelulusanCalonResponse: {
             fakultas_diterima?: string | null;
             gelombang_nama: string;
+            hasil_cbt?: components["schemas"]["HasilCbtCalon"] | null;
             is_pengumuman_buka: boolean;
             is_published: boolean;
             jalur_nama: string;
@@ -2482,6 +3030,12 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        ContohNimItem: {
+            kode_prodi: string;
+            /** @description Hasil bila NIM diterbitkan sekarang (memakai nomor urut berikutnya) */
+            nim: string;
+            prodi: string;
+        };
         CreateCmsBannerRequest: {
             gambar_url: string;
             is_active?: boolean | null;
@@ -2522,6 +3076,11 @@ export interface components {
             jalur_id?: string | null;
             kode_berkas: string;
             nama: string;
+            /**
+             * Format: uuid
+             * @description Khusus calon yang memilih prodi ini (mis. bebas buta warna untuk Fisioterapi)
+             */
+            prodi_id?: string | null;
             tipe_file?: string | null;
             /** Format: int32 */
             ukuran_maks_kb?: number | null;
@@ -2663,12 +3222,19 @@ export interface components {
             ukt_nominal: number;
         };
         CreateSesiRequest: {
+            /** Format: uuid */
+            gelombang_id?: string | null;
+            is_dibuka_pendaftaran?: boolean;
             /** Format: date-time */
             jadwal_mulai: string;
             /** Format: date-time */
             jadwal_selesai: string;
+            /** Format: uuid */
+            jalur_id?: string | null;
             /** Format: int32 */
             kuota: number;
+            /** @description `ONLINE` (default) atau `LURING` */
+            mode?: string;
             nama_sesi: string;
             /** Format: uuid */
             paket_id: string;
@@ -2712,15 +3278,18 @@ export interface components {
         };
         DaftarUlangInfoResponse: {
             berkas_list: components["schemas"]["BerkasDaftarUlang"][];
+            catatan_bukti_bayar?: string | null;
             fakultas: string;
             jenjang: string;
             nama_lengkap: string;
             nim_resmi?: string | null;
             nomor_loa?: string | null;
             nomor_pendaftaran: string;
+            nomor_registrasi?: string | null;
             /** Format: uuid */
             pendaftar_id: string;
             prodi_diterima: string;
+            status_bukti_bayar?: string | null;
             status_daftar_ulang: string;
             status_kelulusan: string;
             tagihan?: components["schemas"]["TagihanDaftarUlangDto"] | null;
@@ -2734,8 +3303,12 @@ export interface components {
             start_date?: string | null;
         };
         DashboardSummaryResponse: {
+            berkas?: components["schemas"]["RingkasanBerkasDashboard"] | null;
+            /** @description Seluruh biaya PMB calon: formulir dan daftar ulang */
+            biaya: components["schemas"]["RingkasanBiayaItem"][];
             bisa_cetak_bukti: boolean;
             bisa_cetak_kartu: boolean;
+            cbt?: components["schemas"]["RingkasanCbtDashboard"] | null;
             gelombang_nama?: string | null;
             jadwal_ujian?: string | null;
             jalur_nama?: string | null;
@@ -2750,8 +3323,15 @@ export interface components {
             pengumuman_status?: string | null;
             prodi_1_nama?: string | null;
             prodi_2_nama?: string | null;
+            /** @description Program studi tempat calon diterima (setelah pengumuman) */
+            prodi_diterima_nama?: string | null;
             status_pendaftaran: string;
             tagihan_lunas: boolean;
+            /**
+             * Format: date-time
+             * @description Waktu formulir pertama kali dibuat
+             */
+            tgl_daftar?: string | null;
         };
         DefinisiBerkas: {
             /** Format: date-time */
@@ -2764,6 +3344,11 @@ export interface components {
             jalur_id?: string | null;
             kode_berkas: string;
             nama: string;
+            /**
+             * Format: uuid
+             * @description NULL = berlaku untuk semua prodi; terisi = khusus calon yang memilih prodi ini.
+             */
+            prodi_id?: string | null;
             tipe_file: string;
             /** Format: int32 */
             ukuran_maks_kb: number;
@@ -2960,6 +3545,10 @@ export interface components {
             start_date?: string | null;
             status?: string | null;
         };
+        FiturResponse: {
+            /** @description Bila `false`, akun berperan pengawas ujian tidak dapat memakai meja presensi/monitor CBT. */
+            pengawas_cbt_aktif: boolean;
+        };
         ForgotPasswordRequest: {
             email: string;
         };
@@ -3016,6 +3605,64 @@ export interface components {
             pesan: string;
             status: string;
         };
+        /** @description Satu baris rekap hasil CBT untuk admin (semua sesi). */
+        HasilCbtAdminItem: {
+            /** @description Admin menyetujui peserta ini walau nilai di bawah passing grade */
+            disetujui_admin?: boolean | null;
+            disetujui_alasan?: string | null;
+            email: string;
+            is_lulus?: boolean | null;
+            /** Format: int32 */
+            jumlah_benar?: number | null;
+            /** Format: int32 */
+            jumlah_kosong?: number | null;
+            /** Format: int32 */
+            jumlah_salah?: number | null;
+            nama_peserta: string;
+            nama_sesi: string;
+            /** Format: double */
+            nilai_akhir?: number | null;
+            nomor_peserta: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            /** Format: uuid */
+            peserta_sesi_id: string;
+            /** Format: uuid */
+            sesi_id: string;
+            status_ujian: string;
+            /** Format: int32 */
+            total_dijawab?: number | null;
+            /** Format: int32 */
+            total_soal?: number | null;
+            /** Format: date-time */
+            waktu_submit?: string | null;
+        };
+        HasilCbtAdminResponse: {
+            items: components["schemas"]["HasilCbtAdminItem"][];
+            /** Format: double */
+            rata_rata?: number | null;
+            selesai: number;
+            total: number;
+        };
+        /** @description Ringkasan hasil CBT untuk calon mahasiswa. */
+        HasilCbtCalon: {
+            /** @description Hasil di bawah passing grade yang disetujui panitia. */
+            disetujui_admin: boolean;
+            /** Format: int32 */
+            jumlah_benar: number;
+            /** Format: int32 */
+            jumlah_kosong: number;
+            /** Format: int32 */
+            jumlah_salah: number;
+            /** @description Memenuhi passing grade atau disetujui admin. */
+            memenuhi_passing_grade: boolean;
+            /** Format: double */
+            nilai_akhir: number;
+            /** Format: double */
+            passing_grade: number;
+            /** Format: date-time */
+            waktu_submit: string;
+        };
         HasilKelulusanResponse: {
             fakultas_diterima?: string | null;
             /** Format: uuid */
@@ -3041,6 +3688,20 @@ export interface components {
             status_kelulusan: string;
             /** Format: date */
             tanggal_sk?: string | null;
+        };
+        HasilSahkanCalon: {
+            /**
+             * Format: int64
+             * @description Jumlah berkas yang baru disahkan.
+             */
+            berkas_disahkan: number;
+            /** @description Semua berkas wajib sudah diunggah. Bila false, status calon belum maju. */
+            lengkap: boolean;
+            nama_lengkap: string;
+            /** Format: uuid */
+            pendaftar_id: string;
+            /** @description Status pendaftaran setelah pengesahan. */
+            status_pendaftaran: string;
         };
         HasilUjian: {
             /** Format: uuid */
@@ -3149,6 +3810,8 @@ export interface components {
             is_active: boolean;
             kode_jalur: string;
             nama_jalur: string;
+            /** @description `CBT`, `BERKAS`, `CAMPURAN`, atau `RPL` (CBT/CAMPURAN wajib memilih sesi CBT) */
+            tipe_seleksi: string;
         };
         JawabanPeserta: {
             /** Format: uuid */
@@ -3208,6 +3871,16 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        LangkahAlur: {
+            /** @description Rute portal untuk menyelesaikan langkah ini (None jika tidak ada aksi di portal). */
+            aksi_url?: string | null;
+            judul: string;
+            kode: string;
+            /** Format: int32 */
+            nomor: number;
+            pesan: string;
+            status: components["schemas"]["StatusLangkah"];
+        };
         LangkahProgressItem: {
             bisa_diakses: boolean;
             deskripsi?: string | null;
@@ -3260,6 +3933,10 @@ export interface components {
             total_sks_diajukan: number;
             /** Format: int32 */
             total_sks_diakui: number;
+        };
+        LingkupNimInfo: {
+            keterangan: string;
+            kode: string;
         };
         ListTransaksiAdminResponse: {
             items: components["schemas"]["AdminTransaksiItem"][];
@@ -3555,12 +4232,14 @@ export interface components {
             /** Format: uuid */
             user_id: string;
         };
+        /** @description Pengalaman kerja pemohon RPL. Tanggal dalam format YYYY-MM-DD. */
         PengalamanKerjaItem: {
-            deskripsi_tugas: string;
-            instansi: string;
-            posisi: string;
-            tahun_mulai: string;
-            tahun_selesai: string;
+            deskripsi_pekerjaan?: string;
+            jabatan: string;
+            masih_bekerja?: boolean;
+            nama_perusahaan: string;
+            tanggal_mulai: string;
+            tanggal_selesai?: string | null;
         };
         PengaturanResponse: {
             deskripsi?: string | null;
@@ -3577,6 +4256,11 @@ export interface components {
             mata_kuliah_id: string;
             nilai_transfer?: string | null;
             status_kelayakan: string;
+        };
+        PeranDilewati: {
+            alasan: string;
+            /** Format: uuid */
+            id: string;
         };
         PesertaSesi: {
             /** Format: date-time */
@@ -3623,6 +4307,11 @@ export interface components {
             /** Format: uuid */
             prodi_pilihan_2?: string | null;
         };
+        PratinjauRumusNimResponse: {
+            contoh: components["schemas"]["ContohNimItem"][];
+            pesan?: string | null;
+            valid: boolean;
+        };
         PresensiCheckInRequest: {
             nomor_peserta_atau_qr: string;
             /** Format: uuid */
@@ -3638,6 +4327,14 @@ export interface components {
             status_presensi: string;
             /** Format: date-time */
             waktu_presensi: string;
+        };
+        PresignBerkasRplRequest: {
+            file_name: string;
+        };
+        PresignBuktiRequest: {
+            file_name: string;
+            /** Format: uuid */
+            tagihan_id: string;
         };
         PresignMediaUploadRequest: {
             file_name: string;
@@ -3751,6 +4448,24 @@ export interface components {
             nama_lengkap: string;
             no_hp: string;
             password: string;
+            /** @description Dari mana calon mengetahui PMB UPITRA (kode dari `SUMBER_INFORMASI`) */
+            sumber_informasi?: string | null;
+            /** @description Keterangan tambahan jika sumber = LAINNYA */
+            sumber_informasi_lainnya?: string | null;
+        };
+        RekeningPembayaran: {
+            atas_nama: string;
+            /** Format: uuid */
+            id: string;
+            instruksi?: string | null;
+            is_active: boolean;
+            /** @description `VA_MANDIRI` atau `QRIS` */
+            jenis: string;
+            nama_bank: string;
+            nomor?: string | null;
+            /** @description Object key gambar QRIS (dipakai admin saat menyimpan ulang tanpa unggah baru) */
+            qris_image_key?: string | null;
+            qris_image_url?: string | null;
         };
         RekonsiliasiResponse: {
             berhasil_disinkronkan: boolean;
@@ -3768,6 +4483,76 @@ export interface components {
             new_password: string;
             token: string;
         };
+        ReviewBuktiRequest: {
+            catatan?: string | null;
+            /** @description `DISETUJUI` atau `DITOLAK` */
+            status: string;
+        };
+        ReviewBuktiResponse: {
+            jenis_tagihan: string;
+            pesan: string;
+            status: string;
+        };
+        /** @description Satu komponen biaya daftar ulang (dari matriks biaya prodi x jalur x gelombang). */
+        RincianBiayaDto: {
+            komponen: string;
+            /** Format: int64 */
+            nominal: number;
+        };
+        /** @description Jumlah berkas persyaratan per status. */
+        RingkasanBerkasDashboard: {
+            /** Format: int32 */
+            ditolak: number;
+            /** Format: int32 */
+            menunggu_verifikasi: number;
+            /** Format: int32 */
+            total_wajib: number;
+            /** Format: int32 */
+            valid: number;
+            /** Format: int32 */
+            wajib_terunggah: number;
+        };
+        /** @description Satu pos biaya PMB calon. */
+        RingkasanBiayaItem: {
+            /** @description FORMULIR atau DAFTAR_ULANG */
+            jenis: string;
+            label: string;
+            /** Format: int64 */
+            nominal: number;
+            nomor_tagihan?: string | null;
+            /** @description BELUM_TERBIT, MENUNGGU_PEMBAYARAN, MENUNGGU_VERIFIKASI, DITOLAK, LUNAS, KEDALUWARSA, BATAL */
+            status: string;
+            /** Format: date-time */
+            tgl_jatuh_tempo?: string | null;
+        };
+        /** @description Jadwal dan hasil CBT calon. */
+        RingkasanCbtDashboard: {
+            /** @description Hasil di bawah passing grade yang disetujui panitia */
+            disetujui_admin: boolean;
+            /** Format: date-time */
+            jadwal_mulai?: string | null;
+            /** Format: date-time */
+            jadwal_selesai?: string | null;
+            /** Format: int32 */
+            jumlah_pengerjaan: number;
+            /** @description Hasil terakhir memenuhi passing grade atau disetujui panitia (None = belum ada hasil) */
+            memenuhi_passing_grade?: boolean | null;
+            /** @description ONLINE atau LURING */
+            mode?: string | null;
+            nama_sesi?: string | null;
+            /**
+             * Format: double
+             * @description Skor pengerjaan terakhir (0-100)
+             */
+            nilai_terakhir?: number | null;
+            /** Format: double */
+            passing_grade?: number | null;
+            ruang?: string | null;
+            /** @description Status pengerjaan terakhir: MENUNGGU, SEDANG_MENGERJAKAN, SELESAI, WAKTU_HABIS */
+            status_ujian?: string | null;
+            /** Format: date-time */
+            waktu_selesai_terakhir?: string | null;
+        };
         RingkasanKeuanganResponse: {
             /** Format: int64 */
             total_dana_masuk: number;
@@ -3778,13 +4563,67 @@ export interface components {
             /** Format: int64 */
             total_transaksi_pending: number;
         };
+        /** @description Satu baris riwayat pengerjaan CBT calon (per sesi yang diikuti). */
+        RiwayatCbtItem: {
+            /**
+             * Format: int64
+             * @description Lama pengerjaan dalam detik
+             */
+            durasi_detik?: number | null;
+            is_lulus?: boolean | null;
+            /** Format: date-time */
+            jadwal_mulai: string;
+            /** Format: date-time */
+            jadwal_selesai: string;
+            /** Format: int32 */
+            jumlah_benar?: number | null;
+            /** Format: int32 */
+            jumlah_kosong?: number | null;
+            /** Format: int64 */
+            jumlah_pelanggaran: number;
+            /** Format: int32 */
+            jumlah_salah?: number | null;
+            /** @description ONLINE atau LURING */
+            mode: string;
+            nama_paket: string;
+            nama_sesi: string;
+            /**
+             * Format: double
+             * @description Skor 0-100; terisi setelah jawaban dinilai
+             */
+            nilai_akhir?: number | null;
+            nomor_peserta: string;
+            /** Format: double */
+            passing_grade: number;
+            /** Format: uuid */
+            peserta_sesi_id: string;
+            ruang: string;
+            status_presensi: string;
+            /** @description MENUNGGU, SEDANG_MENGERJAKAN, SELESAI, WAKTU_HABIS */
+            status_ujian: string;
+            /** Format: int32 */
+            total_soal?: number | null;
+            /**
+             * Format: date-time
+             * @description Waktu calon mulai mengerjakan
+             */
+            waktu_mulai?: string | null;
+            /**
+             * Format: date-time
+             * @description Waktu jawaban dikirim (atau waktu habis)
+             */
+            waktu_selesai?: string | null;
+        };
+        /** @description Riwayat pendidikan formal pemohon RPL. */
         RiwayatPendidikanItem: {
             /** Format: double */
-            ipk: number;
+            ipk_nilai?: number | null;
             jenjang: string;
-            jurusan: string;
             nama_institusi: string;
-            tahun_lulus: string;
+            nomor_ijazah?: string | null;
+            program_studi?: string;
+            /** Format: int32 */
+            tahun_lulus: number;
         };
         RplItemRekapDto: {
             /** Format: uuid */
@@ -3872,6 +4711,18 @@ export interface components {
             /** Format: int32 */
             total_sks_diakui: number;
         };
+        RumusNimResponse: {
+            diperbarui_oleh?: string | null;
+            /** Format: date-time */
+            diperbarui_pada?: string | null;
+            lingkup_pilihan: components["schemas"]["LingkupNimInfo"][];
+            lingkup_urut: string;
+            /** Format: int32 */
+            panjang_maks: number;
+            template: string;
+            template_bawaan: string;
+            token: components["schemas"]["TokenNimInfo"][];
+        };
         RumusPenilaianJalur: {
             /** Format: double */
             bobot_cbt: number;
@@ -3893,6 +4744,18 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        /** @description Sahkan semua berkas yang menunggu milik satu atau beberapa calon sekaligus. */
+        SahkanSemuaBerkasRequest: {
+            /** @description Daftar calon (1 sampai 100). */
+            pendaftar_ids: string[];
+        };
+        SahkanSemuaBerkasResponse: {
+            /** Format: int64 */
+            berkas_disahkan: number;
+            /** Format: int64 */
+            calon_diproses: number;
+            hasil: components["schemas"]["HasilSahkanCalon"][];
+        };
         SesiCalonInfoResponse: {
             /** Format: date-time */
             batas_waktu?: string | null;
@@ -3903,6 +4766,8 @@ export interface components {
             jadwal_mulai?: string | null;
             /** Format: date-time */
             jadwal_selesai?: string | null;
+            /** @description `ONLINE` / `LURING` */
+            mode?: string | null;
             nama_sesi?: string | null;
             nomor_peserta: string;
             /** Format: double */
@@ -3920,9 +4785,8 @@ export interface components {
             /** Format: date-time */
             waktu_mulai?: string | null;
         };
-        SesiUjian: {
-            /** Format: date-time */
-            created_at: string;
+        /** @description Sesi CBT yang dapat dipilih calon sebagai jadwal seleksi di formulir. */
+        SesiTersediaItem: {
             /** Format: uuid */
             id: string;
             /** Format: date-time */
@@ -3931,6 +4795,31 @@ export interface components {
             jadwal_selesai: string;
             /** Format: int32 */
             kuota: number;
+            mode: string;
+            nama_sesi: string;
+            ruang: string;
+            /** Format: int64 */
+            terisi: number;
+        };
+        SesiUjian: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            gelombang_id?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @description Sesi tampil sebagai pilihan jadwal seleksi di formulir calon */
+            is_dibuka_pendaftaran: boolean;
+            /** Format: date-time */
+            jadwal_mulai: string;
+            /** Format: date-time */
+            jadwal_selesai: string;
+            /** Format: uuid */
+            jalur_id?: string | null;
+            /** Format: int32 */
+            kuota: number;
+            /** @description `ONLINE` (dari rumah, tanpa presensi pengawas) atau `LURING` (wajib presensi QR) */
+            mode: string;
             nama_sesi: string;
             /** Format: uuid */
             paket_id: string;
@@ -3946,6 +4835,10 @@ export interface components {
             kuota: number;
             /** Format: uuid */
             prodi_id: string;
+        };
+        SetujuiHasilCbtRequest: {
+            /** @description Wajib (min. 5 karakter) bila hasil di bawah passing grade; opsional bila sudah lulus. */
+            alasan?: string | null;
         };
         SidangKelulusan: {
             /** Format: date-time */
@@ -3976,6 +4869,10 @@ export interface components {
             total_tidak_lulus: number;
             /** Format: date-time */
             updated_at: string;
+        };
+        SimpanRumusNimRequest: {
+            lingkup_urut: string;
+            template: string;
         };
         SoalCbtPesertaResponse: {
             /** Format: double */
@@ -4008,6 +4905,8 @@ export interface components {
             pilihan_c: string;
             pilihan_d: string;
         };
+        /** @enum {string} */
+        StatusLangkah: "SELESAI" | "AKTIF" | "MENUNGGU_ADMIN" | "DITOLAK" | "TERKUNCI";
         StatusPendaftaranStat: {
             /** Format: int64 */
             jumlah: number;
@@ -4049,6 +4948,21 @@ export interface components {
             /** Format: date */
             tgl_lahir: string;
         };
+        SubmitBuktiRequest: {
+            file_key: string;
+            file_name: string;
+            /** Format: int64 */
+            file_size_bytes: number;
+            /** @description `VA_MANDIRI` atau `QRIS` */
+            metode: string;
+            mime_type: string;
+            /** Format: int64 */
+            nominal_dibayar: number;
+            /** Format: uuid */
+            tagihan_id: string;
+            /** Format: date */
+            tgl_bayar: string;
+        };
         SubmitDinamisRequest: {
             data: unknown;
             /** Format: uuid */
@@ -4059,6 +4973,11 @@ export interface components {
             prodi_pilihan_1?: string | null;
             /** Format: uuid */
             prodi_pilihan_2?: string | null;
+            /**
+             * Format: uuid
+             * @description Sesi CBT (tanggal seleksi) yang dipilih calon. Wajib untuk jalur CBT saat formulir dikirim.
+             */
+            sesi_ujian_id?: string | null;
         };
         SubmitPenilaianRplRequest: {
             catatan_asesor?: string | null;
@@ -4114,7 +5033,11 @@ export interface components {
             nominal_asli: number;
             nomor_tagihan: string;
             payment_url?: string | null;
+            rincian?: components["schemas"]["RincianBiayaDto"][];
             status: string;
+            /** Format: date-time */
+            tgl_jatuh_tempo?: string | null;
+            /** @description Nomor VA Mandiri kampus (rekening aktif) untuk transfer daftar ulang */
             va_number?: string | null;
         };
         TagihanWithTransaksiResponse: {
@@ -4157,6 +5080,11 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        TokenNimInfo: {
+            contoh: string;
+            keterangan: string;
+            token: string;
+        };
         TransaksiDetailResponse: {
             gateway_provider: string;
             /** Format: uuid */
@@ -4186,6 +5114,15 @@ export interface components {
             tanggal: string;
             /** Format: int64 */
             terverifikasi: number;
+        };
+        UjianUlangCbtRequest: {
+            alasan: string;
+            /**
+             * Format: uuid
+             * @description Kosong = ulang di sesi yang sama (jadwalnya harus masih berlangsung).
+             *     Isi untuk memindahkan peserta ke sesi lain; riwayat percobaan lama tetap tersimpan.
+             */
+            sesi_id?: string | null;
         };
         UpdateCmsBannerRequest: {
             gambar_url: string;
@@ -4226,6 +5163,8 @@ export interface components {
             /** Format: uuid */
             jalur_id?: string | null;
             nama: string;
+            /** Format: uuid */
+            prodi_id?: string | null;
             tipe_file: string;
             /** Format: int32 */
             ukuran_maks_kb: number;
@@ -4417,7 +5356,8 @@ export interface components {
             status_verifikasi: string;
         };
         VerifyEmailRequest: {
-            token: string;
+            /** @description Kode 6 digit yang dikirim ke email calon */
+            kode: string;
         };
         VoucherDetailResponse: {
             /** Format: uuid */
@@ -5696,7 +6636,12 @@ export interface operations {
     };
     admin_list_users_handler: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Cari berdasarkan nama atau email */
+                q?: string | null;
+                /** @description Saring berdasarkan peran */
+                role?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -5722,6 +6667,48 @@ export interface operations {
                 };
             };
             /** @description Akses ditolak - bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_atur_peran_massal_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AturPeranMassalRequest"];
+            };
+        };
+        responses: {
+            /** @description Peran pengguna terpilih diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AturPeranMassalResponse"];
+                };
+            };
+            /** @description Peran atau daftar pengguna tidak valid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Hanya Super Admin */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6069,6 +7056,35 @@ export interface operations {
             };
         };
     };
+    kirim_ulang_kode_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Kode verifikasi baru dikirim ke email */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericMessageResponse"];
+                };
+            };
+            /** @description Terlalu sering meminta kode */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
     list_bank_soal_handler: {
         parameters: {
             query?: {
@@ -6122,6 +7138,120 @@ export interface operations {
             };
             /** @description Akses ditolak */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    list_hasil_admin_handler: {
+        parameters: {
+            query?: {
+                /** @description Cari nama, email, atau nomor peserta */
+                q?: string | null;
+                sesi_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rekap hasil pengerjaan CBT semua sesi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HasilCbtAdminResponse"];
+                };
+            };
+            /** @description Akses ditolak */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    setujui_hasil_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID peserta sesi */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetujuiHasilCbtRequest"];
+            };
+        };
+        responses: {
+            /** @description Hasil CBT disetujui admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AksiHasilCbtResponse"];
+                };
+            };
+            /** @description Tidak dapat disetujui */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    ujian_ulang_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID peserta sesi */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UjianUlangCbtRequest"];
+            };
+        };
+        responses: {
+            /** @description Peserta diizinkan mengulang CBT */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AksiHasilCbtResponse"];
+                };
+            };
+            /** @description Jadwal sesi tujuan sudah berakhir */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Tidak dapat diulang */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6319,6 +7449,35 @@ export interface operations {
             };
         };
     };
+    lanjut_setelah_cbt_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tahap berikutnya (pengumuman) dibuka */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AksiHasilCbtResponse"];
+                };
+            };
+            /** @description Belum memenuhi passing grade / belum selesai ujian */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
     mulai_ujian_handler: {
         parameters: {
             query?: never;
@@ -6382,6 +7541,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_riwayat_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Riwayat pengerjaan CBT calon, terbaru di atas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiwayatCbtItem"][];
+                };
+            };
+            /** @description Belum login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_sesi_tersedia_handler: {
+        parameters: {
+            query?: {
+                /** @description Filter gelombang calon */
+                gelombang_id?: string;
+                /** @description Filter jalur calon */
+                jalur_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesi CBT yang dapat dipilih sebagai jadwal seleksi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SesiTersediaItem"][];
                 };
             };
         };
@@ -7073,6 +8286,44 @@ export interface operations {
             };
         };
     };
+    get_antrean_verifikasi_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Jumlah berkas/bukti yang menunggu diperiksa panitia */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AntreanVerifikasiResponse"];
+                };
+            };
+            /** @description Belum login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Bukan staf PMB */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
     export_excel_dashboard_handler: {
         parameters: {
             query?: {
@@ -7170,6 +8421,68 @@ export interface operations {
             };
         };
     };
+    get_fitur_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status sakelar fitur sistem */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FiturResponse"];
+                };
+            };
+            /** @description Belum login */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    set_pengawas_cbt_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AturFiturRequest"];
+            };
+        };
+        responses: {
+            /** @description Sakelar pengawas CBT diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FiturResponse"];
+                };
+            };
+            /** @description Hanya Super Admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
     health_check_handler: {
         parameters: {
             query?: never;
@@ -7216,6 +8529,48 @@ export interface operations {
             };
             /** @description Akses khusus admin */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    arahkan_pilihan_2_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArahkanPilihan2Request"];
+            };
+        };
+        responses: {
+            /** @description Calon diarahkan ke program studi pilihan kedua */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArahkanPilihan2Response"];
+                };
+            };
+            /** @description Calon tidak punya pilihan kedua */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Status calon tidak memungkinkan pengalihan */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7574,6 +8929,110 @@ export interface operations {
             };
         };
     };
+    get_rumus_nim_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rumus penomoran NIM yang berlaku */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RumusNimResponse"];
+                };
+            };
+            /** @description Bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    simpan_rumus_nim_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimpanRumusNimRequest"];
+            };
+        };
+        responses: {
+            /** @description Rumus NIM disimpan; berlaku untuk NIM yang terbit berikutnya */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RumusNimResponse"];
+                };
+            };
+            /** @description Rumus tidak valid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    pratinjau_rumus_nim_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimpanRumusNimRequest"];
+            };
+        };
+        responses: {
+            /** @description Validasi rumus dan contoh NIM per prodi (tidak disimpan) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PratinjauRumusNimResponse"];
+                };
+            };
+            /** @description Bukan admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
     update_rumus_penilaian_handler: {
         parameters: {
             query?: never;
@@ -7902,6 +9361,65 @@ export interface operations {
             };
         };
     };
+    list_bukti_admin_handler: {
+        parameters: {
+            query?: {
+                /** @description PENDING | DISETUJUI | DITOLAK */
+                status?: string;
+                /** @description FORMULIR | DAFTAR_ULANG_UKT */
+                jenis?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Antrean bukti bayar */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuktiPembayaranItem"][];
+                };
+            };
+        };
+    };
+    review_bukti_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID bukti pembayaran */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewBuktiRequest"];
+            };
+        };
+        responses: {
+            /** @description Bukti diproses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewBuktiResponse"];
+                };
+            };
+            /** @description Bukti sudah diproses sebelumnya */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_ekspor_transaksi_handler: {
         parameters: {
             query?: {
@@ -8094,6 +9612,77 @@ export interface operations {
             };
         };
     };
+    submit_bukti_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitBuktiRequest"];
+            };
+        };
+        responses: {
+            /** @description Bukti bayar terkirim, menunggu verifikasi admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Masih ada bukti yang menunggu verifikasi / tahap tidak sesuai */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    my_bukti_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Riwayat bukti bayar milik calon */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuktiPembayaranItem"][];
+                };
+            };
+        };
+    };
+    presign_bukti_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresignBuktiRequest"];
+            };
+        };
+        responses: {
+            /** @description URL unggah bukti bayar (15 menit) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     cek_voucher_handler: {
         parameters: {
             query?: never;
@@ -8198,6 +9787,26 @@ export interface operations {
             };
         };
     };
+    list_rekening_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description VA Mandiri & QRIS kampus yang aktif */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RekeningPembayaran"][];
+                };
+            };
+        };
+    };
     simulasi_va_bayar_handler: {
         parameters: {
             query?: never;
@@ -8288,6 +9897,8 @@ export interface operations {
                 status?: string;
                 /** @description Pencarian nama / nomor pendaftaran */
                 search?: string;
+                /** @description Hanya berkas milik calon ini */
+                pendaftar_id?: string;
             };
             header?: never;
             path?: never;
@@ -8302,6 +9913,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BerkasDetailItem"][];
+                };
+            };
+            /** @description Hanya admin PMB yang berhak mengakses */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_list_berkas_per_calon_handler: {
+        parameters: {
+            query?: {
+                /** @description PENDING (ada yang menunggu), INVALID (ada yang ditolak), VALID (semua sah), atau kosong untuk semua */
+                status?: string;
+                /** @description Pencarian nama / nomor pendaftaran / email */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Calon beserta ringkasan berkasnya; yang perlu diperiksa di atas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BerkasCalonRingkasan"][];
                 };
             };
             /** @description Hanya admin PMB yang berhak mengakses */
@@ -8841,6 +10486,68 @@ export interface operations {
             };
         };
     };
+    admin_sahkan_semua_berkas_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SahkanSemuaBerkasRequest"];
+            };
+        };
+        responses: {
+            /** @description Berkas yang menunggu milik calon terpilih disahkan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SahkanSemuaBerkasResponse"];
+                };
+            };
+            /** @description Jumlah calon harus 1 sampai 100 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Hanya admin PMB yang berhak memverifikasi */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+        };
+    };
+    get_alur_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Stepper alur PMB 9 langkah untuk calon */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlurResponse"];
+                };
+            };
+        };
+    };
     konfirmasi_upload_berkas_handler: {
         parameters: {
             query?: never;
@@ -9041,8 +10748,17 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Berkas wajib belum diunggah */
-            400: {
+            /** @description Formulir sudah dikirim / kuota sesi CBT penuh */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponse"];
+                };
+            };
+            /** @description Sesi CBT belum dipilih */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9789,6 +11505,37 @@ export interface operations {
             };
             /** @description Internal server error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    presign_berkas_rpl_handler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresignBerkasRplRequest"];
+            };
+        };
+        responses: {
+            /** @description URL unggah dokumen portofolio RPL (15 menit) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresignedUploadResponse"];
+                };
+            };
+            /** @description Format file tidak didukung / bukan jalur RPL */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

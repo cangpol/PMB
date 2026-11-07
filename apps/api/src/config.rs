@@ -20,6 +20,41 @@ pub struct AppConfig {
     pub midtrans_client_key: String,
     pub midtrans_is_production: bool,
     pub mock_payment_secret: String,
+    /// Pengiriman email nyata via SMTP. None = email hanya ditulis ke log (pengembangan).
+    pub smtp: Option<SmtpConfig>,
+    /// Wajibkan calon memverifikasi email dengan kode 6 digit (env WAJIB_VERIFIKASI_EMAIL=true).
+    /// Default nonaktif.
+    pub wajib_verifikasi_email: bool,
+    /// Sesi tak dipakai selama ini (detik) -> berakhir. Env SESSION_IDLE_SECS.
+    pub session_idle_secs: u64,
+    /// Umur maksimum sesi sejak login (detik). Env SESSION_ABSOLUTE_SECS.
+    pub session_absolute_secs: u64,
+}
+
+/// Konfigurasi server SMTP (mis. Gmail Workspace, Mailgun, Brevo, SMTP kampus).
+#[derive(Clone)]
+pub struct SmtpConfig {
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    /// Alamat pengirim, mis. "PMB Universitas Pignatelli Triputra <pmb@kampus.ac.id>"
+    pub from: String,
+    /// true = TLS langsung (port 465); false = STARTTLS (port 587)
+    pub tls_langsung: bool,
+}
+
+// Jangan pernah mencetak kata sandi SMTP ke log
+impl std::fmt::Debug for SmtpConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SmtpConfig")
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .field("username", &self.username)
+            .field("from", &self.from)
+            .field("tls_langsung", &self.tls_langsung)
+            .finish_non_exhaustive()
+    }
 }
 
 impl AppConfig {
@@ -76,6 +111,44 @@ impl AppConfig {
         let mock_payment_secret = env::var("MOCK_PAYMENT_SECRET")
             .unwrap_or_else(|_| "mock-secret-key-pignatelli".to_string());
 
+        let smtp = match (
+            env::var("SMTP_HOST").ok().filter(|v| !v.trim().is_empty()),
+            env::var("SMTP_FROM").ok().filter(|v| !v.trim().is_empty()),
+        ) {
+            (Some(host), Some(from)) => {
+                let port = env::var("SMTP_PORT")
+                    .ok()
+                    .and_then(|v| v.parse::<u16>().ok())
+                    .unwrap_or(587);
+                Some(SmtpConfig {
+                    host,
+                    port,
+                    username: env::var("SMTP_USERNAME").unwrap_or_default(),
+                    password: env::var("SMTP_PASSWORD").unwrap_or_default(),
+                    from,
+                    tls_langsung: env::var("SMTP_TLS")
+                        .map(|v| v.eq_ignore_ascii_case("tls") || v.eq_ignore_ascii_case("ssl"))
+                        .unwrap_or(port == 465),
+                })
+            }
+            _ => None,
+        };
+
+        let wajib_verifikasi_email = env::var("WAJIB_VERIFIKASI_EMAIL")
+            .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+            .unwrap_or(false);
+
+        let session_idle_secs = env::var("SESSION_IDLE_SECS")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .filter(|v| *v > 0)
+            .unwrap_or(crate::security::session::BATAS_DIAM_DETIK);
+        let session_absolute_secs = env::var("SESSION_ABSOLUTE_SECS")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .filter(|v| *v > 0)
+            .unwrap_or(crate::security::session::BATAS_MUTLAK_DETIK);
+
         Self {
             port,
             host,
@@ -95,6 +168,10 @@ impl AppConfig {
             midtrans_client_key,
             midtrans_is_production,
             mock_payment_secret,
+            smtp,
+            wajib_verifikasi_email,
+            session_idle_secs,
+            session_absolute_secs,
         }
     }
 }

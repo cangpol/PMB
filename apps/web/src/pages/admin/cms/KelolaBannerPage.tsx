@@ -9,10 +9,12 @@ import {
 } from "../../../components/common";
 import { SeoHead } from "../../../components/common/SeoHead";
 import type { components } from "../../../types/api";
+import { useDialog } from "@/components/ui/useDialog";
 
 type CmsBanner = components["schemas"]["CmsBannerResponse"];
 
 export const KelolaBannerPage: React.FC = () => {
+  const dialog = useDialog();
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<CmsBanner | null>(null);
@@ -234,9 +236,23 @@ export const KelolaBannerPage: React.FC = () => {
                   </Button>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (window.confirm(`Hapus banner "${banner.judul}"?`)) {
-                        deleteMutation.mutate(banner.id);
+                    aria-label="Hapus banner"
+                    onClick={async () => {
+                      const ya = await dialog.konfirmasi({
+                        judul: "Hapus banner?",
+                        deskripsi: `Banner "${banner.judul}" akan dihapus permanen.`,
+                        nada: "bahaya",
+                        labelYa: "Ya, Hapus",
+                      });
+                      if (ya) {
+                        deleteMutation.mutate(banner.id, {
+                          onSuccess: () =>
+                            void dialog.hasil({
+                              nada: "sukses",
+                              judul: "Banner dihapus",
+                              autoTutupMs: 2000,
+                            }),
+                        });
                       }
                     }}
                     className="p-1.5 rounded-lg text-rose-600 hover:text-rose-800 hover:bg-rose-50 transition-colors"

@@ -10,10 +10,12 @@ import {
 } from "../../../components/common";
 import { SeoHead } from "../../../components/common/SeoHead";
 import type { components } from "../../../types/api";
+import { useDialog } from "@/components/ui/useDialog";
 
 type CmsFaq = components["schemas"]["CmsFaqResponse"];
 
 export const KelolaFaqPage: React.FC = () => {
+  const dialog = useDialog();
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingFaq, setEditingFaq] = useState<CmsFaq | null>(null);
@@ -263,9 +265,23 @@ export const KelolaFaqPage: React.FC = () => {
                         </Button>
                         <button
                           type="button"
-                          onClick={() => {
-                            if (window.confirm("Hapus pertanyaan ini?")) {
-                              deleteMutation.mutate(faq.id);
+                          aria-label="Hapus pertanyaan"
+                          onClick={async () => {
+                            const ya = await dialog.konfirmasi({
+                              judul: "Hapus pertanyaan?",
+                              deskripsi: `"${faq.pertanyaan}" akan dihapus permanen.`,
+                              nada: "bahaya",
+                              labelYa: "Ya, Hapus",
+                            });
+                            if (ya) {
+                              deleteMutation.mutate(faq.id, {
+                                onSuccess: () =>
+                                  void dialog.hasil({
+                                    nada: "sukses",
+                                    judul: "Pertanyaan dihapus",
+                                    autoTutupMs: 2000,
+                                  }),
+                              });
                             }
                           }}
                           className="p-1.5 rounded-lg text-rose-600 hover:text-rose-800 hover:bg-rose-50 transition-colors"

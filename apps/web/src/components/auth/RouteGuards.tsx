@@ -1,10 +1,24 @@
 import React from "react";
-import { Navigate, useLocation, Link } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import type { UserRole } from "../../types";
-import { Card } from "../ui/Card";
-import { Button } from "../ui/Button";
-import { ShieldAlert, ArrowLeft } from "lucide-react";
+import { dashboardPeran } from "./akses";
+
+/**
+ * Ke halaman login. Halaman asal hanya diingat bila sesi memang belum ada;
+ * setelah pengguna keluar, pengguna berikutnya selalu mulai dari dashboard-nya.
+ */
+const KeLogin: React.FC = () => {
+  const { baruLogout } = useAuth();
+  const location = useLocation();
+  return (
+    <Navigate
+      to="/login"
+      replace
+      state={baruLogout ? undefined : { from: location }}
+    />
+  );
+};
 
 interface RequireAuthProps {
   children?: React.ReactNode;
@@ -12,7 +26,6 @@ interface RequireAuthProps {
 
 export const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
   const { user, isLoading } = useAuth();
-  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -28,7 +41,7 @@ export const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <KeLogin />;
   }
 
   return <>{children}</>;
@@ -44,7 +57,6 @@ export const RequireRole: React.FC<RequireRoleProps> = ({
   children,
 }) => {
   const { user, isLoading } = useAuth();
-  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -60,45 +72,16 @@ export const RequireRole: React.FC<RequireRoleProps> = ({
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <KeLogin />;
   }
 
   const hasAccess =
     user.role === "super_admin" || allowedRoles.includes(user.role as UserRole);
 
   if (!hasAccess) {
-    const defaultDashboard =
-      user.role === "calon_mahasiswa"
-        ? "/portal/dashboard"
-        : "/admin/dashboard";
-
-    return (
-      <div className="flex min-h-[70vh] items-center justify-center p-6">
-        <Card className="max-w-md w-full p-8 text-center border-biru-200 shadow-sm">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-biru-50 text-biru-900 border border-biru-200">
-            <ShieldAlert className="h-7 w-7" />
-          </div>
-          <h2 className="font-serif text-2xl font-bold text-biru-950 mb-2">
-            Akses Ditolak
-          </h2>
-          <p className="text-sm text-biru-800 mb-6 leading-relaxed">
-            Akun Anda dengan peran{" "}
-            <span className="font-semibold text-biru-900 capitalize">
-              {user.role.replace(/_/g, " ")}
-            </span>{" "}
-            tidak memiliki izin untuk mengakses halaman ini.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to={defaultDashboard}>
-              <Button variant="primary" className="w-full sm:w-auto">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Kembali ke Dashboard Anda
-              </Button>
-            </Link>
-          </div>
-        </Card>
-      </div>
-    );
+    // Jangan tampilkan apa pun tentang halaman yang bukan hak peran ini;
+    // langsung kembalikan ke dashboard miliknya.
+    return <Navigate to={dashboardPeran(user.role)} replace />;
   }
 
   return <>{children}</>;

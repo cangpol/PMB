@@ -12,9 +12,10 @@ use crate::{
     extractors::AuthUser,
     modules::dashboard::{
         dto::{
-            AdminDashboardResponse, CalonDashboardResponse, DashboardFilterQuery,
-            DistribusiJalurStat, DistribusiProdiStat, ExecutiveDashboardResponse, FunnelStat,
-            ProdiStat, StatusPendaftaranStat, StepperStep, TrenHarianStat,
+            AdminDashboardResponse, AntreanItem, AntreanVerifikasiResponse, CalonDashboardResponse,
+            DashboardFilterQuery, DistribusiJalurStat, DistribusiProdiStat,
+            ExecutiveDashboardResponse, FunnelStat, ProdiStat, StatusPendaftaranStat, StepperStep,
+            TrenHarianStat,
         },
         service::DashboardService,
     },
@@ -26,6 +27,7 @@ use crate::{
     paths(
         get_calon_dashboard_handler,
         get_admin_dashboard_handler,
+        get_antrean_verifikasi_handler,
         get_executive_dashboard_handler,
         export_excel_dashboard_handler,
     ),
@@ -33,6 +35,8 @@ use crate::{
         CalonDashboardResponse,
         StepperStep,
         AdminDashboardResponse,
+        AntreanVerifikasiResponse,
+        AntreanItem,
         ProdiStat,
         FunnelStat,
         DashboardFilterQuery,
@@ -50,6 +54,7 @@ pub fn dashboard_router() -> Router<AppState> {
     Router::new()
         .route("/calon", get(get_calon_dashboard_handler))
         .route("/admin", get(get_admin_dashboard_handler))
+        .route("/admin/antrean", get(get_antrean_verifikasi_handler))
         .route("/admin/stats", get(get_executive_dashboard_handler))
         .route("/admin/sumber-informasi", get(get_sumber_informasi_handler))
         .route("/admin/export-excel", get(export_excel_dashboard_handler))
@@ -223,6 +228,37 @@ pub async fn get_sumber_informasi_handler(
             0.0
         };
     }
-    items.sort_by(|a, b| b.jumlah.cmp(&a.jumlah));
+    items.sort_by_key(|a| std::cmp::Reverse(a.jumlah));
     Ok(Json(serde_json::json!({ "total": total, "items": items })))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/dashboard/admin/antrean",
+    tag = "Dashboard Admin",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Jumlah berkas/bukti yang menunggu diperiksa panitia", body = AntreanVerifikasiResponse),
+        (status = 401, description = "Belum login", body = ApiErrorResponse),
+        (status = 403, description = "Bukan staf PMB", body = ApiErrorResponse)
+    )
+)]
+pub async fn get_antrean_verifikasi_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    if auth_user.role == "calon_mahasiswa" {
+        return Err(AppError::Forbidden("Akses khusus panitia PMB".to_string()));
+    }
+    // Tiap peran hanya melihat antrean yang menjadi wewenangnya
+    let service = DashboardService::new(state.db.clone());
+    let res = service
+        .get_antrean_verifikasi(
+            auth_user.is_admin(),
+            auth_user.is_admin() || auth_user.is_keuangan(),
+            auth_user.is_admin(),
+            auth_user.is_admin(),
+        )
+        .await?;
+    Ok(Json(res))
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
 import { RequireAuth, RequireRole } from "./RouteGuards";
 import {
   AuthContext,
@@ -18,7 +18,9 @@ const mockAuthContext = (
   login: vi.fn(),
   register: vi.fn(),
   logout: vi.fn(),
+  baruLogout: false,
   verifyEmail: vi.fn(),
+  kirimUlangKode: vi.fn(),
   forgotPassword: vi.fn(),
   resetPassword: vi.fn(),
   changePassword: vi.fn(),
@@ -67,7 +69,7 @@ describe("Auth & RBAC Route Guards", () => {
     expect(screen.queryByText("Konten Portal")).not.toBeInTheDocument();
   });
 
-  it("RequireRole MENOLAK calon mahasiswa yang mencoba mengakses rute admin PMB", () => {
+  it("RequireRole mengembalikan calon ke portalnya tanpa membuka halaman admin", () => {
     const candidateUser: AuthResponse = {
       user_id: "usr-1",
       email: "calon@example.com",
@@ -80,29 +82,61 @@ describe("Auth & RBAC Route Guards", () => {
 
     render(
       <AuthContext.Provider value={ctx}>
-        <MemoryRouter initialEntries={["/admin/dashboard"]}>
+        <MemoryRouter initialEntries={["/admin/cbt/bank-soal"]}>
           <Routes>
             <Route
-              path="/admin/dashboard"
+              path="/admin/cbt/bank-soal"
               element={
                 <RequireRole allowedRoles={["admin_pmb", "super_admin"]}>
                   <div>Konten Rahasia Admin PMB</div>
                 </RequireRole>
               }
             />
+            <Route
+              path="/portal/dashboard"
+              element={<div>Dashboard Calon</div>}
+            />
           </Routes>
         </MemoryRouter>
       </AuthContext.Provider>,
     );
 
-    // Verifikasi bahwa calon mahasiswa ditolak secara eksplisit
-    expect(screen.getByText("Akses Ditolak")).toBeInTheDocument();
-    expect(
-      screen.getByText(/tidak memiliki izin untuk mengakses halaman ini/),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Dashboard Calon")).toBeInTheDocument();
     expect(
       screen.queryByText("Konten Rahasia Admin PMB"),
     ).not.toBeInTheDocument();
+    // Tidak ada halaman "Akses Ditolak" yang membocorkan keberadaan rute admin
+    expect(screen.queryByText("Akses Ditolak")).not.toBeInTheDocument();
+  });
+
+  it("Setelah logout, halaman terakhir tidak diingat untuk pengguna berikutnya", () => {
+    const ctx = { ...mockAuthContext(null, false), baruLogout: true };
+    let stateLogin: unknown = "belum";
+    const LoginProbe = () => {
+      stateLogin = useLocation().state;
+      return <div>Halaman Login</div>;
+    };
+
+    render(
+      <AuthContext.Provider value={ctx}>
+        <MemoryRouter initialEntries={["/admin/cbt/bank-soal"]}>
+          <Routes>
+            <Route
+              path="/admin/cbt/bank-soal"
+              element={
+                <RequireRole allowedRoles={["admin_pmb"]}>
+                  <div>Bank Soal</div>
+                </RequireRole>
+              }
+            />
+            <Route path="/login" element={<LoginProbe />} />
+          </Routes>
+        </MemoryRouter>
+      </AuthContext.Provider>,
+    );
+
+    expect(screen.getByText("Halaman Login")).toBeInTheDocument();
+    expect(stateLogin).toBeFalsy();
   });
 
   it("RequireRole MENGIZINKAN admin PMB mengakses rute admin", () => {

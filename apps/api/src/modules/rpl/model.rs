@@ -18,31 +18,53 @@ pub struct MataKuliah {
     pub updated_at: DateTime<Utc>,
 }
 
+/// Riwayat pendidikan formal pemohon RPL.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct RiwayatPendidikanItem {
     pub jenjang: String,
     pub nama_institusi: String,
-    pub jurusan: String,
-    pub tahun_lulus: String,
-    pub ipk: f64,
+    #[serde(default, alias = "jurusan")]
+    pub program_studi: String,
+    pub tahun_lulus: i32,
+    #[serde(default, alias = "ipk")]
+    pub ipk_nilai: Option<f64>,
+    #[serde(default)]
+    pub nomor_ijazah: Option<String>,
 }
 
+/// Pengalaman kerja pemohon RPL. Tanggal dalam format YYYY-MM-DD.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct PengalamanKerjaItem {
-    pub instansi: String,
-    pub posisi: String,
-    pub tahun_mulai: String,
-    pub tahun_selesai: String,
-    pub deskripsi_tugas: String,
+    #[serde(alias = "instansi")]
+    pub nama_perusahaan: String,
+    #[serde(alias = "posisi")]
+    pub jabatan: String,
+    #[serde(default, alias = "deskripsi_tugas")]
+    pub deskripsi_pekerjaan: String,
+    pub tanggal_mulai: String,
+    #[serde(default)]
+    pub tanggal_selesai: Option<String>,
+    #[serde(default)]
+    pub masih_bekerja: bool,
 }
 
+/// Dokumen portofolio RPL yang diunggah ke object storage.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct BerkasRplItem {
-    pub jenis_berkas: String,
-    pub file_name: String,
+    /// Contoh: IJAZAH, TRANSKRIP, SERTIFIKAT, SURAT_KETERANGAN_KERJA, PORTOFOLIO, LAINNYA
+    pub jenis_dokumen: String,
+    pub nama_file: String,
+    /// Kunci objek hasil presign `POST /api/rpl/berkas/presign`
     pub file_key: String,
+    #[serde(default)]
     pub mime_type: String,
-    pub file_size_bytes: i64,
+    #[serde(default)]
+    pub ukuran_bytes: i64,
+    #[serde(default)]
+    pub keterangan: Option<String>,
+    /// URL unduh sementara (diisi server saat menampilkan; dikosongkan saat disimpan)
+    #[serde(default)]
+    pub url_unduh: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]

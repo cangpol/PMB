@@ -44,8 +44,10 @@ import type {
   ProdiDetailResponse,
   JalurDetailResponse,
 } from "@/types";
+import { useDialog } from "@/components/ui/useDialog";
 
 export const VoucherPage: React.FC = () => {
+  const dialog = useDialog();
   const [voucherList, setVoucherList] = useState<VoucherDetailResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -181,9 +183,19 @@ export const VoucherPage: React.FC = () => {
       await deleteVoucher(deleteTarget.id);
       setDeleteTarget(null);
       await fetchVoucherData();
+      void dialog.hasil({
+        nada: "sukses",
+        judul: "Voucher dihapus",
+        deskripsi: "Voucher berhasil dihapus.",
+        autoTutupMs: 2000,
+      });
     } catch (err: unknown) {
       const e = err as { pesan?: string };
-      alert(e.pesan || "Gagal menghapus voucher");
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Penghapusan gagal",
+        deskripsi: e.pesan || "Gagal menghapus voucher",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -467,11 +479,11 @@ export const VoucherPage: React.FC = () => {
 
             <div className="space-y-1">
               <label className="text-xs font-bold text-biru-900">
-                Kode Voucher (Huruf Besar)
+                Kode Voucher
               </label>
               <Input
                 required
-                placeholder="misal: [CONTOH] TRIPUTRA50"
+                placeholder="misal: HEMAT50"
                 value={form.kode_voucher}
                 onChange={(e) =>
                   setForm({
@@ -481,6 +493,11 @@ export const VoucherPage: React.FC = () => {
                 }
                 disabled={editingVoucher !== null}
               />
+              <p className="text-[11px] text-biru-700">
+                Kode inilah yang diketik calon. Gunakan huruf, angka, atau tanda
+                hubung (-), tanpa spasi. Kode tidak dapat diubah setelah
+                disimpan.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -494,7 +511,6 @@ export const VoucherPage: React.FC = () => {
                   onChange={(e) =>
                     setForm({ ...form, tipe_diskon: e.target.value })
                   }
-                  disabled={editingVoucher !== null}
                 >
                   <option value="NOMINAL">Nominal Rupiah (Rp)</option>
                   <option value="PERCENT">Persentase (%)</option>
@@ -518,10 +534,18 @@ export const VoucherPage: React.FC = () => {
                       nilai_diskon: parseInt(e.target.value) || 0,
                     })
                   }
-                  disabled={editingVoucher !== null}
                 />
               </div>
             </div>
+            <p className="text-[11px] text-biru-700 -mt-1">
+              Potongan berlaku untuk <strong>biaya formulir pendaftaran</strong>
+              .{" "}
+              {form.tipe_diskon === "PERCENT"
+                ? `Contoh: biaya Rp 250.000 dengan diskon ${form.nilai_diskon || 0}% → calon membayar Rp ${Math.max(0, Math.round(250000 * (1 - (form.nilai_diskon || 0) / 100))).toLocaleString("id-ID")}.`
+                : `Contoh: biaya Rp 250.000 dikurangi Rp ${(form.nilai_diskon || 0).toLocaleString("id-ID")} → calon membayar Rp ${Math.max(0, 250000 - (form.nilai_diskon || 0)).toLocaleString("id-ID")}.`}{" "}
+              Bila hasilnya Rp 0, calon tidak perlu transfer. Mengubah potongan
+              tidak memengaruhi tagihan yang sudah terbit.
+            </p>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
@@ -608,7 +632,7 @@ export const VoucherPage: React.FC = () => {
 
             <div className="space-y-1">
               <label className="text-xs font-bold text-biru-900">
-                Deskripsi Voucher
+                Nama / Keterangan Voucher
               </label>
               <Input
                 placeholder="misal: Potongan biaya pendaftaran early bird gelombang 1"

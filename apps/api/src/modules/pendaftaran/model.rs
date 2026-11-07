@@ -71,6 +71,8 @@ pub struct DefinisiField {
 pub struct DefinisiBerkas {
     pub id: Uuid,
     pub jalur_id: Option<Uuid>,
+    /// NULL = berlaku untuk semua prodi; terisi = khusus calon yang memilih prodi ini.
+    pub prodi_id: Option<Uuid>,
     pub kode_berkas: String,
     pub nama: String,
     pub deskripsi: Option<String>,

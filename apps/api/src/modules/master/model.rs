@@ -55,6 +55,8 @@ pub struct JalurMasuk {
     pub deskripsi: String,
     pub biaya_formulir: i64,
     pub is_active: bool,
+    /// `CBT`, `BERKAS`, `CAMPURAN`, atau `RPL`
+    pub tipe_seleksi: String,
     pub created_at: DateTime<Utc>,
 }
 

@@ -58,8 +58,10 @@ import type {
   CreateKomponenBiayaRequest,
   HitungBiayaResponse,
 } from "@/types";
+import { useDialog } from "@/components/ui/useDialog";
 
 export const BiayaMatriksPage: React.FC = () => {
+  const dialog = useDialog();
   const [activeTab, setActiveTab] = useState<string>("matriks");
 
   // State Matriks Biaya
@@ -299,9 +301,19 @@ export const BiayaMatriksPage: React.FC = () => {
       }
       setDeleteTarget(null);
       await fetchData();
+      void dialog.hasil({
+        nada: "sukses",
+        judul: "Item dihapus",
+        deskripsi: "Item biaya berhasil dihapus.",
+        autoTutupMs: 2000,
+      });
     } catch (err: unknown) {
       const e = err as { pesan?: string };
-      alert(e.pesan || "Gagal menghapus item");
+      void dialog.hasil({
+        nada: "gagal",
+        judul: "Penghapusan gagal",
+        deskripsi: e.pesan || "Gagal menghapus item",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -719,7 +731,7 @@ export const BiayaMatriksPage: React.FC = () => {
                 </label>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="misal: [CONTOH] TRIPUTRA50"
+                    placeholder="misal: HEMAT50"
                     value={simulasiVoucher}
                     onChange={(e) => setSimulasiVoucher(e.target.value)}
                     className="text-xs"
@@ -807,9 +819,7 @@ export const BiayaMatriksPage: React.FC = () => {
                         <span>Total Akhir:</span>
                         <span className="font-mono text-base text-biru-300">
                           Rp{" "}
-                          {simulasiResult.total_akhir.toLocaleString(
-                            "id-ID",
-                          )}
+                          {simulasiResult.total_akhir.toLocaleString("id-ID")}
                         </span>
                       </div>
                       <div className="border-t border-biru-800/60 pt-2 flex justify-between text-xs text-biru-200">

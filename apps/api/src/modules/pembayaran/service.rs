@@ -139,10 +139,10 @@ impl PembayaranService {
     ) -> Result<TagihanWithTransaksiResponse, AppError> {
         // Cek apakah pendaftar sudah memiliki tagihan formulir
         let existing_list = self.repo.find_tagihan_by_pendaftar_id(pendaftar_id).await?;
-        if let Some(existing) = existing_list
-            .into_iter()
-            .find(|t| t.jenis_tagihan == "FORMULIR")
-        {
+        // Tagihan kedaluwarsa/batal tidak dipakai lagi: calon mendapat tagihan baru
+        if let Some(existing) = existing_list.into_iter().find(|t| {
+            t.jenis_tagihan == "FORMULIR" && !matches!(t.status.as_str(), "KEDALUWARSA" | "BATAL")
+        }) {
             let active_tx = self
                 .repo
                 .find_active_transaksi_by_tagihan_id(existing.id)
@@ -165,42 +165,48 @@ impl PembayaranService {
             });
         }
 
-        // 1. Ambil biaya formulir dari matriks_biaya
-        let nominal_asli = self
-            .repo
-            .get_biaya_matriks(prodi_id, jalur_id, gelombang_id)
-            .await?
-            .unwrap_or(250_000); // Default biaya formulir standar jika belum diset matriks
+        // 1. Biaya formulir ditetapkan per jalur (jalur_masuk.biaya_formulir).
+        //    matriks_biaya berisi komponen biaya daftar ulang, bukan biaya formulir.
+        let _ = gelombang_id;
+        let nominal_asli = self.repo.get_biaya_formulir_jalur(jalur_id).await?;
 
         // 2. Validasi & Kalkulasi Voucher jika diberikan
         let mut diskon = 0;
         let mut voucher_id = None;
 
+        // Voucher yang diisi tetapi tidak berlaku ditolak dengan alasannya, bukan diabaikan:
+        // tagihan yang telanjur terbit dengan harga penuh tidak bisa diberi voucher lagi.
+        let kode_voucher = kode_voucher
+            .map(|k| k.trim().to_uppercase())
+            .filter(|k| !k.is_empty());
         if let Some(ref kode) = kode_voucher {
-            if let Some((v, b_jalur, b_prodi)) = self.repo.find_voucher_with_limits(kode).await? {
-                if validasi_voucher(&v, Utc::now()).is_ok()
-                    && validasi_voucher_restrictions(
-                        b_jalur,
-                        b_prodi,
-                        Some(jalur_id),
-                        Some(prodi_id),
-                    )
-                    .is_ok()
-                {
-                    // Klaim kuota voucher secara atomic
-                    if self.repo.claim_voucher_atomic(v.id).await? {
-                        diskon =
-                            hitung_diskon_voucher(&v.tipe_diskon, v.nilai_diskon, nominal_asli);
-                        voucher_id = Some(v.id);
-                    }
-                }
+            let (v, b_jalur, b_prodi) = self
+                .repo
+                .find_voucher_with_limits(kode)
+                .await?
+                .ok_or_else(|| {
+                    AppError::BadRequest(format!(
+                        "Kode voucher {kode} tidak ditemukan atau tidak aktif."
+                    ))
+                })?;
+            validasi_voucher(&v, Utc::now()).map_err(|e| AppError::BadRequest(e.to_string()))?;
+            validasi_voucher_restrictions(b_jalur, b_prodi, Some(jalur_id), Some(prodi_id))
+                .map_err(|e| AppError::BadRequest(e.to_string()))?;
+            // Klaim kuota voucher secara atomic
+            if !self.repo.claim_voucher_atomic(v.id).await? {
+                return Err(AppError::BadRequest(
+                    "Kuota voucher sudah habis.".to_string(),
+                ));
             }
+            diskon = hitung_diskon_voucher(&v.tipe_diskon, v.nilai_diskon, nominal_asli);
+            voucher_id = Some(v.id);
         }
 
         let nominal_akhir = (nominal_asli - diskon).max(0);
         let seq = self.repo.get_next_sequence().await?;
         let nomor_tagihan = format!("INV-2026-{:05}", seq);
-        let tgl_jatuh_tempo = Utc::now() + Duration::hours(24);
+        // Transfer manual (VA Mandiri / QRIS statis) + verifikasi admin butuh jeda lebih longgar
+        let tgl_jatuh_tempo = Utc::now() + Duration::days(3);
 
         let tagihan = self
             .repo

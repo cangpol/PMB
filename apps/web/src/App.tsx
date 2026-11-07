@@ -9,6 +9,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/context";
 import { ToastProvider } from "@/components/ui/Toast";
+import { DialogProvider } from "@/components/ui/DialogProvider";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { RequireRole } from "@/components/auth/RouteGuards";
@@ -18,6 +19,10 @@ import { RequireRole } from "@/components/auth/RouteGuards";
 // =============================================================================
 
 // Public Pages
+import {
+  GerbangLangkah,
+  LANGKAH_HALAMAN,
+} from "./components/pendaftaran/GerbangLangkah";
 const HomePage = lazy(() =>
   import("./pages/public/HomePage").then((m) => ({ default: m.HomePage })),
 );
@@ -176,6 +181,16 @@ const VerifikasiBerkasPage = lazy(() =>
     default: m.VerifikasiBerkasPage,
   })),
 );
+const VerifikasiPembayaranPage = lazy(() =>
+  import("./pages/admin/VerifikasiPembayaranPage").then((m) => ({
+    default: m.VerifikasiPembayaranPage,
+  })),
+);
+const RekeningPembayaranPage = lazy(() =>
+  import("./pages/admin/RekeningPembayaranPage").then((m) => ({
+    default: m.RekeningPembayaranPage,
+  })),
+);
 const VerifikasiKeuanganPage = lazy(() =>
   import("./pages/admin/VerifikasiKeuanganPage").then((m) => ({
     default: m.VerifikasiKeuanganPage,
@@ -294,6 +309,21 @@ const VoucherPage = lazy(() =>
     default: m.VoucherPage,
   })),
 );
+const HasilCbtPage = lazy(() =>
+  import("./pages/admin/cbt/HasilCbtPage").then((m) => ({
+    default: m.HasilCbtPage,
+  })),
+);
+const PenggunaAksesPage = lazy(() =>
+  import("./pages/admin/PenggunaAksesPage").then((m) => ({
+    default: m.PenggunaAksesPage,
+  })),
+);
+const RumusNimPage = lazy(() =>
+  import("./pages/admin/konfigurasi/RumusNimPage").then((m) => ({
+    default: m.RumusNimPage,
+  })),
+);
 const PengaturanPmbPage = lazy(() =>
   import("./pages/admin/konfigurasi/PengaturanPmbPage").then((m) => ({
     default: m.PengaturanPmbPage,
@@ -330,249 +360,369 @@ export const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ToastProvider>
-          <BrowserRouter>
-            <Suspense fallback={<PageLoadingFallback />}>
-              <Routes>
-                {/* Rute Publik Terpadu dengan PublicLayout Resmi */}
-                <Route element={<PublicLayout />}>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/jalur-masuk" element={<JalurMasukPage />} />
-                  <Route path="/program-studi" element={<ProdiPage />} />
-                  <Route
-                    path="/program-studi/bandingkan"
-                    element={<ProdiBandingkanPage />}
-                  />
-                  <Route
-                    path="/program-studi/:slug"
-                    element={<ProdiDetailPage />}
-                  />
-                  {/* Kompatibilitas Tautan Lama */}
-                  <Route path="/prodi" element={<ProdiPage />} />
-                  <Route path="/prodi/:id" element={<ProdiDetailPage />} />
-                  <Route path="/biaya" element={<BiayaJalurPage />} />
-                  <Route path="/jadwal" element={<JadwalSeleksiPage />} />
-                  <Route path="/pengumuman" element={<PengumumanPage />} />
-                  <Route
-                    path="/pengumuman/:slug"
-                    element={<PengumumanDetailPage />}
-                  />
-                  <Route
-                    path="/cek-kelulusan"
-                    element={<CekKelulusanPublikPage />}
-                  />
-                  <Route path="/faq" element={<FaqPage />} />
-                  <Route path="/kontak" element={<KontakPage />} />
-                  <Route
-                    path="/syarat-ketentuan"
-                    element={<SyaratKetentuanPage />}
-                  />
-                  <Route
-                    path="/kebijakan-privasi"
-                    element={<KebijakanPrivasiPage />}
-                  />
-                </Route>
+          <DialogProvider>
+            <BrowserRouter>
+              <Suspense fallback={<PageLoadingFallback />}>
+                <Routes>
+                  {/* Rute Publik Terpadu dengan PublicLayout Resmi */}
+                  <Route element={<PublicLayout />}>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/jalur-masuk" element={<JalurMasukPage />} />
+                    <Route path="/program-studi" element={<ProdiPage />} />
+                    <Route
+                      path="/program-studi/bandingkan"
+                      element={<ProdiBandingkanPage />}
+                    />
+                    <Route
+                      path="/program-studi/:slug"
+                      element={<ProdiDetailPage />}
+                    />
+                    {/* Kompatibilitas Tautan Lama */}
+                    <Route path="/prodi" element={<ProdiPage />} />
+                    <Route path="/prodi/:id" element={<ProdiDetailPage />} />
+                    <Route path="/biaya" element={<BiayaJalurPage />} />
+                    <Route path="/jadwal" element={<JadwalSeleksiPage />} />
+                    <Route path="/pengumuman" element={<PengumumanPage />} />
+                    <Route
+                      path="/pengumuman/:slug"
+                      element={<PengumumanDetailPage />}
+                    />
+                    <Route
+                      path="/cek-kelulusan"
+                      element={<CekKelulusanPublikPage />}
+                    />
+                    <Route path="/faq" element={<FaqPage />} />
+                    <Route path="/kontak" element={<KontakPage />} />
+                    <Route
+                      path="/syarat-ketentuan"
+                      element={<SyaratKetentuanPage />}
+                    />
+                    <Route
+                      path="/kebijakan-privasi"
+                      element={<KebijakanPrivasiPage />}
+                    />
+                  </Route>
 
-                {/* Rute Autentikasi dengan AuthLayout Premium */}
-                <Route element={<AuthLayout />}>
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/verify-email" element={<VerifyEmailPage />} />
-                  <Route
-                    path="/forgot-password"
-                    element={<ForgotPasswordPage />}
-                  />
-                  <Route
-                    path="/reset-password"
-                    element={<ResetPasswordPage />}
-                  />
-                </Route>
+                  {/* Rute Autentikasi dengan AuthLayout Premium */}
+                  <Route element={<AuthLayout />}>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/verify-email" element={<VerifyEmailPage />} />
+                    <Route
+                      path="/forgot-password"
+                      element={<ForgotPasswordPage />}
+                    />
+                    <Route
+                      path="/reset-password"
+                      element={<ResetPasswordPage />}
+                    />
+                  </Route>
 
-                {/* Rute Dev: Styleguide (Hanya Aktif di Mode Dev) */}
-                {import.meta.env.DEV && (
-                  <Route path="/styleguide" element={<StyleguidePage />} />
-                )}
+                  {/* Rute Dev: Styleguide (Hanya Aktif di Mode Dev) */}
+                  {import.meta.env.DEV && (
+                    <Route path="/styleguide" element={<StyleguidePage />} />
+                  )}
 
-                {/* Portal Calon Mahasiswa (Dilindungi RBAC: calon_mahasiswa & super_admin) */}
-                <Route
-                  path="/portal"
-                  element={
-                    <RequireRole
-                      allowedRoles={["calon_mahasiswa", "super_admin"]}
-                    >
-                      <PortalLayout />
-                    </RequireRole>
-                  }
-                >
+                  {/* Portal Calon Mahasiswa (Dilindungi RBAC: calon_mahasiswa & super_admin) */}
                   <Route
-                    index
-                    element={<Navigate to="/portal/dashboard" replace />}
-                  />
-                  <Route path="dashboard" element={<DashboardCalon />} />
-                  <Route path="formulir" element={<FormPendaftaranPage />} />
-                  <Route path="rpl" element={<FormulirRplPage />} />
-                  <Route path="berkas" element={<UploadBerkasPage />} />
-                  <Route path="pembayaran" element={<PembayaranPage />} />
-                  <Route path="ujian" element={<UjianCbtPage />} />
-                  <Route path="hasil" element={<HasilKelulusanPage />} />
-                  <Route path="daftar-ulang" element={<DaftarUlangPage />} />
-                </Route>
-
-                {/* Portal Administrasi & Verifikasi */}
-                <Route
-                  path="/admin"
-                  element={
-                    <RequireRole
-                      allowedRoles={[
-                        "admin_pmb",
-                        "super_admin",
-                        "keuangan",
-                        "asesor_rpl",
-                        "pengawas_ujian",
-                      ]}
-                    >
-                      <AdminLayout />
-                    </RequireRole>
-                  }
-                >
-                  <Route
-                    index
-                    element={<Navigate to="/admin/dashboard" replace />}
-                  />
-                  <Route path="dashboard" element={<AdminDashboard />} />
-                  <Route
-                    path="pendaftaran-offline"
+                    path="/portal"
                     element={
-                      <RequireRole allowedRoles={["admin_pmb", "super_admin"]}>
-                        <PendaftaranOfflinePage />
-                      </RequireRole>
-                    }
-                  />
-                  <Route
-                    path="berkas"
-                    element={
-                      <RequireRole allowedRoles={["admin_pmb", "super_admin"]}>
-                        <VerifikasiBerkasPage />
-                      </RequireRole>
-                    }
-                  />
-                  <Route path="keuangan" element={<VerifikasiKeuanganPage />} />
-                  <Route path="seleksi" element={<SeleksiKelulusanPage />} />
-                  <Route
-                    path="daftar-ulang"
-                    element={<VerifikasiDaftarUlangPage />}
-                  />
-                  <Route path="master" element={<MasterDataPage />} />
-
-                  {/* Sub-modul CMS & Konten Publik: Khusus Admin PMB & Super Admin */}
-                  <Route
-                    path="cms"
-                    element={
-                      <RequireRole allowedRoles={["admin_pmb", "super_admin"]}>
-                        <Outlet />
+                      <RequireRole
+                        allowedRoles={["calon_mahasiswa", "super_admin"]}
+                      >
+                        <PortalLayout />
                       </RequireRole>
                     }
                   >
                     <Route
                       index
-                      element={<Navigate to="/admin/cms/berita" replace />}
+                      element={<Navigate to="/portal/dashboard" replace />}
                     />
-                    <Route path="berita" element={<KelolaBeritaPage />} />
-                    <Route path="berita/:id" element={<EditorBeritaPage />} />
-                    <Route path="banner" element={<KelolaBannerPage />} />
-                    <Route path="faq" element={<KelolaFaqPage />} />
-                    <Route path="halaman" element={<KelolaHalamanPage />} />
+                    <Route path="dashboard" element={<DashboardCalon />} />
+                    <Route
+                      path="formulir"
+                      element={
+                        <GerbangLangkah langkah={LANGKAH_HALAMAN.formulir}>
+                          <FormPendaftaranPage />
+                        </GerbangLangkah>
+                      }
+                    />
+                    <Route
+                      path="rpl"
+                      element={
+                        <GerbangLangkah langkah={LANGKAH_HALAMAN.rpl} khususRpl>
+                          <FormulirRplPage />
+                        </GerbangLangkah>
+                      }
+                    />
+                    <Route
+                      path="berkas"
+                      element={
+                        <GerbangLangkah langkah={LANGKAH_HALAMAN.berkas}>
+                          <UploadBerkasPage />
+                        </GerbangLangkah>
+                      }
+                    />
+                    <Route
+                      path="pembayaran"
+                      element={
+                        <GerbangLangkah langkah={LANGKAH_HALAMAN.pembayaran}>
+                          <PembayaranPage />
+                        </GerbangLangkah>
+                      }
+                    />
+                    <Route
+                      path="ujian"
+                      element={
+                        <GerbangLangkah langkah={LANGKAH_HALAMAN.ujian}>
+                          <UjianCbtPage />
+                        </GerbangLangkah>
+                      }
+                    />
+                    <Route
+                      path="hasil"
+                      element={
+                        <GerbangLangkah langkah={LANGKAH_HALAMAN.hasil}>
+                          <HasilKelulusanPage />
+                        </GerbangLangkah>
+                      }
+                    />
+                    <Route
+                      path="daftar-ulang"
+                      element={
+                        <GerbangLangkah langkah={LANGKAH_HALAMAN.daftarUlang}>
+                          <DaftarUlangPage />
+                        </GerbangLangkah>
+                      }
+                    />
                   </Route>
 
-                  {/* Sub-modul CBT & Presensi: Pengawas, Admin PMB, Super Admin */}
+                  {/* Portal Administrasi & Verifikasi */}
                   <Route
-                    path="cbt"
+                    path="/admin"
                     element={
                       <RequireRole
                         allowedRoles={[
-                          "pengawas_ujian",
                           "admin_pmb",
                           "super_admin",
-                        ]}
-                      >
-                        <Outlet />
-                      </RequireRole>
-                    }
-                  >
-                    <Route
-                      index
-                      element={<Navigate to="/admin/cbt/sesi" replace />}
-                    />
-                    <Route path="bank-soal" element={<BankSoalPage />} />
-                    <Route path="sesi" element={<JadwalSesiPage />} />
-                    <Route path="presensi" element={<PresensiCbtPage />} />
-                    <Route
-                      path="monitor/:id"
-                      element={<MonitorLiveCbtPage />}
-                    />
-                  </Route>
-
-                  {/* Sub-modul RPL: Asesor RPL, Admin PMB, Super Admin */}
-                  <Route
-                    path="rpl"
-                    element={
-                      <RequireRole
-                        allowedRoles={[
+                          "keuangan",
                           "asesor_rpl",
-                          "admin_pmb",
-                          "super_admin",
+                          "pengawas_ujian",
                         ]}
                       >
-                        <Outlet />
+                        <AdminLayout />
                       </RequireRole>
                     }
                   >
-                    <Route index element={<KelolaRplAdminPage />} />
                     <Route
-                      path="penilaian/:id"
-                      element={<PenilaianRplPage />}
+                      index
+                      element={<Navigate to="/admin/dashboard" replace />}
                     />
+                    <Route path="dashboard" element={<AdminDashboard />} />
                     <Route
-                      path="mata-kuliah"
+                      path="pendaftaran-offline"
                       element={
                         <RequireRole
                           allowedRoles={["admin_pmb", "super_admin"]}
                         >
-                          <KelolaMataKuliahRplPage />
+                          <PendaftaranOfflinePage />
                         </RequireRole>
                       }
                     />
-                  </Route>
-
-                  {/* Sub-modul Konfigurasi PMB: Khusus Admin PMB & Super Admin */}
-                  <Route
-                    path="konfigurasi"
-                    element={
-                      <RequireRole allowedRoles={["admin_pmb", "super_admin"]}>
-                        <Outlet />
-                      </RequireRole>
-                    }
-                  >
                     <Route
-                      index
+                      path="berkas"
                       element={
-                        <Navigate to="/admin/konfigurasi/gelombang" replace />
+                        <RequireRole
+                          allowedRoles={["admin_pmb", "super_admin"]}
+                        >
+                          <VerifikasiBerkasPage />
+                        </RequireRole>
                       }
                     />
-                    <Route path="gelombang" element={<TahunGelombangPage />} />
-                    <Route path="prodi" element={<FakultasProdiPage />} />
-                    <Route path="jalur" element={<JalurMasukConfigPage />} />
-                    <Route path="biaya" element={<BiayaMatriksPage />} />
-                    <Route path="vouchers" element={<VoucherPage />} />
-                    <Route path="form-builder" element={<FormBuilderPage />} />
-                    <Route path="pengaturan" element={<PengaturanPmbPage />} />
-                  </Route>
-                </Route>
+                    <Route
+                      path="keuangan"
+                      element={<VerifikasiKeuanganPage />}
+                    />
+                    <Route
+                      path="verifikasi-pembayaran"
+                      element={
+                        <RequireRole
+                          allowedRoles={[
+                            "admin_pmb",
+                            "super_admin",
+                            "keuangan",
+                          ]}
+                        >
+                          <VerifikasiPembayaranPage />
+                        </RequireRole>
+                      }
+                    />
+                    <Route
+                      path="rekening-pembayaran"
+                      element={
+                        <RequireRole
+                          allowedRoles={[
+                            "admin_pmb",
+                            "super_admin",
+                            "keuangan",
+                          ]}
+                        >
+                          <RekeningPembayaranPage />
+                        </RequireRole>
+                      }
+                    />
+                    <Route path="seleksi" element={<SeleksiKelulusanPage />} />
+                    <Route
+                      path="daftar-ulang"
+                      element={<VerifikasiDaftarUlangPage />}
+                    />
+                    <Route path="master" element={<MasterDataPage />} />
 
-                {/* Fallback Rute */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
+                    {/* Sub-modul CMS & Konten Publik: Khusus Admin PMB & Super Admin */}
+                    <Route
+                      path="cms"
+                      element={
+                        <RequireRole
+                          allowedRoles={["admin_pmb", "super_admin"]}
+                        >
+                          <Outlet />
+                        </RequireRole>
+                      }
+                    >
+                      <Route
+                        index
+                        element={<Navigate to="/admin/cms/berita" replace />}
+                      />
+                      <Route path="berita" element={<KelolaBeritaPage />} />
+                      <Route path="berita/:id" element={<EditorBeritaPage />} />
+                      <Route path="banner" element={<KelolaBannerPage />} />
+                      <Route path="faq" element={<KelolaFaqPage />} />
+                      <Route path="halaman" element={<KelolaHalamanPage />} />
+                    </Route>
+
+                    {/* Sub-modul CBT & Presensi: Pengawas, Admin PMB, Super Admin */}
+                    <Route
+                      path="cbt"
+                      element={
+                        <RequireRole
+                          allowedRoles={[
+                            "pengawas_ujian",
+                            "admin_pmb",
+                            "super_admin",
+                          ]}
+                        >
+                          <Outlet />
+                        </RequireRole>
+                      }
+                    >
+                      <Route
+                        index
+                        element={<Navigate to="/admin/cbt/sesi" replace />}
+                      />
+                      <Route path="bank-soal" element={<BankSoalPage />} />
+                      <Route path="sesi" element={<JadwalSesiPage />} />
+                      <Route path="presensi" element={<PresensiCbtPage />} />
+                      <Route
+                        path="hasil"
+                        element={
+                          <RequireRole
+                            allowedRoles={["admin_pmb", "super_admin"]}
+                          >
+                            <HasilCbtPage />
+                          </RequireRole>
+                        }
+                      />
+                      <Route
+                        path="monitor/:id"
+                        element={<MonitorLiveCbtPage />}
+                      />
+                    </Route>
+
+                    {/* Sub-modul RPL: Asesor RPL, Admin PMB, Super Admin */}
+                    <Route
+                      path="rpl"
+                      element={
+                        <RequireRole
+                          allowedRoles={[
+                            "asesor_rpl",
+                            "admin_pmb",
+                            "super_admin",
+                          ]}
+                        >
+                          <Outlet />
+                        </RequireRole>
+                      }
+                    >
+                      <Route index element={<KelolaRplAdminPage />} />
+                      <Route
+                        path="penilaian/:id"
+                        element={<PenilaianRplPage />}
+                      />
+                      <Route
+                        path="mata-kuliah"
+                        element={
+                          <RequireRole
+                            allowedRoles={["admin_pmb", "super_admin"]}
+                          >
+                            <KelolaMataKuliahRplPage />
+                          </RequireRole>
+                        }
+                      />
+                    </Route>
+
+                    {/* Pengguna & Akses (sakelar fitur + bagi peran): khusus Super Admin */}
+                    <Route
+                      path="pengguna"
+                      element={
+                        <RequireRole allowedRoles={["super_admin"]}>
+                          <PenggunaAksesPage />
+                        </RequireRole>
+                      }
+                    />
+
+                    {/* Sub-modul Konfigurasi PMB: Khusus Admin PMB & Super Admin */}
+                    <Route
+                      path="konfigurasi"
+                      element={
+                        <RequireRole
+                          allowedRoles={["admin_pmb", "super_admin"]}
+                        >
+                          <Outlet />
+                        </RequireRole>
+                      }
+                    >
+                      <Route
+                        index
+                        element={
+                          <Navigate to="/admin/konfigurasi/gelombang" replace />
+                        }
+                      />
+                      <Route
+                        path="gelombang"
+                        element={<TahunGelombangPage />}
+                      />
+                      <Route path="prodi" element={<FakultasProdiPage />} />
+                      <Route path="jalur" element={<JalurMasukConfigPage />} />
+                      <Route path="biaya" element={<BiayaMatriksPage />} />
+                      <Route path="vouchers" element={<VoucherPage />} />
+                      <Route
+                        path="form-builder"
+                        element={<FormBuilderPage />}
+                      />
+                      <Route
+                        path="pengaturan"
+                        element={<PengaturanPmbPage />}
+                      />
+                      <Route path="rumus-nim" element={<RumusNimPage />} />
+                    </Route>
+                  </Route>
+
+                  {/* Fallback Rute */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </DialogProvider>
         </ToastProvider>
       </AuthProvider>
     </QueryClientProvider>

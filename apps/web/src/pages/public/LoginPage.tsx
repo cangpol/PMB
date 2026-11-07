@@ -18,6 +18,10 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Card } from "../../components/ui/Card";
 import { useAuth } from "../../context/useAuth";
+import {
+  tujuanSetelahLogin,
+  WAJIB_VERIFIKASI_EMAIL,
+} from "../../components/auth/akses";
 
 const loginSchema = z.object({
   email: z
@@ -38,11 +42,11 @@ export const LoginPage: React.FC = () => {
 
   React.useEffect(() => {
     if (!isLoading && user) {
-      const destination =
-        location.state?.from?.pathname ||
-        (user.role === "calon_mahasiswa"
-          ? "/portal/dashboard"
-          : "/admin/dashboard");
+      const destination = tujuanSetelahLogin(
+        user.role,
+        location.state?.from?.pathname,
+        user.is_email_verified,
+      );
       navigate(destination, { replace: true });
     }
   }, [user, isLoading, navigate, location.state]);
@@ -65,11 +69,11 @@ export const LoginPage: React.FC = () => {
     setErrorMessage(null);
     try {
       const user = await login(values);
-      const destination =
-        location.state?.from?.pathname ||
-        (user.role === "calon_mahasiswa"
-          ? "/portal/dashboard"
-          : "/admin/dashboard");
+      const destination = tujuanSetelahLogin(
+        user.role,
+        location.state?.from?.pathname,
+        user.is_email_verified,
+      );
       navigate(destination, { replace: true });
     } catch (err: unknown) {
       const apiErr = err as { pesan?: string };
@@ -172,74 +176,77 @@ export const LoginPage: React.FC = () => {
         </Button>
       </form>
 
-      {/* Demo Credentials Helper */}
-      <Card className="border border-biru-200 bg-biru-50/60 p-4 space-y-3">
-        <span className="block text-[11px] font-bold uppercase tracking-wider text-biru-800 text-center">
-          Pilihan Demo Akun (Klik untuk Mengisi):
-        </span>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <button
-            type="button"
-            onClick={() =>
-              fillCredentials("calon@triputra.id", "Pignatelli2026!")
-            }
-            className="flex flex-col items-center justify-center p-2 rounded-lg border border-biru-200 bg-putih text-biru-900 hover:bg-biru-100 transition-colors text-center"
-          >
-            <User className="h-4 w-4 text-biru-700 mb-1" />
-            <span className="text-[11px] font-medium">Calon Mhs</span>
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              fillCredentials("admin@triputra.id", "Pignatelli2026!")
-            }
-            className="flex flex-col items-center justify-center p-2 rounded-lg border border-biru-200 bg-putih text-biru-900 hover:bg-biru-100 transition-colors text-center"
-          >
-            <Shield className="h-4 w-4 text-biru-700 mb-1" />
-            <span className="text-[11px] font-medium">Admin PMB</span>
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              fillCredentials("keuangan@triputra.id", "Pignatelli2026!")
-            }
-            className="flex flex-col items-center justify-center p-2 rounded-lg border border-biru-200 bg-putih text-biru-900 hover:bg-biru-100 transition-colors text-center"
-          >
-            <CreditCard className="h-4 w-4 text-biru-700 mb-1" />
-            <span className="text-[11px] font-medium">Keuangan</span>
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              fillCredentials("pengawas@triputra.id", "Pignatelli2026!")
-            }
-            className="flex flex-col items-center justify-center p-2 rounded-lg border border-biru-200 bg-putih text-biru-900 hover:bg-biru-100 transition-colors text-center"
-          >
-            <Eye className="h-4 w-4 text-biru-700 mb-1" />
-            <span className="text-[11px] font-medium">Pengawas CBT</span>
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              fillCredentials("asesor@triputra.id", "Pignatelli2026!")
-            }
-            className="flex flex-col items-center justify-center p-2 rounded-lg border border-biru-200 bg-putih text-biru-900 hover:bg-biru-100 transition-colors text-center"
-          >
-            <FileCheck className="h-4 w-4 text-biru-700 mb-1" />
-            <span className="text-[11px] font-medium">Asesor RPL</span>
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              fillCredentials("superadmin@triputra.id", "Pignatelli2026!")
-            }
-            className="flex flex-col items-center justify-center p-2 rounded-lg border border-biru-200 bg-putih text-biru-900 hover:bg-biru-100 transition-colors text-center"
-          >
-            <Shield className="h-4 w-4 text-biru-900 mb-1" />
-            <span className="text-[11px] font-semibold">Super Admin</span>
-          </button>
-        </div>
-      </Card>
+      {/* Akun demo berisi kata sandi asli: HANYA tampil di mode pengembangan,
+          tidak pernah ikut ke build produksi. */}
+      {import.meta.env.DEV && (
+        <Card className="border border-biru-200 bg-biru-50/60 p-4 space-y-3">
+          <span className="block text-[11px] font-bold uppercase tracking-wider text-biru-800 text-center">
+            Pilihan Demo Akun (Klik untuk Mengisi):
+          </span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                fillCredentials("calon@triputra.id", "Pignatelli2026!")
+              }
+              className="flex flex-col items-center justify-center p-2 rounded-lg border border-biru-200 bg-putih text-biru-900 hover:bg-biru-100 transition-colors text-center"
+            >
+              <User className="h-4 w-4 text-biru-700 mb-1" />
+              <span className="text-[11px] font-medium">Calon Mhs</span>
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                fillCredentials("admin@triputra.id", "Pignatelli2026!")
+              }
+              className="flex flex-col items-center justify-center p-2 rounded-lg border border-biru-200 bg-putih text-biru-900 hover:bg-biru-100 transition-colors text-center"
+            >
+              <Shield className="h-4 w-4 text-biru-700 mb-1" />
+              <span className="text-[11px] font-medium">Admin PMB</span>
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                fillCredentials("keuangan@triputra.id", "Pignatelli2026!")
+              }
+              className="flex flex-col items-center justify-center p-2 rounded-lg border border-biru-200 bg-putih text-biru-900 hover:bg-biru-100 transition-colors text-center"
+            >
+              <CreditCard className="h-4 w-4 text-biru-700 mb-1" />
+              <span className="text-[11px] font-medium">Keuangan</span>
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                fillCredentials("pengawas@triputra.id", "Pignatelli2026!")
+              }
+              className="flex flex-col items-center justify-center p-2 rounded-lg border border-biru-200 bg-putih text-biru-900 hover:bg-biru-100 transition-colors text-center"
+            >
+              <Eye className="h-4 w-4 text-biru-700 mb-1" />
+              <span className="text-[11px] font-medium">Pengawas CBT</span>
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                fillCredentials("asesor@triputra.id", "Pignatelli2026!")
+              }
+              className="flex flex-col items-center justify-center p-2 rounded-lg border border-biru-200 bg-putih text-biru-900 hover:bg-biru-100 transition-colors text-center"
+            >
+              <FileCheck className="h-4 w-4 text-biru-700 mb-1" />
+              <span className="text-[11px] font-medium">Asesor RPL</span>
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                fillCredentials("superadmin@triputra.id", "Pignatelli2026!")
+              }
+              className="flex flex-col items-center justify-center p-2 rounded-lg border border-biru-200 bg-putih text-biru-900 hover:bg-biru-100 transition-colors text-center"
+            >
+              <Shield className="h-4 w-4 text-biru-900 mb-1" />
+              <span className="text-[11px] font-semibold">Super Admin</span>
+            </button>
+          </div>
+        </Card>
+      )}
 
       <div className="flex flex-col gap-2 pt-2 text-center text-xs text-biru-800">
         <div>
@@ -251,15 +258,17 @@ export const LoginPage: React.FC = () => {
             Daftar Akun Baru
           </Link>
         </div>
-        <div>
-          Sudah punya token aktivasi?{" "}
-          <Link
-            to="/verify-email"
-            className="font-medium text-biru-600 hover:text-biru-950 hover:underline"
-          >
-            Verifikasi Email Di Sini
-          </Link>
-        </div>
+        {WAJIB_VERIFIKASI_EMAIL && (
+          <div>
+            Sudah punya token aktivasi?{" "}
+            <Link
+              to="/verify-email"
+              className="font-medium text-biru-600 hover:text-biru-950 hover:underline"
+            >
+              Verifikasi Email Di Sini
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

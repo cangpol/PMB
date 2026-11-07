@@ -134,6 +134,7 @@ impl MasterService {
                 deskripsi: j.deskripsi,
                 biaya_formulir: j.biaya_formulir,
                 is_active: j.is_active,
+                tipe_seleksi: j.tipe_seleksi,
             })
             .collect())
     }
