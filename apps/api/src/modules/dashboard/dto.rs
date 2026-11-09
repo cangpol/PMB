@@ -135,6 +135,10 @@ pub struct AntreanVerifikasiResponse {
     pub daftar_ulang: AntreanItem,
     /// Hasil CBT di bawah passing grade yang menunggu keputusan admin (ujian ulang / setujui).
     pub cbt_keputusan: AntreanItem,
+    /// Calon yang berkasnya terverifikasi dan menunggu seleksi rapor oleh admin.
+    pub seleksi_rapor: AntreanItem,
+    /// Calon yang sudah selesai CBT dan menunggu seleksi interview oleh admin.
+    pub seleksi_interview: AntreanItem,
     /// Jumlah seluruh berkas/bukti/keputusan yang menunggu.
     pub total: i64,
 }

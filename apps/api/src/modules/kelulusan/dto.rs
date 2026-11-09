@@ -133,6 +133,13 @@ pub struct DrafKelulusanItemDto {
     pub prodi_diterima_nama: Option<String>,
     pub pilihan_ke: Option<i32>,
     pub catatan: Option<String>,
+    /// Hasil seleksi rapor: MENUNGGU | LULUS | TIDAK_LULUS
+    pub status_seleksi_rapor: String,
+    /// Hasil seleksi interview: MENUNGGU | LULUS | TIDAK_LULUS
+    pub status_seleksi_interview: String,
+    pub nilai_seleksi_interview: Option<f64>,
+    /// Hasil CBT terakhir memenuhi passing grade (None = belum ujian)
+    pub lulus_cbt: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -200,11 +207,15 @@ pub struct DaftarUlangInfoResponse {
     pub nomor_loa: Option<String>,
     pub tagihan: Option<TagihanDaftarUlangDto>,
     pub berkas_list: Vec<BerkasDaftarUlang>,
+    /// Potongan beasiswa DPP & SKS jalur READY (persen); 0 bila tidak ada.
+    pub potongan_persen: i32,
+    /// Benefit tambahan jalur (mis. Duta UPITRA, Student Leadership Camp Forum).
+    pub benefit_jalur: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, Validate)]
 pub struct UploadBerkasDaftarUlangRequest {
-    pub jenis_berkas: String, // 'SURAT_PERNYATAAN_MABA', 'SURAT_BEBAS_NARKOBA', 'AKTA_KELAHIRAN', 'IJAZAH_LEGALISIR'
+    pub jenis_berkas: String, // 'SPKP', 'BERKAS_PERATURAN', 'SURAT_PERNYATAAN_BEASISWA', 'KTP', 'KK', 'TRANSKRIP_NILAI'
     #[validate(length(min = 1, message = "Nama berkas tidak boleh kosong"))]
     pub file_name: String,
     pub mime_type: String,
@@ -268,6 +279,12 @@ pub struct MahasiswaDaftarUlangDto {
     pub status_ukt: String,
     pub total_berkas_valid: i64,
     pub total_berkas_pending: i64,
+    /// Jumlah jenis berkas wajib yang unggahan terbarunya VALID.
+    pub berkas_wajib_valid: i64,
+    /// Jumlah jenis berkas wajib daftar ulang.
+    pub berkas_wajib_total: i64,
+    /// Semua berkas wajib valid: syarat penerbitan NIM.
+    pub semua_berkas_valid: bool,
 }
 
 // ---------------------------------------------------------------------------

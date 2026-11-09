@@ -8,6 +8,9 @@ export type LoginRequest = Schemas["LoginRequest"];
 export type RegisterRequest = Schemas["RegisterRequest"] & {
   sumber_informasi?: string;
   sumber_informasi_lainnya?: string;
+  provinsi_asal_sekolah?: string;
+  kabupaten_asal_sekolah?: string;
+  asal_sekolah?: string;
 };
 export type VerifyEmailRequest = Schemas["VerifyEmailRequest"];
 export type ForgotPasswordRequest = Schemas["ForgotPasswordRequest"];

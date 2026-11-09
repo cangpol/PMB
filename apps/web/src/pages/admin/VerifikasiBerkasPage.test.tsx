@@ -24,6 +24,8 @@ vi.mock("@/hooks/useAntreanVerifikasi", async (asli) => ({
       bukti_bayar: { menunggu: 0, calon: 0, terlama_sejak: null },
       daftar_ulang: { menunggu: 0, calon: 0, terlama_sejak: null },
       cbt_keputusan: { menunggu: 0, calon: 0, terlama_sejak: null },
+      seleksi_rapor: { menunggu: 0, calon: 0, terlama_sejak: null },
+      seleksi_interview: { menunggu: 0, calon: 0, terlama_sejak: null },
       total: 5,
     },
   }),

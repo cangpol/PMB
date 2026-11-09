@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -9,10 +9,10 @@ import {
   Sparkles,
   Save,
   AlertCircle,
-  MapPin,
 } from "lucide-react";
 import { Button, Card, Input, EmptyState } from "@/components/ui";
-import { DATA_WILAYAH_INDONESIA } from "../../data/wilayah";
+import { PilihWilayahDomisili } from "./PilihWilayahDomisili";
+import { AutocompleteSekolah } from "./AutocompleteSekolah";
 
 export interface DefinisiFieldItem {
   id: string;
@@ -170,10 +170,13 @@ function buildDynamicZodSchema(fields: DefinisiFieldItem[]) {
 
       case "wilayah": {
         let wil: z.ZodTypeAny = z.object({
-          provinsi: z.string().min(1, `Pilih Provinsi untuk ${f.label}`),
-          kabupaten: z.string().min(1, `Pilih Kabupaten/Kota untuk ${f.label}`),
-          kecamatan: z.string().optional(),
-          kelurahan: z.string().optional(),
+          negara: z.string().trim().min(1, `Isi Negara untuk ${f.label}`),
+          provinsi: z.string().trim().min(1, `Isi Provinsi untuk ${f.label}`),
+          kabupaten: z
+            .string()
+            .trim()
+            .min(1, `Isi Kabupaten/Kota untuk ${f.label}`),
+          kecamatan: z.string().trim().min(1, `Isi Kecamatan untuk ${f.label}`),
         });
         if (!f.wajib) {
           wil = wil.optional();
@@ -242,6 +245,15 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
     resolver: zodResolver(dynamicSchema),
     defaultValues,
   });
+
+  // Domisili calon dipakai untuk mengurutkan saran nama sekolah
+  const kodeWilayah = fields.find(
+    (f) => f.tipe_field === "wilayah",
+  )?.kode_field;
+  const domisili = useWatch({
+    control,
+    name: kodeWilayah ?? "__tanpa_wilayah__",
+  }) as { provinsi?: string; kabupaten?: string } | undefined;
 
   const groupedFields = useMemo(() => {
     const groups: Record<string, DefinisiFieldItem[]> = {};
@@ -318,15 +330,38 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                     </label>
 
                     {/* RENDER BERDASARKAN TIPE FIELD */}
-                    {field.tipe_field === "teks" && (
-                      <Input
-                        type="text"
-                        placeholder={field.placeholder || undefined}
-                        disabled={readOnly}
-                        {...register(field.kode_field)}
-                        className={`w-full ${error ? "border-biru-600 ring-1 ring-biru-600" : ""}`}
-                      />
-                    )}
+                    {field.tipe_field === "teks" &&
+                      field.kode_field === "asal_sekolah" && (
+                        <Controller
+                          control={control}
+                          name={field.kode_field}
+                          render={({ field: c }) => (
+                            <AutocompleteSekolah
+                              value={c.value ?? ""}
+                              onChange={c.onChange}
+                              onBlur={c.onBlur}
+                              placeholder={field.placeholder || undefined}
+                              disabled={readOnly}
+                              invalid={!!error}
+                              preferensi={{
+                                provinsi: domisili?.provinsi,
+                                kabupaten: domisili?.kabupaten,
+                              }}
+                            />
+                          )}
+                        />
+                      )}
+
+                    {field.tipe_field === "teks" &&
+                      field.kode_field !== "asal_sekolah" && (
+                        <Input
+                          type="text"
+                          placeholder={field.placeholder || undefined}
+                          disabled={readOnly}
+                          {...register(field.kode_field)}
+                          className={`w-full ${error ? "border-biru-600 ring-1 ring-biru-600" : ""}`}
+                        />
+                      )}
 
                     {field.tipe_field === "angka" && (
                       <Input
@@ -445,81 +480,13 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                       <Controller
                         control={control}
                         name={field.kode_field}
-                        defaultValue={{ provinsi: "", kabupaten: "" }}
-                        render={({ field: controllerField }) => {
-                          const currentVal = controllerField.value || {};
-                          const provTerpilih = DATA_WILAYAH_INDONESIA.find(
-                            (p) => p.nama === currentVal.provinsi,
-                          );
-                          const daftarKabupaten = provTerpilih
-                            ? provTerpilih.kabupaten
-                            : [];
-
-                          return (
-                            <div className="p-4 bg-biru-50/40 rounded-xl border border-biru-100 space-y-3">
-                              <div className="flex items-center gap-2 text-xs font-semibold text-biru-900">
-                                <MapPin className="w-4 h-4 text-biru-800" />
-                                <span>
-                                  Pilihan Provinsi & Kabupaten/Kota Resmi
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                  <label className="block text-xs text-biru-800 mb-1">
-                                    Provinsi
-                                  </label>
-                                  <select
-                                    disabled={readOnly}
-                                    value={currentVal.provinsi || ""}
-                                    onChange={(e) => {
-                                      controllerField.onChange({
-                                        provinsi: e.target.value,
-                                        kabupaten: "",
-                                      });
-                                    }}
-                                    className="w-full px-3 py-2 bg-putih border border-biru-200 rounded-lg text-xs text-biru-950 focus:ring-2 focus:ring-biru-800"
-                                  >
-                                    <option value="">
-                                      -- Pilih Provinsi --
-                                    </option>
-                                    {DATA_WILAYAH_INDONESIA.map((prov) => (
-                                      <option key={prov.nama} value={prov.nama}>
-                                        {prov.nama}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-biru-800 mb-1">
-                                    Kabupaten / Kota
-                                  </label>
-                                  <select
-                                    disabled={readOnly || !currentVal.provinsi}
-                                    value={currentVal.kabupaten || ""}
-                                    onChange={(e) => {
-                                      controllerField.onChange({
-                                        ...currentVal,
-                                        kabupaten: e.target.value,
-                                      });
-                                    }}
-                                    className="w-full px-3 py-2 bg-putih border border-biru-200 rounded-lg text-xs text-biru-950 focus:ring-2 focus:ring-biru-800 disabled:bg-biru-100/30"
-                                  >
-                                    <option value="">
-                                      {currentVal.provinsi
-                                        ? "-- Pilih Kabupaten/Kota --"
-                                        : "Pilih provinsi terlebih dahulu"}
-                                    </option>
-                                    {daftarKabupaten.map((kab) => (
-                                      <option key={kab} value={kab}>
-                                        {kab}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }}
+                        render={({ field: controllerField }) => (
+                          <PilihWilayahDomisili
+                            value={controllerField.value}
+                            onChange={controllerField.onChange}
+                            disabled={readOnly}
+                          />
+                        )}
                       />
                     )}
 

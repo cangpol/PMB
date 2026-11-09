@@ -18,6 +18,11 @@ vi.mock("@/hooks/useAntreanVerifikasi", async (asli) => ({
   useNotifikasiAntrean: () => undefined,
 }));
 
+// Notifikasi admin tanpa jaringan
+vi.mock("@/hooks/useNotifikasiAdmin", () => ({
+  useNotifikasiAdmin: () => ({ data: [] }),
+}));
+
 // Sakelar fitur pengawas CBT dikendalikan tes
 const fiturMock = vi.hoisted(() => ({ pengawasCbtAktif: true }));
 vi.mock("@/hooks/useFitur", () => ({
@@ -451,6 +456,8 @@ describe("AdminLayout Component & Mobile Drawer", () => {
         bukti_bayar: item(0),
         daftar_ulang: item(0),
         cbt_keputusan: item(0),
+        seleksi_rapor: item(0),
+        seleksi_interview: item(0),
         total: 3,
       };
       renderDi("/admin/berkas");
@@ -467,6 +474,8 @@ describe("AdminLayout Component & Mobile Drawer", () => {
         bukti_bayar: item(7),
         daftar_ulang: item(0),
         cbt_keputusan: item(0),
+        seleksi_rapor: item(0),
+        seleksi_interview: item(0),
         total: 7,
       };
       // Rute di grup lain: grup Keuangan tertutup, lencana ada di judul grupnya
@@ -480,6 +489,8 @@ describe("AdminLayout Component & Mobile Drawer", () => {
         bukti_bayar: item(0),
         daftar_ulang: item(0),
         cbt_keputusan: item(0),
+        seleksi_rapor: item(0),
+        seleksi_interview: item(0),
         total: 0,
       };
       renderDi("/admin/berkas");
@@ -494,6 +505,8 @@ describe("AdminLayout Component & Mobile Drawer", () => {
         bukti_bayar: item(0),
         daftar_ulang: item(0),
         cbt_keputusan: item(0),
+        seleksi_rapor: item(0),
+        seleksi_interview: item(0),
         total: 250,
       };
       renderDi("/admin/berkas");

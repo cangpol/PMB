@@ -1,73 +1,32 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Clock, CheckCircle2, ArrowRight } from "lucide-react";
+import { Clock, ArrowRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button, Card, StatusBadge } from "../../components/common";
+import { DaftarTahapRingkas } from "../../components/pendaftaran/DaftarTahapRingkas";
+import {
+  periodeGelombang,
+  statusGelombang,
+  tahapDibuka,
+  type GelombangPublik,
+} from "../../lib/gelombangTahap";
 import { SeoHead } from "../../components/common/SeoHead";
 
-interface GelombangItem {
-  id: string;
-  nama: string;
-  keterangan: string;
-  periodePendaftaran: string;
-  periodeUjianCbt: string;
-  pengumumanKelulusan: string;
-  registrasiUlang: string;
-  status: "AKTIF" | "MENDATANG" | "SELESAI";
-  keuntungan: string[];
-}
-
-const JADWAL_GELOMBANG: GelombangItem[] = [
-  {
-    id: "gel-1",
-    nama: "Gelombang 1 (Early Bird)",
-    keterangan:
-      "Periode pendaftaran awal dengan fasilitas beasiswa dan potongan DPP terbesar.",
-    periodePendaftaran: "1 Mei 2026 – 31 Juli 2026",
-    periodeUjianCbt: "Fleksibel Mandiri (Setiap Hari Sabtu)",
-    pengumumanKelulusan: "1x24 Jam setelah Sesi CBT",
-    registrasiUlang: "1 – 15 Agustus 2026",
-    status: "AKTIF",
-    keuntungan: [
-      "Potongan Dana Pengembangan (DPP) Rp 2.000.000",
-      "Prioritas Seleksi Beasiswa Triputra Group 100%",
-      "Bebas memilih sesi ujian CBT & jadwal orientasi",
-    ],
-  },
-  {
-    id: "gel-2",
-    nama: "Gelombang 2 (Reguler)",
-    keterangan:
-      "Periode seleksi reguler untuk seluruh lulusan SMA/SMK/MA dan pindahan.",
-    periodePendaftaran: "1 Agustus 2026 – 31 Agustus 2026",
-    periodeUjianCbt: "Setiap Hari Rabu & Sabtu",
-    pengumumanKelulusan: "1x24 Jam setelah Sesi CBT",
-    registrasiUlang: "1 – 10 September 2026",
-    status: "MENDATANG",
-    keuntungan: [
-      "Potongan Dana Pengembangan (DPP) Rp 1.000.000",
-      "Kesempatan beasiswa prestasi rapor s.d. 50% UKT",
-      "Keringanan angsuran pembayaran registrasi",
-    ],
-  },
-  {
-    id: "gel-3",
-    nama: "Gelombang 3 (Penutupan Kuota)",
-    keterangan:
-      "Periode seleksi akhir untuk pengisian sisa kuota program studi yang masih tersedia.",
-    periodePendaftaran: "1 September 2026 – 20 September 2026",
-    periodeUjianCbt: "Jadwal On-Demand Khusus",
-    pengumumanKelulusan: "Same-Day Announcement",
-    registrasiUlang: "21 – 25 September 2026",
-    status: "MENDATANG",
-    keuntungan: [
-      "Proses verifikasi berkas ekspres 1x24 jam",
-      "Penerbitan NIM instan setelah registrasi",
-      "Masuk ke kelas pembekalan mahasiswa baru langsung",
-    ],
-  },
-];
-
 export const JadwalSeleksiPage: React.FC = () => {
+  // Jadwal diambil dari gelombang yang diatur admin (termasuk tahap 1 / tahap 2)
+  const {
+    data: gelombangList = [],
+    isLoading,
+    isError,
+  } = useQuery<GelombangPublik[]>({
+    queryKey: ["master-gelombang-jadwal"],
+    queryFn: async () => {
+      const res = await fetch("/api/master/gelombang");
+      if (!res.ok) throw new Error("Gagal memuat gelombang");
+      return res.json();
+    },
+  });
+
   return (
     <div className="space-y-16 pb-20">
       <SeoHead
@@ -94,121 +53,129 @@ export const JadwalSeleksiPage: React.FC = () => {
 
       {/* Konten Gelombang */}
       <section className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        {isLoading && (
+          <p className="text-sm text-biru-700 text-center py-10">
+            Memuat jadwal gelombang...
+          </p>
+        )}
+        {isError && (
+          <p className="text-sm text-biru-900 text-center py-10">
+            Jadwal gelombang belum dapat dimuat. Silakan muat ulang halaman.
+          </p>
+        )}
+        {!isLoading && !isError && gelombangList.length === 0 && (
+          <p className="text-sm text-biru-700 text-center py-10">
+            Jadwal gelombang pendaftaran akan segera diumumkan.
+          </p>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {JADWAL_GELOMBANG.map((gel) => (
-            <Card
-              key={gel.id}
-              className={`p-6 sm:p-7 flex flex-col justify-between transition-all ${
-                gel.status === "AKTIF"
-                  ? "border-biru-600 shadow-soft-lg ring-2 ring-biru-500/20 bg-gradient-to-b from-biru-50/50 to-putih"
-                  : "border-biru-200 hover:border-biru-300"
-              }`}
-            >
-              <div className="space-y-5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-biru-600">
-                    {gel.id.toUpperCase()}
-                  </span>
-                  <StatusBadge
-                    status={
-                      gel.status === "AKTIF"
-                        ? "TERVERIFIKASI"
-                        : gel.status === "MENDATANG"
-                          ? "MENUNGGU"
-                          : "DRAFT"
-                    }
-                    label={
-                      gel.status === "AKTIF"
-                        ? "Dibuka Sekarang"
-                        : gel.status === "MENDATANG"
-                          ? "Segera Dibuka"
-                          : "Ditutup"
-                    }
-                  />
+          {gelombangList.map((gel, idx) => {
+            const status = statusGelombang(gel);
+            const nama = gel.nama_gelombang.replace(/\[CONTOH\]\s*/i, "");
+            const dibuka = tahapDibuka(gel);
+            return (
+              <Card
+                key={gel.id}
+                className={`p-6 sm:p-7 flex flex-col justify-between transition-all ${
+                  status === "AKTIF"
+                    ? "border-biru-600 shadow-soft-lg ring-2 ring-biru-500/20 bg-gradient-to-b from-biru-50/50 to-putih"
+                    : "border-biru-200 hover:border-biru-300"
+                }`}
+              >
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-biru-600">
+                      GEL-{idx + 1}
+                    </span>
+                    <StatusBadge
+                      status={
+                        status === "AKTIF"
+                          ? "TERVERIFIKASI"
+                          : status === "MENDATANG"
+                            ? "MENUNGGU"
+                            : "DRAFT"
+                      }
+                      label={
+                        status === "AKTIF"
+                          ? dibuka
+                            ? `${dibuka.nama} Dibuka`
+                            : "Dibuka Sekarang"
+                          : status === "MENDATANG"
+                            ? "Segera Dibuka"
+                            : "Ditutup"
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <h2 className="font-serif text-2xl font-bold text-biru-950">
+                      {nama}
+                    </h2>
+                    {gel.deskripsi && (
+                      <p className="text-xs text-biru-700 mt-1 font-sans leading-relaxed">
+                        {gel.deskripsi}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 text-xs border-y border-biru-100 py-4 font-sans">
+                    <div>
+                      <span className="text-biru-600 block text-[11px]">
+                        Periode Pendaftaran:
+                      </span>
+                      <strong className="text-biru-950 font-semibold">
+                        {periodeGelombang(gel)}
+                      </strong>
+                    </div>
+                    {gel.tahap?.length ? (
+                      <div className="space-y-2">
+                        <span className="text-biru-600 block text-[11px]">
+                          Tahap Pendaftaran:
+                        </span>
+                        <DaftarTahapRingkas tahap={gel.tahap} />
+                      </div>
+                    ) : null}
+                    {gel.info_daftar_ulang && (
+                      <div>
+                        <span className="text-biru-600 block text-[11px]">
+                          Batas Daftar Ulang &amp; NIM:
+                        </span>
+                        <strong className="text-biru-950 font-semibold">
+                          {gel.info_daftar_ulang}
+                        </strong>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div>
-                  <h2 className="font-serif text-2xl font-bold text-biru-950">
-                    {gel.nama}
-                  </h2>
-                  <p className="text-xs text-biru-700 mt-1 font-sans leading-relaxed">
-                    {gel.keterangan}
-                  </p>
-                </div>
-
-                <div className="space-y-3 text-xs border-y border-biru-100 py-4 font-sans">
-                  <div>
-                    <span className="text-biru-600 block text-[11px]">
-                      Periode Pendaftaran:
-                    </span>
-                    <strong className="text-biru-950 font-semibold">
-                      {gel.periodePendaftaran}
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="text-biru-600 block text-[11px]">
-                      Ujian Potensi CBT:
-                    </span>
-                    <strong className="text-biru-950 font-semibold">
-                      {gel.periodeUjianCbt}
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="text-biru-600 block text-[11px]">
-                      Pengumuman Hasil:
-                    </span>
-                    <strong className="text-biru-950 font-semibold">
-                      {gel.pengumumanKelulusan}
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="text-biru-600 block text-[11px]">
-                      Batas Daftar Ulang &amp; NIM:
-                    </span>
-                    <strong className="text-biru-950 font-semibold">
-                      {gel.registrasiUlang}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-biru-900 block">
-                    Benefit Gelombang:
-                  </span>
-                  <ul className="text-xs text-biru-800 space-y-1.5">
-                    {gel.keuntungan.map((b, i) => (
-                      <li key={i} className="flex items-start gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-biru-600 shrink-0 mt-0.5" />
-                        <span className="leading-snug">{b}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              <div className="pt-6 mt-4 border-t border-biru-100">
-                {gel.status === "AKTIF" ? (
-                  <Link to="/register" className="block">
+                <div className="pt-6 mt-4 border-t border-biru-100">
+                  {status === "AKTIF" ? (
+                    <Link to="/register" className="block">
+                      <Button
+                        variant="primary"
+                        className="w-full text-xs font-bold py-2.5 shadow-soft-sm"
+                        rightIcon={<ArrowRight className="w-4 h-4" />}
+                      >
+                        {dibuka
+                          ? `Daftar ${dibuka.nama} Sekarang`
+                          : "Daftar Sekarang"}
+                      </Button>
+                    </Link>
+                  ) : (
                     <Button
-                      variant="primary"
-                      className="w-full text-xs font-bold py-2.5 shadow-soft-sm"
-                      rightIcon={<ArrowRight className="w-4 h-4" />}
+                      variant="outline"
+                      disabled
+                      className="w-full text-xs opacity-60 cursor-not-allowed"
                     >
-                      Daftar Gelombang 1 Sekarang
+                      {status === "SELESAI"
+                        ? "Pendaftaran Ditutup"
+                        : "Pendaftaran Belum Dibuka"}
                     </Button>
-                  </Link>
-                ) : (
-                  <Button
-                    variant="outline"
-                    disabled
-                    className="w-full text-xs opacity-60 cursor-not-allowed"
-                  >
-                    Pendaftaran Belum Dibuka
-                  </Button>
-                )}
-              </div>
-            </Card>
-          ))}
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Informasi Tahapan Hari-H Ujian */}
@@ -234,8 +201,8 @@ export const JadwalSeleksiPage: React.FC = () => {
               <p>
                 Jadwal (sesi) CBT dipilih saat mengisi formulir pendaftaran.
                 Ujian dapat diikuti setelah pembayaran formulir disetujui dan
-                seluruh berkas diverifikasi admin PMB. Sesi online dikerjakan
-                dari rumah; sesi luring di lab kampus dengan presensi pengawas.
+                seluruh berkas diverifikasi admin PMB. Ujian CBT dikerjakan
+                online dari rumah.
               </p>
             </div>
             <div className="p-4 rounded-xl bg-putih border border-biru-200 space-y-1">

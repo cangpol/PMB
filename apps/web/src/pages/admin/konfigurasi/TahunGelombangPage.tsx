@@ -51,6 +51,9 @@ import type {
   CreateTahunAkademikRequest,
 } from "@/types";
 import { useDialog } from "@/components/ui/useDialog";
+import { TahapGelombangEditor } from "@/components/admin/TahapGelombangEditor";
+import { InfoGelombangEditor } from "@/components/admin/InfoGelombangEditor";
+import { teksTahunMasuk } from "@/lib/tahunAkademik";
 
 export const TahunGelombangPage: React.FC = () => {
   const dialog = useDialog();
@@ -346,8 +349,8 @@ export const TahunGelombangPage: React.FC = () => {
             Tahun Akademik & Gelombang
           </h1>
           <p className="text-xs sm:text-sm text-biru-800 font-light mt-1">
-            Kelola periode pendaftaran, masa berlaku gelombang, kuota, dan
-            status buka/tutup.
+            Kelola tahun akademik, periode pendaftaran, masa berlaku gelombang,
+            kuota, dan status buka/tutup.
           </p>
         </div>
       </div>
@@ -602,6 +605,7 @@ export const TahunGelombangPage: React.FC = () => {
                     <TableHead>Kode</TableHead>
                     <TableHead>Nama Tahun Akademik</TableHead>
                     <TableHead>Rentang Tanggal</TableHead>
+                    <TableHead>Tahun Masuk</TableHead>
                     <TableHead className="text-center">Status</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
@@ -617,6 +621,9 @@ export const TahunGelombangPage: React.FC = () => {
                       </TableCell>
                       <TableCell className="text-xs text-biru-900">
                         {t.tgl_mulai} s/d {t.tgl_selesai}
+                      </TableCell>
+                      <TableCell className="text-xs font-semibold text-biru-900">
+                        {teksTahunMasuk(t.tgl_mulai)}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant={t.is_active ? "berhasil" : "netral"}>
@@ -681,7 +688,7 @@ export const TahunGelombangPage: React.FC = () => {
         open={isGelombangModalOpen}
         onOpenChange={setIsGelombangModalOpen}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingGelombang
@@ -835,6 +842,22 @@ export const TahunGelombangPage: React.FC = () => {
               </div>
             </div>
 
+            {editingGelombang ? (
+              <TahapGelombangEditor
+                gelombangId={editingGelombang.id}
+                tglMulai={editingGelombang.tgl_mulai}
+                tglSelesai={editingGelombang.tgl_selesai}
+              />
+            ) : null}
+            {editingGelombang ? (
+              <InfoGelombangEditor gelombangId={editingGelombang.id} />
+            ) : (
+              <p className="text-[11px] text-biru-700">
+                Simpan gelombang terlebih dahulu, lalu buka lagi untuk membagi
+                gelombang menjadi beberapa tahap pendaftaran.
+              </p>
+            )}
+
             <DialogFooter>
               <Button
                 type="button"
@@ -930,6 +953,12 @@ export const TahunGelombangPage: React.FC = () => {
                 />
               </div>
             </div>
+
+            <p className="text-[11px] text-biru-800">
+              Tahun masuk:{" "}
+              <strong>{teksTahunMasuk(tahunForm.tgl_mulai)}</strong>. Dua digit
+              terakhirnya dipakai pada nomor pendaftaran dan NIM calon.
+            </p>
 
             <div className="flex items-center gap-2 pt-2">
               <input

@@ -8,13 +8,10 @@ import {
   ArrowRight,
   Calendar,
   CheckCircle2,
-  BookOpen,
   Award,
-  Briefcase,
   ChevronDown,
   ChevronRight,
   BadgePercent,
-  Gift,
   Globe,
   UserPlus,
   LogIn,
@@ -31,21 +28,23 @@ import {
   STATISTIK_BERANDA,
   HERO_CONTENT,
   GELOMBANG_CONTENT,
+  JALUR_PENERIMAAN,
 } from "../../content/beranda";
 import { getProdiList } from "../../services/prodi";
 import type { components } from "../../types/api";
+import { DaftarTahapRingkas } from "../../components/pendaftaran/DaftarTahapRingkas";
+import {
+  batasPenutupan,
+  judulGelombang,
+  periodeGelombang,
+  statusGelombang,
+  type GelombangPublik,
+} from "../../lib/gelombangTahap";
 
 type CmsPost = components["schemas"]["CmsPostResponse"];
 type CmsFaq = components["schemas"]["CmsFaqResponse"];
 
-interface MasterGelombangItem {
-  id: string;
-  nama_gelombang: string;
-  tgl_mulai: string;
-  tgl_selesai: string;
-  kuota: number;
-  is_active: boolean;
-}
+type MasterGelombangItem = GelombangPublik & { kuota: number };
 
 interface TimeLeft {
   days: number;
@@ -164,18 +163,18 @@ export const HomePage: React.FC = () => {
   const activeGelombang = useMemo(() => {
     if (!gelombangList || gelombangList.length === 0) return null;
     const now = Date.now();
+    // Aktif = gelombang yang menerima pendaftaran saat ini (tahap yang dibuka bila bertahap)
     return (
-      gelombangList.find((g) => {
-        const selesai = new Date(g.tgl_selesai).getTime();
-        return g.is_active && selesai > now;
-      }) || null
+      gelombangList.find(
+        (g) => g.is_active && statusGelombang(g, now) === "AKTIF",
+      ) || null
     );
   }, [gelombangList]);
 
   // Target timestamp: jika ada gelombang aktif gunakan tgl_selesai-nya, jika tidak fallback ke 31 Juli 2026
   const targetTimestamp = useMemo(() => {
-    if (activeGelombang?.tgl_selesai) {
-      return new Date(activeGelombang.tgl_selesai).getTime();
+    if (activeGelombang) {
+      return batasPenutupan(activeGelombang);
     }
     return new Date("2026-07-31T23:59:59").getTime();
   }, [activeGelombang]);
@@ -274,7 +273,9 @@ export const HomePage: React.FC = () => {
 
   // 7. State Simulasi Kalkulator UKT
   const [selectedProdi, setSelectedProdi] = useState<string>("S1-IF");
-  const [selectedJalur, setSelectedJalur] = useState<string>("reguler");
+  const [selectedJalur, setSelectedJalur] = useState<string>(
+    JALUR_PENERIMAAN[3].kode,
+  );
   const [voucherCode, setVoucherCode] = useState<string>("TRIPUTRA2026");
   const [voucherApplied, setVoucherApplied] = useState<boolean>(true);
 
@@ -398,35 +399,30 @@ export const HomePage: React.FC = () => {
       : 0;
   const totalFormulir = biayaFormulir - diskonFormulir;
 
-  // Jadwal Timeline Gelombang
-  const GELOMBANG_SCHEDULE = [
-    {
-      nama: "Gelombang 1 (Early Bird)",
-      periode: "1 Januari – 31 Juli 2026",
-      status: "Dibuka Sekarang",
-      statusBadge: "bg-biru-100 text-biru-950 border-biru-300 font-bold",
-      highlight:
-        "Potongan DPP Rp 2.000.000 & kuota beasiswa kemitraan prioritas utama.",
-      tahap: "Pendaftaran, verifikasi berkas, dan ujian CBT fleksibel.",
-    },
-    {
-      nama: "Gelombang 2 (Reguler & Prestasi)",
-      periode: "1 Agustus – 31 Agustus 2026",
-      status: "Segera Dibuka",
-      statusBadge: "bg-biru-50 text-biru-800 border-biru-200 font-semibold",
-      highlight: "Seleksi berbasis CBT online dan evaluasi prestasi rapor.",
-      tahap: "Ujian CBT mingguan dengan pengumuman hasil berkala.",
-    },
-    {
-      nama: "Gelombang 3 (Mandiri & Jalur RPL)",
-      periode: "1 September – 15 September 2026",
-      status: "Mendatang",
-      statusBadge: "bg-putih text-biru-700 border-biru-200 font-medium",
-      highlight:
-        "Pengisian kuota akhir prodi dan asesmen portofolio praktisi RPL.",
-      tahap: "Sidang kelulusan final dan penerbitan NIM serentak.",
-    },
-  ];
+  // Jadwal Timeline Gelombang (dari gelombang & tahap yang diatur admin)
+  const GELOMBANG_SCHEDULE = (gelombangList ?? []).map((g) => {
+    const status = statusGelombang(g);
+    return {
+      id: g.id,
+      nama: g.nama_gelombang.replace(/\[CONTOH\]\s*/i, ""),
+      periode: periodeGelombang(g),
+      status:
+        status === "AKTIF"
+          ? "Dibuka Sekarang"
+          : status === "MENDATANG"
+            ? "Segera Dibuka"
+            : "Ditutup",
+      statusBadge:
+        status === "AKTIF"
+          ? "bg-biru-100 text-biru-950 border-biru-300 font-bold"
+          : status === "MENDATANG"
+            ? "bg-biru-50 text-biru-800 border-biru-200 font-semibold"
+            : "bg-putih text-biru-700 border-biru-200 font-medium",
+      deskripsi: g.deskripsi ?? "",
+      tahap: g.tahap ?? [],
+      bisaDaftar: status === "AKTIF",
+    };
+  });
 
   return (
     <div className="space-y-20 lg:space-y-28">
@@ -594,11 +590,8 @@ export const HomePage: React.FC = () => {
                 <div className="flex items-center justify-between border-b border-biru-800/80 pb-4">
                   <div>
                     <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-biru-500/20 text-biru-200 border border-biru-400/30 mb-1">
-                      {activeGelombang?.nama_gelombang
-                        ? activeGelombang.nama_gelombang.replace(
-                            /\[CONTOH\]\s*/i,
-                            "",
-                          )
+                      {activeGelombang
+                        ? judulGelombang(activeGelombang)
                         : GELOMBANG_CONTENT.badgeDefault}
                     </span>
                     <h2 className="font-serif text-xl font-bold text-putih">
@@ -661,8 +654,9 @@ export const HomePage: React.FC = () => {
                       <p className="text-sm font-semibold text-putih">
                         {activeGelombang
                           ? new Date(
-                              activeGelombang.tgl_selesai,
+                              batasPenutupan(activeGelombang),
                             ).toLocaleDateString("id-ID", {
+                              timeZone: "Asia/Jakarta",
                               weekday: "long",
                               day: "numeric",
                               month: "long",
@@ -671,6 +665,10 @@ export const HomePage: React.FC = () => {
                           : "Jumat, 31 Juli 2026 • 23:59 WIB"}
                       </p>
                     </div>
+
+                    {activeGelombang?.tahap?.length ? (
+                      <DaftarTahapRingkas tahap={activeGelombang.tahap} gelap />
+                    ) : null}
 
                     {/* Counter Grid Tabular (4 Kotak Berbobot Visual Sama, Font Sans) */}
                     <div className="grid grid-cols-4 gap-2.5 text-center">
@@ -706,27 +704,6 @@ export const HomePage: React.FC = () => {
                           Detik
                         </span>
                       </div>
-                    </div>
-
-                    {/* Daftar Keuntungan dengan Ikon Centang Rapi */}
-                    <div className="rounded-xl bg-biru-950/60 border border-biru-800/80 p-3.5 text-xs text-biru-200 space-y-2">
-                      <div className="flex items-center gap-1.5 font-semibold text-putih">
-                        <Gift className="w-3.5 h-3.5 text-biru-400" />
-                        <span>{GELOMBANG_CONTENT.keuntunganJudul}</span>
-                      </div>
-                      <ul className="space-y-1.5">
-                        {GELOMBANG_CONTENT.keuntunganList.map(
-                          (keuntungan, idx) => (
-                            <li
-                              key={idx}
-                              className="flex items-start gap-2 text-xs sm:text-[13px] text-biru-100 leading-relaxed"
-                            >
-                              <CheckCircle2 className="w-4 h-4 text-biru-400 shrink-0 mt-0.5" />
-                              <span>{keuntungan}</span>
-                            </li>
-                          ),
-                        )}
-                      </ul>
                     </div>
 
                     <Link to="/register" className="block">
@@ -792,174 +769,32 @@ export const HomePage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Jalur 1: Reguler CBT */}
-          <Card className="p-6 flex flex-col justify-between hover:shadow-soft-lg transition-all border-biru-200 hover:border-biru-400">
-            <div className="space-y-4">
-              <div className="h-12 w-12 rounded-xl bg-biru-100 flex items-center justify-center text-biru-800">
-                <BookOpen className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-biru-600">
-                  Ujian Mandiri
-                </span>
-                <h3 className="font-serif text-xl font-bold text-biru-950 mt-1">
-                  Jalur Reguler (CBT)
+          {JALUR_PENERIMAAN.map((j) => (
+            <Card
+              key={j.nama}
+              className="p-6 flex flex-col justify-between hover:shadow-soft-lg transition-all border-biru-200 hover:border-biru-400"
+            >
+              <div className="space-y-3">
+                <div className="h-12 w-12 rounded-xl bg-biru-100 flex items-center justify-center text-biru-800">
+                  <Award className="w-6 h-6" />
+                </div>
+                <h3 className="font-serif text-xl font-bold text-biru-950">
+                  {j.nama}
                 </h3>
+                <p className="text-xs font-semibold uppercase tracking-wider text-biru-600">
+                  {j.keterangan}
+                </p>
+                <ul className="space-y-1.5 border-t border-biru-100 pt-3 text-xs text-biru-800">
+                  {j.ketentuan.map((k) => (
+                    <li key={k} className="flex items-start gap-1.5">
+                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-biru-600" />
+                      <span>{k}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <p className="text-xs text-biru-700 leading-relaxed">
-                Seleksi berbasis ujian Computer-Based Test online mandiri. Ujian
-                fleksibel dapat dikerjakan dari rumah atau laboratorium kampus.
-              </p>
-              <ul className="text-xs text-biru-800 space-y-1.5 pt-2 border-t border-biru-100">
-                <li className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-biru-600 shrink-0" />
-                  <span>Terbuka semua jurusan SMA/SMK/MA</span>
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-biru-600 shrink-0" />
-                  <span>Hasil nilai langsung diumumkan</span>
-                </li>
-              </ul>
-            </div>
-            <div className="pt-6">
-              <Link to="/jalur-masuk#reguler" className="block">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs font-semibold"
-                >
-                  Detail Jalur Reguler &rarr;
-                </Button>
-              </Link>
-            </div>
-          </Card>
-
-          {/* Jalur 2: Prestasi Unggul */}
-          <Card className="p-6 flex flex-col justify-between hover:shadow-soft-lg transition-all border-biru-200 hover:border-biru-400">
-            <div className="space-y-4">
-              <div className="h-12 w-12 rounded-xl bg-biru-100 flex items-center justify-center text-biru-800">
-                <Award className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-biru-600">
-                  Bebas Tes CBT
-                </span>
-                <h3 className="font-serif text-xl font-bold text-biru-950 mt-1">
-                  Jalur Prestasi Rapor
-                </h3>
-              </div>
-              <p className="text-xs text-biru-700 leading-relaxed">
-                Seleksi penilaian nilai rapor semester 1-5 atau sertifikat
-                kejuaraan akademik/non-akademik tingkat kota, provinsi, dan
-                nasional.
-              </p>
-              <ul className="text-xs text-biru-800 space-y-1.5 pt-2 border-t border-biru-100">
-                <li className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-biru-600 shrink-0" />
-                  <span>Rata-rata nilai rapor &ge; 80.0</span>
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-biru-600 shrink-0" />
-                  <span>Peluang beasiswa potongan UKT</span>
-                </li>
-              </ul>
-            </div>
-            <div className="pt-6">
-              <Link to="/jalur-masuk#prestasi" className="block">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs font-semibold"
-                >
-                  Detail Jalur Prestasi &rarr;
-                </Button>
-              </Link>
-            </div>
-          </Card>
-
-          {/* Jalur 3: Beasiswa Triputra */}
-          <Card className="p-6 flex flex-col justify-between hover:shadow-soft-lg transition-all border-biru-300 bg-gradient-to-b from-biru-50/50 to-putih">
-            <div className="space-y-4">
-              <div className="h-12 w-12 rounded-xl bg-biru-900 text-putih flex items-center justify-center">
-                <Briefcase className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-biru-700">
-                  Beasiswa Penuh & Ikatan Kerja
-                </span>
-                <h3 className="font-serif text-xl font-bold text-biru-950 mt-1">
-                  Kemitraan Triputra
-                </h3>
-              </div>
-              <p className="text-xs text-biru-700 leading-relaxed">
-                Program beasiswa prestisius dari Triputra Group mencakup biaya
-                pendidikan penuh, uang saku, dan program magang bersertifikasi.
-              </p>
-              <ul className="text-xs text-biru-800 space-y-1.5 pt-2 border-t border-biru-200">
-                <li className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-biru-600 shrink-0" />
-                  <span>Biaya kuliah 100% ditanggung</span>
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-biru-600 shrink-0" />
-                  <span>Kesempatan karier di Triputra</span>
-                </li>
-              </ul>
-            </div>
-            <div className="pt-6">
-              <Link to="/jalur-masuk#beasiswa" className="block">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="w-full text-xs font-bold"
-                >
-                  Daftar Beasiswa &rarr;
-                </Button>
-              </Link>
-            </div>
-          </Card>
-
-          {/* Jalur 4: Jalur RPL */}
-          <Card className="p-6 flex flex-col justify-between hover:shadow-soft-lg transition-all border-biru-200 hover:border-biru-400">
-            <div className="space-y-4">
-              <div className="h-12 w-12 rounded-xl bg-biru-100 flex items-center justify-center text-biru-800">
-                <GraduationCap className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-biru-600">
-                  Konversi Pengalaman Kerja
-                </span>
-                <h3 className="font-serif text-xl font-bold text-biru-950 mt-1">
-                  Jalur RPL (Tipe A)
-                </h3>
-              </div>
-              <p className="text-xs text-biru-700 leading-relaxed">
-                Rekognisi Pembelajaran Lampau untuk pekerja, profesional, atau
-                lulusan D3/pindahan. Pengalaman kerja diakui hingga puluhan SKS.
-              </p>
-              <ul className="text-xs text-biru-800 space-y-1.5 pt-2 border-t border-biru-100">
-                <li className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-biru-600 shrink-0" />
-                  <span>Lulus Sarjana dalam 2-3 semester</span>
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-biru-600 shrink-0" />
-                  <span>Asesmen portofolio terstruktur</span>
-                </li>
-              </ul>
-            </div>
-            <div className="pt-6">
-              <Link to="/jalur-masuk#rpl" className="block">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs font-semibold"
-                >
-                  Detail Jalur RPL &rarr;
-                </Button>
-              </Link>
-            </div>
-          </Card>
+            </Card>
+          ))}
         </div>
       </motion.section>
 
@@ -1243,10 +1078,11 @@ export const HomePage: React.FC = () => {
                       onChange={(e) => setSelectedJalur(e.target.value)}
                       className="w-full rounded-xl border border-biru-700 bg-biru-950 px-3.5 py-2.5 text-sm text-putih focus:border-biru-400 focus:outline-none"
                     >
-                      <option value="reguler">Jalur Reguler (Tes CBT)</option>
-                      <option value="prestasi">Jalur Prestasi Rapor</option>
-                      <option value="beasiswa">Beasiswa Triputra</option>
-                      <option value="rpl">Jalur RPL (Konversi SKS)</option>
+                      {JALUR_PENERIMAAN.map((j) => (
+                        <option key={j.kode} value={j.kode}>
+                          {j.nama}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -1357,12 +1193,17 @@ export const HomePage: React.FC = () => {
         </div>
 
         <div className="space-y-4 max-w-4xl mx-auto">
+          {GELOMBANG_SCHEDULE.length === 0 && (
+            <p className="text-center text-sm text-biru-700">
+              Jadwal gelombang pendaftaran akan segera diumumkan.
+            </p>
+          )}
           {GELOMBANG_SCHEDULE.map((g) => (
             <div
-              key={g.nama}
+              key={g.id}
               className="p-6 rounded-2xl border border-biru-200 bg-putih shadow-soft-sm hover:shadow-soft-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-6"
             >
-              <div className="space-y-2 sm:max-w-xl">
+              <div className="space-y-3 sm:max-w-xl w-full">
                 <div className="flex flex-wrap items-center gap-2.5">
                   <span
                     className={`px-2.5 py-0.5 rounded-full text-xs border ${g.statusBadge}`}
@@ -1376,24 +1217,26 @@ export const HomePage: React.FC = () => {
                 <h3 className="font-serif text-xl font-bold text-biru-950">
                   {g.nama}
                 </h3>
-                <p className="text-xs text-biru-700 leading-relaxed font-sans">
-                  {g.highlight}
-                </p>
-                <p className="text-[11px] text-biru-600 font-medium">
-                  {g.tahap}
-                </p>
+                {g.deskripsi && (
+                  <p className="text-xs text-biru-700 leading-relaxed font-sans">
+                    {g.deskripsi}
+                  </p>
+                )}
+                {g.tahap.length > 0 && <DaftarTahapRingkas tahap={g.tahap} />}
               </div>
 
               <div className="sm:self-center shrink-0">
-                <Link to="/register">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full sm:w-auto text-xs font-semibold"
-                  >
-                    Daftar Sekarang &rarr;
-                  </Button>
-                </Link>
+                {g.bisaDaftar ? (
+                  <Link to="/register">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full sm:w-auto text-xs font-semibold"
+                    >
+                      Daftar Sekarang &rarr;
+                    </Button>
+                  </Link>
+                ) : null}
               </div>
             </div>
           ))}

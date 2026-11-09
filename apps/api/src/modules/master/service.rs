@@ -140,16 +140,36 @@ impl MasterService {
     }
 
     pub async fn list_gelombang(&self) -> Result<Vec<GelombangResponse>, AppError> {
+        use crate::modules::pendaftaran::tahap;
         let gelombangs = self.repo.get_all_gelombang().await?;
+        let ids: Vec<Uuid> = gelombangs.iter().map(|g| g.id).collect();
+        let semua_tahap = tahap::daftar_tahap_banyak(self.repo.pool(), &ids).await?;
+        let hari_ini = tahap::hari_ini_wib();
+        let info = crate::modules::konfigurasi::info_gelombang::info_banyak(self.repo.pool(), &ids)
+            .await?;
         Ok(gelombangs
             .into_iter()
-            .map(|g| GelombangResponse {
-                id: g.id,
-                nama_gelombang: g.nama_gelombang,
-                tgl_mulai: g.tgl_mulai,
-                tgl_selesai: g.tgl_selesai,
-                kuota: g.kuota,
-                is_active: g.is_active,
+            .map(|g| {
+                let i = info
+                    .iter()
+                    .find(|(id, _)| *id == g.id)
+                    .map(|(_, i)| i.clone())
+                    .unwrap_or_default();
+                GelombangResponse {
+                    deskripsi: i.deskripsi,
+                    info_daftar_ulang: i.info_daftar_ulang,
+                    tahap: semua_tahap
+                        .iter()
+                        .filter(|t| t.gelombang_id == g.id)
+                        .map(|t| t.ke_response(hari_ini))
+                        .collect(),
+                    id: g.id,
+                    nama_gelombang: g.nama_gelombang,
+                    tgl_mulai: g.tgl_mulai,
+                    tgl_selesai: g.tgl_selesai,
+                    kuota: g.kuota,
+                    is_active: g.is_active,
+                }
             })
             .collect())
     }

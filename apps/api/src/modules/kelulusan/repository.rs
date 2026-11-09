@@ -304,6 +304,11 @@ impl KelulusanRepository {
              -- Hanya calon yang sudah menuntaskan seleksi (CBT selesai / berkas terverifikasi
              -- untuk jalur tanpa CBT) atau yang sudah punya hasil (proses ulang ranking).
              WHERE p.status_pendaftaran IN ('MENUNGGU_PENGUMUMAN', 'LULUS', 'CADANGAN', 'TIDAK_LULUS')
+               -- Jalur ber-CBT: hanya yang sudah lulus seleksi rapor dan interview yang diranking,
+               -- sehingga calon yang masih tahap interview tidak ikut diputuskan / dibuka daftar ulangnya.
+               AND p.cbt_dilewati = FALSE
+               AND (j.tipe_seleksi NOT IN ('CBT', 'CAMPURAN')
+                    OR (p.status_seleksi_rapor = 'LULUS' AND p.status_seleksi_interview = 'LULUS'))
                AND ($1::uuid IS NULL OR p.gelombang_id = $1)
              ORDER BY p.created_at ASC",
         )
@@ -441,7 +446,12 @@ impl KelulusanRepository {
                 h.prodi_diterima_id,
                 prd.nama_prodi as prodi_diterima_nama,
                 h.pilihan_ke,
-                h.catatan_sidang as catatan
+                h.catatan_sidang as catatan,
+                p.status_seleksi_rapor,
+                p.status_seleksi_interview,
+                p.nilai_seleksi_interview,
+                (SELECT hu.is_lulus FROM hasil_ujian hu WHERE hu.pendaftar_id = p.id
+                  ORDER BY hu.waktu_submit DESC LIMIT 1) as lulus_cbt
              FROM hasil_kelulusan h
              JOIN pendaftar p ON p.id = h.pendaftar_id
              JOIN users u ON u.id = p.user_id
@@ -478,6 +488,10 @@ impl KelulusanRepository {
                 prodi_diterima_nama: r.get("prodi_diterima_nama"),
                 pilihan_ke: r.get("pilihan_ke"),
                 catatan: r.get("catatan"),
+                status_seleksi_rapor: r.get("status_seleksi_rapor"),
+                status_seleksi_interview: r.get("status_seleksi_interview"),
+                nilai_seleksi_interview: r.get("nilai_seleksi_interview"),
+                lulus_cbt: r.get("lulus_cbt"),
             });
         }
 
@@ -727,7 +741,11 @@ impl KelulusanRepository {
                 h.nomor_surat_loa,
                 COALESCE(t.status, 'BELUM_TERBIT') as status_ukt,
                 COALESCE(SUM(CASE WHEN b.status_verifikasi = 'VALID' THEN 1 ELSE 0 END), 0)::int8 as total_berkas_valid,
-                COALESCE(SUM(CASE WHEN b.status_verifikasi = 'PENDING' THEN 1 ELSE 0 END), 0)::int8 as total_berkas_pending
+                COALESCE(SUM(CASE WHEN b.status_verifikasi = 'PENDING' THEN 1 ELSE 0 END), 0)::int8 as total_berkas_pending,
+                (SELECT COUNT(*) FROM unnest($1::text[]) AS j(jenis)
+                  WHERE (SELECT x.status_verifikasi FROM berkas_daftar_ulang x
+                          WHERE x.pendaftar_id = p.id AND x.jenis_berkas = j.jenis
+                          ORDER BY x.uploaded_at DESC LIMIT 1) = 'VALID')::int8 as berkas_wajib_valid
             FROM hasil_kelulusan h
             JOIN pendaftar p ON p.id = h.pendaftar_id
             JOIN users u ON u.id = p.user_id
@@ -743,11 +761,19 @@ impl KelulusanRepository {
                      h.status_kelulusan, h.status_daftar_ulang, h.nim_resmi, h.nomor_surat_loa, t.status, h.updated_at
             ORDER BY h.updated_at DESC",
         )
+        .bind(
+            crate::modules::kelulusan::handler::JENIS_BERKAS_DAFTAR_ULANG
+                .map(String::from)
+                .to_vec(),
+        )
         .fetch_all(&self.pool)
         .await?;
 
+        let total_wajib =
+            crate::modules::kelulusan::handler::JENIS_BERKAS_DAFTAR_ULANG.len() as i64;
         let mut list = Vec::new();
         for r in rows {
+            let berkas_wajib_valid: i64 = r.get("berkas_wajib_valid");
             list.push(MahasiswaDaftarUlangDto {
                 pendaftar_id: r.get("pendaftar_id"),
                 nomor_pendaftaran: r.get("nomor_pendaftaran"),
@@ -761,6 +787,9 @@ impl KelulusanRepository {
                 status_ukt: r.get("status_ukt"),
                 total_berkas_valid: r.get("total_berkas_valid"),
                 total_berkas_pending: r.get("total_berkas_pending"),
+                berkas_wajib_valid,
+                berkas_wajib_total: total_wajib,
+                semua_berkas_valid: berkas_wajib_valid == total_wajib,
             });
         }
 
@@ -934,7 +963,7 @@ impl KelulusanRepository {
             LEFT JOIN hasil_kelulusan h ON h.pendaftar_id = p.id
             LEFT JOIN sidang_kelulusan s ON s.id = h.sidang_id
             LEFT JOIN program_studi prd ON prd.id = h.prodi_diterima_id
-            WHERE LOWER(p.nomor_pendaftaran) = LOWER($1)
+            WHERE LOWER(p.nomor_pendaftaran) = LOWER($1) OR LOWER(p.nomor_sementara) = LOWER($1)
             "#,
         )
         .bind(clean_nomor)
@@ -1112,13 +1141,16 @@ pub async fn terbitkan_kelulusan_dari_cbt(
 ) -> Result<u64, AppError> {
     let res = sqlx::query(
         "WITH calon AS (
-            SELECT p.id, p.prodi_pilihan_1, hu.nilai_akhir
+            SELECT p.id, p.prodi_pilihan_1, COALESCE(hu.nilai_akhir, 0.0) AS nilai_akhir
             FROM pendaftar p
-            JOIN LATERAL (
+            LEFT JOIN LATERAL (
                 SELECT nilai_akhir, is_lulus FROM hasil_ujian
                 WHERE pendaftar_id = p.id ORDER BY waktu_submit DESC LIMIT 1
-            ) hu ON hu.is_lulus = TRUE
-            WHERE p.status_pendaftaran = 'MENUNGGU_PENGUMUMAN'
+            ) hu ON TRUE
+            -- lulus CBT, atau CBT dilewati karena jalur (READY Early, Partner, dst.)
+            WHERE (hu.is_lulus = TRUE OR p.cbt_dilewati = TRUE)
+              AND p.status_pendaftaran = 'MENUNGGU_PENGUMUMAN'
+              AND p.status_seleksi_interview = 'LULUS'
               AND NOT EXISTS (SELECT 1 FROM hasil_kelulusan hk WHERE hk.pendaftar_id = p.id)
               AND ($1::uuid IS NULL OR p.id = $1)
             ORDER BY p.created_at

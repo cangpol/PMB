@@ -28,6 +28,7 @@ import {
   AlurStepper,
   langkahTerbuka,
   useAlur,
+  langkahPengumuman,
 } from "../../components/pendaftaran/AlurStepper";
 import { LANGKAH_HALAMAN } from "../../components/pendaftaran/GerbangLangkah";
 import { rupiah } from "../../components/pembayaran/BuktiPembayaranCard";
@@ -35,6 +36,7 @@ import {
   formatHariTanggal,
   formatJam,
 } from "../../components/cbt/RiwayatCbtCard";
+import { labelNomorPendaftaran } from "../../lib/nomorPendaftaran";
 
 type DashboardSummary = components["schemas"]["DashboardSummaryResponse"];
 type RingkasanBiaya = components["schemas"]["RingkasanBiayaItem"];
@@ -218,7 +220,7 @@ export const DashboardCalon: React.FC = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs pt-1">
           {[
             {
-              label: "Nomor Pendaftaran",
+              label: labelNomorPendaftaran(summary.nomor_pendaftaran),
               nilai: summary.nomor_pendaftaran ?? "-",
               mono: true,
             },
@@ -382,11 +384,9 @@ export const DashboardCalon: React.FC = () => {
                     {cbt.mode === "ONLINE" ? "Online" : `Luring · ${cbt.ruang}`}
                   </Baris>
                 )}
-                <Baris label="Skor terakhir">
-                  {cbt.nilai_terakhir != null
-                    ? cbt.nilai_terakhir.toFixed(2)
-                    : "Belum ada"}
-                </Baris>
+                {cbt.nilai_terakhir != null && (
+                  <Baris label="Penilaian">Nilai CBT dinilai admin</Baris>
+                )}
                 {cbt.waktu_selesai_terakhir && (
                   <Baris label="Dikerjakan">
                     {formatHariTanggal(cbt.waktu_selesai_terakhir)},{" "}
@@ -409,21 +409,12 @@ export const DashboardCalon: React.FC = () => {
               {summary.pengumuman_status
                 ? (LABEL_PENGUMUMAN[summary.pengumuman_status] ??
                   summary.pengumuman_status)
-                : "Belum diumumkan"}
+                : // Keterangan sama persis dengan langkah "Cek Pengumuman" di tahapan progress
+                  (langkahPengumuman(alur)?.pesan ?? "Belum diumumkan")}
             </Baris>
             {summary.prodi_diterima_nama && (
               <Baris label="Diterima di">{summary.prodi_diterima_nama}</Baris>
             )}
-            {!summary.pengumuman_status &&
-              summary.cbt?.memenuhi_passing_grade != null && (
-                <Baris label="Hasil CBT">
-                  {summary.cbt.memenuhi_passing_grade
-                    ? summary.cbt.disetujui_admin
-                      ? "Disetujui panitia, menunggu pengumuman resmi"
-                      : "Lulus passing grade, menunggu pengumuman resmi"
-                    : "Belum memenuhi passing grade, menunggu keputusan panitia"}
-                </Baris>
-              )}
           </KartuRingkasan>
 
           <KartuRingkasan

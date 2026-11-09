@@ -10,15 +10,23 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Button, Card } from "../../components/common";
-import { getProdiList, formatRupiah } from "../../services/prodi";
+import { formatRupiah } from "../../services/prodi";
+import type { RincianBiayaKuliah } from "../../lib/biayaKuliah";
 import { SeoHead } from "../../components/common/SeoHead";
 
 export const BiayaJalurPage: React.FC = () => {
-  // Query program studi untuk tabel biaya UKT transparan
-  const { data: prodiList = [], isLoading: isProdiLoading } = useQuery({
-    queryKey: ["public-prodi-list"],
-    queryFn: getProdiList,
+  // Rincian biaya kuliah per program studi (diatur admin)
+  const { data: biayaList = [], isLoading: isBiayaLoading } = useQuery<
+    RincianBiayaKuliah[]
+  >({
+    queryKey: ["rincian-biaya-kuliah"],
+    queryFn: async () => {
+      const res = await fetch("/api/master/rincian-biaya-kuliah");
+      if (!res.ok) throw new Error("Gagal memuat rincian biaya kuliah");
+      return res.json();
+    },
   });
+  const rupiah = (n: number) => (n > 0 ? formatRupiah(n) : "-");
 
   const jalurList = [
     {
@@ -199,16 +207,15 @@ export const BiayaJalurPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Tabel Komponen UKT Standar Seluruh 10 Prodi */}
+        {/* Rincian Biaya Kuliah per Program Studi */}
         <div className="pt-8 space-y-6">
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <h2 className="font-serif text-3xl font-bold text-biru-950">
-              Transparansi Uang Kuliah Tunggal (UKT)
+              Rincian Biaya Kuliah
             </h2>
             <p className="text-xs sm:text-sm text-biru-800">
-              Biaya kuliah flat per semester tanpa uang pangkal/gedung
-              tersembunyi. Termasuk biaya ujian, praktikum lab industri, dan
-              akses fasilitas digital kampus.
+              Biaya per program studi: admisi, biaya setiap semester, serta
+              total pembayaran hingga lulus.
             </p>
           </div>
 
@@ -217,58 +224,63 @@ export const BiayaJalurPage: React.FC = () => {
               <thead>
                 <tr className="bg-biru-950 text-putih">
                   <th className="py-3.5 px-4 font-bold">Program Studi</th>
-                  <th className="py-3.5 px-4 font-bold">Jenjang</th>
-                  <th className="py-3.5 px-4 font-bold">Fakultas</th>
+                  <th className="py-3.5 px-4 font-bold text-right">Admisi</th>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                    <th
+                      key={n}
+                      className="py-3.5 px-3 font-bold text-right whitespace-nowrap"
+                    >
+                      Semester {n}
+                    </th>
+                  ))}
                   <th className="py-3.5 px-4 font-bold text-right">
-                    Uang Gedung (SPI)
-                  </th>
-                  <th className="py-3.5 px-4 font-bold text-right">
-                    UKT per Semester
+                    Total Pembayaran hingga Lulus
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-biru-100 text-biru-950 font-sans">
-                {isProdiLoading ? (
+                {isBiayaLoading ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-biru-700">
-                      Memuat data biaya resmi program studi...
+                    <td colSpan={11} className="py-8 text-center text-biru-700">
+                      Memuat rincian biaya kuliah...
                     </td>
                   </tr>
-                ) : prodiList.length > 0 ? (
-                  prodiList.map((prodi) => (
+                ) : biayaList.length > 0 ? (
+                  biayaList.map((b) => (
                     <tr
-                      key={prodi.id}
+                      key={b.prodi_id}
                       className="hover:bg-biru-50/60 transition-colors"
                     >
                       <td className="py-3.5 px-4 font-bold text-biru-950">
                         <Link
-                          to={`/program-studi/${prodi.slug || prodi.id}`}
+                          to={`/program-studi/${b.slug || b.prodi_id}`}
                           className="hover:text-biru-700 hover:underline"
                         >
-                          {prodi.jenjang} {prodi.nama_prodi}
+                          {b.jenjang} {b.nama_prodi}
                         </Link>
+                        <span className="block text-[11px] font-normal text-biru-700">
+                          {b.fakultas}
+                        </span>
                       </td>
-                      <td className="py-3.5 px-4 text-biru-800">
-                        {prodi.jenjang === "D3"
-                          ? "Diploma 3 (6 Smt)"
-                          : "Sarjana (8 Smt)"}
+                      <td className="py-3.5 px-4 text-right tabular-nums">
+                        {rupiah(b.admisi)}
                       </td>
-                      <td className="py-3.5 px-4 text-biru-700">
-                        {prodi.fakultas}
-                      </td>
-                      <td className="py-3.5 px-4 text-right text-biru-700 font-semibold tabular-nums">
-                        Rp 0 (Bebas Uang Gedung)
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-bold text-biru-950 tabular-nums">
-                        {prodi.biaya_ukt_min
-                          ? formatRupiah(prodi.biaya_ukt_min)
-                          : "Segera diumumkan"}
+                      {b.semester.map((nilai, i) => (
+                        <td
+                          key={i}
+                          className="py-3.5 px-3 text-right tabular-nums whitespace-nowrap"
+                        >
+                          {i < b.jumlah_semester ? rupiah(nilai) : "-"}
+                        </td>
+                      ))}
+                      <td className="py-3.5 px-4 text-right font-bold tabular-nums">
+                        {rupiah(b.total_hingga_lulus)}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="py-6 text-center text-biru-700">
+                    <td colSpan={11} className="py-6 text-center text-biru-700">
                       Data biaya program studi sedang dipersiapkan.
                     </td>
                   </tr>
@@ -276,6 +288,23 @@ export const BiayaJalurPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          <ul className="space-y-1.5 text-xs sm:text-sm text-biru-900 font-sans">
+            <li className="flex gap-2">
+              <span aria-hidden="true">*</span>
+              <span>
+                Rincian biaya diatas merupakan <strong>BIAYA NORMAL</strong>{" "}
+                (Tanpa Potongan Beasiswa)
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span aria-hidden="true">*</span>
+              <span>
+                Tersedia Program Jalur Early Bird 2026 berupa potongan Beasiswa
+                100% SKS dan DPP
+              </span>
+            </li>
+          </ul>
 
           <div className="p-4 rounded-2xl bg-biru-50 border border-biru-200 text-xs text-biru-800 flex items-start sm:items-center gap-3">
             <ShieldCheck className="w-5 h-5 text-biru-600 shrink-0 mt-0.5 sm:mt-0" />

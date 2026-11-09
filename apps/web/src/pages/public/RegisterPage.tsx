@@ -18,8 +18,16 @@ import { Input } from "../../components/ui/Input";
 import { Card } from "../../components/ui/Card";
 import { useAuth } from "../../context/useAuth";
 import { tujuanSetelahLogin } from "../../components/auth/akses";
-import { SUMBER_INFORMASI_OPTIONS } from "../../data/sumberInformasi";
+import {
+  SUMBER_INFORMASI_OPTIONS,
+  PLATFORM_MEDIA_SOSIAL,
+  LAINNYA_PLATFORM,
+} from "../../data/sumberInformasi";
+import { PilihAsalSekolah } from "../../components/auth/PilihAsalSekolah";
 import { simpanPilihanAwal } from "../../lib/pilihanAwal";
+
+/** Kode sumber informasi yang memunculkan pilihan asal sekolah */
+const SUMBER_SEKOLAH = "SOSIALISASI_SEKOLAH";
 
 const registerSchema = z
   .object({
@@ -51,15 +59,49 @@ const registerSchema = z
       .string()
       .max(150, "Maksimal 150 karakter")
       .optional(),
+    sumber_platform: z.string().optional(),
+    // Hanya diisi & wajib bila sumber informasi = Sosialisasi di Sekolah
+    provinsi_sekolah: z.string().optional(),
+    kabupaten_sekolah: z.string().optional(),
+    nama_sekolah: z
+      .string()
+      .trim()
+      .max(255, "Maksimal 255 karakter")
+      .optional(),
   })
   .refine((data) => data.password === data.confirm_password, {
     message: "Konfirmasi kata sandi tidak cocok dengan kata sandi di atas",
     path: ["confirm_password"],
   })
+  .superRefine((data, ctx) => {
+    if (data.sumber_informasi !== SUMBER_SEKOLAH) return;
+    const wajib: [keyof typeof data, string][] = [
+      ["provinsi_sekolah", "Pilih provinsi asal sekolah"],
+      ["kabupaten_sekolah", "Pilih kabupaten / kota asal sekolah"],
+      ["nama_sekolah", "Pilih atau ketik nama sekolah Anda"],
+    ];
+    for (const [path, message] of wajib) {
+      if (!String(data[path] ?? "").trim()) {
+        ctx.addIssue({ code: "custom", message, path: [path] });
+      }
+    }
+  })
   .refine(
     (data) =>
-      data.sumber_informasi !== "LAINNYA" ||
-      !!data.sumber_informasi_lainnya?.trim(),
+      data.sumber_informasi !== "MEDIA_SOSIAL" || !!data.sumber_platform,
+    {
+      message: "Pilih media sosialnya",
+      path: ["sumber_platform"],
+    },
+  )
+  .refine(
+    (data) =>
+      !(
+        (data.sumber_informasi === "LAINNYA" ||
+          (data.sumber_informasi === "MEDIA_SOSIAL" &&
+            data.sumber_platform === LAINNYA_PLATFORM)) &&
+        !data.sumber_informasi_lainnya?.trim()
+      ),
     {
       message: "Mohon sebutkan sumber informasi Anda",
       path: ["sumber_informasi_lainnya"],
@@ -93,7 +135,8 @@ export const RegisterPage: React.FC = () => {
     register,
     handleSubmit,
     watch,
-    formState: { errors },
+    setValue,
+    formState: { errors, isSubmitted },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -104,9 +147,24 @@ export const RegisterPage: React.FC = () => {
       confirm_password: "",
       sumber_informasi: "",
       sumber_informasi_lainnya: "",
+      sumber_platform: "",
+      provinsi_sekolah: "",
+      kabupaten_sekolah: "",
+      nama_sekolah: "",
     },
   });
   const sumberDipilih = watch("sumber_informasi");
+  React.useEffect(() => {
+    if (sumberDipilih !== SUMBER_SEKOLAH) {
+      setValue("provinsi_sekolah", "");
+      setValue("kabupaten_sekolah", "");
+      setValue("nama_sekolah", "");
+    }
+  }, [sumberDipilih, setValue]);
+  const platformDipilih = watch("sumber_platform");
+  const perluKeterangan =
+    sumberDipilih === "LAINNYA" ||
+    (sumberDipilih === "MEDIA_SOSIAL" && platformDipilih === LAINNYA_PLATFORM);
 
   const onSubmit = async (values: RegisterFormValues) => {
     setIsSubmitting(true);
@@ -119,9 +177,20 @@ export const RegisterPage: React.FC = () => {
         password: values.password,
         sumber_informasi: values.sumber_informasi,
         sumber_informasi_lainnya:
-          values.sumber_informasi === "LAINNYA"
-            ? values.sumber_informasi_lainnya?.trim()
-            : undefined,
+          values.sumber_informasi === "MEDIA_SOSIAL"
+            ? values.sumber_platform === LAINNYA_PLATFORM
+              ? values.sumber_informasi_lainnya?.trim()
+              : values.sumber_platform
+            : values.sumber_informasi === "LAINNYA"
+              ? values.sumber_informasi_lainnya?.trim()
+              : undefined,
+        ...(values.sumber_informasi === SUMBER_SEKOLAH
+          ? {
+              provinsi_asal_sekolah: values.provinsi_sekolah,
+              kabupaten_asal_sekolah: values.kabupaten_sekolah,
+              asal_sekolah: values.nama_sekolah?.trim(),
+            }
+          : {}),
       });
       setRegisteredEmail(values.email);
     } catch (err: unknown) {
@@ -292,13 +361,39 @@ export const RegisterPage: React.FC = () => {
               {errors.sumber_informasi.message}
             </p>
           )}
-          {sumberDipilih === "LAINNYA" && (
+          {sumberDipilih === "MEDIA_SOSIAL" && (
+            <div className="mt-2">
+              <select
+                aria-label="Nama media sosial"
+                {...register("sumber_platform")}
+                aria-invalid={!!errors.sumber_platform}
+                className="w-full rounded-lg border border-biru-200 bg-putih px-3 py-2.5 text-sm text-biru-950 focus:border-biru-600 focus:outline-none focus:ring-2 focus:ring-biru-600/20"
+              >
+                <option value="">-- Media sosial apa? --</option>
+                {PLATFORM_MEDIA_SOSIAL.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+              {errors.sumber_platform && (
+                <p className="mt-1 text-xs font-semibold text-biru-800">
+                  {errors.sumber_platform.message}
+                </p>
+              )}
+            </div>
+          )}
+          {perluKeterangan && (
             <div className="mt-2">
               <Input
                 {...register("sumber_informasi_lainnya")}
                 type="text"
                 maxLength={150}
-                placeholder="Sebutkan sumber informasi Anda"
+                placeholder={
+                  sumberDipilih === "MEDIA_SOSIAL"
+                    ? "Sebutkan nama media sosialnya"
+                    : "Sebutkan sumber informasi Anda"
+                }
                 aria-invalid={!!errors.sumber_informasi_lainnya}
               />
               {errors.sumber_informasi_lainnya && (
@@ -309,6 +404,27 @@ export const RegisterPage: React.FC = () => {
             </div>
           )}
         </div>
+
+        {sumberDipilih === SUMBER_SEKOLAH && (
+          <PilihAsalSekolah
+            value={{
+              provinsi: watch("provinsi_sekolah") ?? "",
+              kabupaten: watch("kabupaten_sekolah") ?? "",
+              sekolah: watch("nama_sekolah") ?? "",
+            }}
+            onChange={(v) => {
+              const opt = { shouldValidate: isSubmitted };
+              setValue("provinsi_sekolah", v.provinsi, opt);
+              setValue("kabupaten_sekolah", v.kabupaten, opt);
+              setValue("nama_sekolah", v.sekolah, opt);
+            }}
+            errors={{
+              provinsi: errors.provinsi_sekolah?.message,
+              kabupaten: errors.kabupaten_sekolah?.message,
+              sekolah: errors.nama_sekolah?.message,
+            }}
+          />
+        )}
 
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-biru-900 mb-1.5">

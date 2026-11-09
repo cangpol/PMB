@@ -56,7 +56,8 @@ const INFO_DROPDOWN_LINKS = [
 export const PublicNavbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState<boolean>(false);
   const [isScrolled, setIsScrolled] = React.useState<boolean>(false);
-  const [infoDropdownOpen, setInfoDropdownOpen] = React.useState<boolean>(false);
+  const [infoDropdownOpen, setInfoDropdownOpen] =
+    React.useState<boolean>(false);
   const [mobileInfoExpanded, setMobileInfoExpanded] =
     React.useState<boolean>(false);
 
@@ -243,7 +244,9 @@ export const PublicNavbar: React.FC = () => {
                         <Icon className="h-4 w-4" />
                       </div>
                       <div>
-                        <div className="text-xs font-semibold">{item.label}</div>
+                        <div className="text-xs font-semibold">
+                          {item.label}
+                        </div>
                         <div className="text-[11px] text-biru-600 line-clamp-1">
                           {item.description}
                         </div>
@@ -452,4 +455,3 @@ export const PublicNavbar: React.FC = () => {
     </header>
   );
 };
-

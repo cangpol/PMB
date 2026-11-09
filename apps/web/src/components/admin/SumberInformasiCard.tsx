@@ -8,6 +8,7 @@ interface Item {
   label: string;
   jumlah: number;
   persen: number;
+  rincian?: { nama: string; jumlah: number }[];
 }
 
 export const SumberInformasiCard: React.FC = () => {
@@ -62,6 +63,11 @@ export const SumberInformasiCard: React.FC = () => {
                 style={{ width: `${Math.min(100, i.persen)}%` }}
               />
             </div>
+            {i.rincian && i.rincian.length > 0 && (
+              <p className="mt-1 text-[11px] text-biru-700">
+                {i.rincian.map((r) => `${r.nama} ${r.jumlah}`).join(" · ")}
+              </p>
+            )}
           </li>
         ))}
       </ul>

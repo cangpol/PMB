@@ -105,7 +105,7 @@ use crate::{
         get_sesi_tersedia_handler,
         get_riwayat_handler,
         list_hasil_admin_handler,
-        lanjut_setelah_cbt_handler,
+        tolak_hasil_handler,
         get_rumus_nim_handler,
         arahkan_pilihan_2_handler,
         simpan_rumus_nim_handler,

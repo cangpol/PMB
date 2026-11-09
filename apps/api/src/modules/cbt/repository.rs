@@ -269,6 +269,7 @@ impl CbtRepository {
                    (SELECT COUNT(*) FROM peserta_sesi ps WHERE ps.sesi_id = s.id) AS terisi
             FROM sesi_ujian s
             WHERE s.is_dibuka_pendaftaran = TRUE
+              AND s.mode = 'ONLINE'
               -- Masih bisa dipilih selama sesi belum berakhir (sesi online sering dibuka berjam-jam)
               AND s.jadwal_selesai > NOW()
               AND s.status NOT IN ('DIBATALKAN', 'SELESAI')
@@ -698,9 +699,9 @@ impl CbtRepository {
         .fetch_one(&mut *tx)
         .await?;
 
-        // Setelah CBT selesai peserta berhenti di MENUNGGU_UJIAN:
-        // - memenuhi passing grade -> peserta menekan tombol "Lanjut" (`lanjut_setelah_cbt`)
-        // - di bawah passing grade -> tertahan sampai admin memutuskan ujian ulang / persetujuan
+        // Setelah CBT selesai peserta berhenti di MENUNGGU_UJIAN. Admin yang menilai lolos atau
+        // tidaknya sesuai passing grade (setujui / tolak / ujian ulang di menu Hasil CBT);
+        // calon tidak melihat hasil lulus/tidaknya.
         sqlx::query(
             "UPDATE pendaftar SET status_pendaftaran = 'MENUNGGU_UJIAN', updated_at = NOW() WHERE id = $1",
         )
@@ -1035,6 +1036,36 @@ impl CbtRepository {
         )
         .await?;
         Ok((pendaftar_id, nilai, lulus))
+    }
+
+    /// Admin menyatakan hasil CBT tidak lolos: pendaftar menjadi TIDAK_LULUS.
+    /// Mengembalikan (pendaftar_id, nilai_akhir).
+    pub async fn tolak_hasil(&self, peserta_sesi_id: Uuid) -> Result<(Uuid, f64), AppError> {
+        let mut tx = self.pool.begin().await?;
+        let cur: Option<(Uuid, f64, String)> = sqlx::query_as(
+            "SELECT h.pendaftar_id, h.nilai_akhir, p.status_pendaftaran
+             FROM hasil_ujian h JOIN pendaftar p ON p.id = h.pendaftar_id
+             WHERE h.peserta_sesi_id = $1 FOR UPDATE OF h, p",
+        )
+        .bind(peserta_sesi_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+        let (pendaftar_id, nilai, status) =
+            cur.ok_or_else(|| AppError::NotFound("Peserta belum memiliki hasil CBT".into()))?;
+        if status != "MENUNGGU_UJIAN" {
+            return Err(AppError::Conflict(
+                "Hasil ini sudah diproses. Gunakan koreksi kandidat di menu Seleksi & Kelulusan."
+                    .into(),
+            ));
+        }
+        sqlx::query(
+            "UPDATE pendaftar SET status_pendaftaran = 'TIDAK_LULUS', updated_at = NOW() WHERE id = $1",
+        )
+        .bind(pendaftar_id)
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        Ok((pendaftar_id, nilai))
     }
 
     /// Izinkan peserta mengulang CBT. Mengembalikan (pendaftar_id, ringkasan hasil lama).

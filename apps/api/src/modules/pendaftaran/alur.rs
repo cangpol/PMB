@@ -33,6 +33,8 @@ pub mod status {
     pub const MENUNGGU_VERIFIKASI_DAFTAR_ULANG: &str = "MENUNGGU_VERIFIKASI_DAFTAR_ULANG";
     pub const DAFTAR_ULANG_LUNAS: &str = "DAFTAR_ULANG_LUNAS";
     pub const TERDAFTAR: &str = "TERDAFTAR";
+    /// Kuota jalur penuh saat daftar ulang; menunggu admin memindahkan ke jalur lain.
+    pub const MENUNGGU_PINDAH_JALUR: &str = "MENUNGGU_PINDAH_JALUR";
 
     /// Calon boleh mengunggah bukti bayar formulir.
     pub const BOLEH_UNGGAH_BUKTI_FORMULIR: &[&str] = &[SUBMITTED, PEMBAYARAN_DITOLAK];
@@ -203,7 +205,7 @@ pub fn peringkat(status_pendaftaran: &str) -> u8 {
         BERKAS_VERIFIED | MENUNGGU_UJIAN => 5,
         MENUNGGU_PENGUMUMAN => 6,
         LULUS | CADANGAN | TIDAK_LULUS => 7,
-        MENUNGGU_VERIFIKASI_DAFTAR_ULANG => 8,
+        MENUNGGU_VERIFIKASI_DAFTAR_ULANG | MENUNGGU_PINDAH_JALUR => 8,
         DAFTAR_ULANG_LUNAS => 9,
         TERDAFTAR => 10,
         _ => 0,
@@ -258,6 +260,8 @@ pub struct KonteksAlur {
     pub nim: Option<String>,
     /// Hasil CBT terbaru memenuhi passing grade (None = belum ada hasil).
     pub cbt_lulus: Option<bool>,
+    /// Seleksi CBT dilewati karena aturan jalur (dinyatakan lulus tanpa ujian).
+    pub cbt_dilewati: bool,
 }
 
 fn langkah(
@@ -451,22 +455,22 @@ pub fn bangun_alur(ctx: &KonteksAlur) -> AlurResponse {
         _ => String::new(),
     };
     list.push(match r {
-        // Lulus CBT: calon menekan tombol "Lanjut" untuk membuka tahap berikutnya
-        _ if s == MENUNGGU_UJIAN && ctx.cbt_lulus == Some(true) => langkah(
+        // Jalur READY tertentu: CBT dilewati dengan keterangan lulus setelah seleksi berkas disetujui
+        _ if ctx.cbt_dilewati && r >= 6 => langkah(
             6,
             "ujian",
             "Ujian CBT",
-            Aktif,
-            "Selamat, nilai CBT Anda memenuhi passing grade. Tekan tombol Lanjut untuk membuka tahap berikutnya.",
-            Some("/portal/ujian"),
+            Selesai,
+            "Seleksi CBT dilewati dan dinyatakan lulus sesuai ketentuan jalur Anda.",
+            None,
         ),
-        // Hasil CBT di bawah passing grade: tertahan sampai panitia memutuskan
+        // CBT selesai: calon tidak diberi tahu lulus/tidaknya; admin yang menilai sesuai passing grade
         _ if s == MENUNGGU_UJIAN => langkah(
             6,
             "ujian",
             "Ujian CBT",
             MenungguAdmin,
-            "Nilai CBT belum memenuhi passing grade. Panitia akan memutuskan ujian ulang atau melanjutkan proses Anda.",
+            "Ujian selesai. Nilai CBT kamu akan kami nilai dulu; admin yang menentukan lolos atau tidaknya sesuai ketentuan passing grade.",
             Some("/portal/ujian"),
         ),
         0..=4 => langkah(
@@ -482,7 +486,7 @@ pub fn bangun_alur(ctx: &KonteksAlur) -> AlurResponse {
             "ujian",
             "Ujian CBT",
             Aktif,
-            format!("Ikuti CBT sesuai jadwal yang Anda pilih.{info_jadwal}"),
+            format!("Setelah dinyatakan lulus seleksi rapor, ikuti CBT online sesuai jadwal yang Anda pilih.{info_jadwal}"),
             Some("/portal/ujian"),
         ),
         _ => langkah(6, "ujian", "Ujian CBT", Selesai, "Ujian selesai.", None),
@@ -503,7 +507,11 @@ pub fn bangun_alur(ctx: &KonteksAlur) -> AlurResponse {
             "pengumuman",
             "Cek Pengumuman",
             MenungguAdmin,
-            "Menunggu pengumuman hasil seleksi.",
+            if ctx.cbt_dilewati {
+                "Seleksi CBT dilewati. Menunggu seleksi wawancara dan pengumuman hasil."
+            } else {
+                "CBT selesai. Menunggu seleksi interview dan pengumuman hasil."
+            },
             Some("/portal/hasil"),
         ),
         TIDAK_LULUS => langkah(
@@ -561,6 +569,14 @@ pub fn bangun_alur(ctx: &KonteksAlur) -> AlurResponse {
             "Bayar Daftar Ulang",
             MenungguAdmin,
             "Bukti pembayaran daftar ulang sedang diperiksa admin PMB.",
+            Some("/portal/daftar-ulang"),
+        ),
+        MENUNGGU_PINDAH_JALUR => langkah(
+            8,
+            "bayar_daftar_ulang",
+            "Bayar Daftar Ulang",
+            MenungguAdmin,
+            "Kuota jalur pilihan Anda sudah terpenuhi. Admin PMB akan memindahkan Anda ke jalur lain; hasil seleksi tetap berlaku.",
             Some("/portal/daftar-ulang"),
         ),
         _ if r >= 9 => langkah(
@@ -692,22 +708,64 @@ mod tests {
     }
 
     #[test]
-    fn cbt_lulus_menunggu_tombol_lanjut_calon() {
-        let a = bangun_alur(&KonteksAlur {
-            status_pendaftaran: Some(status::MENUNGGU_UJIAN.to_string()),
-            cbt_lulus: Some(true),
-            ..Default::default()
-        });
-        assert_eq!(status_of(&a, "ujian"), StatusLangkah::Aktif);
-        assert_eq!(status_of(&a, "pengumuman"), StatusLangkah::Terkunci);
-        assert_eq!(a.langkah_aktif.as_deref(), Some("ujian"));
+    fn cbt_selesai_menunggu_penilaian_admin_tanpa_membedakan_lulus_tidak() {
+        for lulus in [Some(true), Some(false), None] {
+            let a = bangun_alur(&KonteksAlur {
+                status_pendaftaran: Some(status::MENUNGGU_UJIAN.to_string()),
+                cbt_lulus: lulus,
+                ..Default::default()
+            });
+            assert_eq!(status_of(&a, "ujian"), StatusLangkah::MenungguAdmin);
+            assert_eq!(status_of(&a, "pengumuman"), StatusLangkah::Terkunci);
+            let pesan = &a.langkah.iter().find(|l| l.kode == "ujian").unwrap().pesan;
+            assert!(pesan.contains("akan kami nilai dulu"), "{pesan}");
+            assert!(!pesan.to_lowercase().contains("memenuhi"), "{pesan}");
+        }
     }
 
     #[test]
-    fn cbt_di_bawah_passing_grade_tertahan_menunggu_keputusan_panitia() {
-        let a = alur(Some(status::MENUNGGU_UJIAN));
-        assert_eq!(status_of(&a, "ujian"), StatusLangkah::MenungguAdmin);
-        assert_eq!(status_of(&a, "pengumuman"), StatusLangkah::Terkunci);
+    fn cbt_dilewati_jalur_ready_ditampilkan_selesai_lulus() {
+        let a = bangun_alur(&KonteksAlur {
+            status_pendaftaran: Some(status::LULUS.to_string()),
+            cbt_dilewati: true,
+            ..Default::default()
+        });
+        assert_eq!(status_of(&a, "ujian"), StatusLangkah::Selesai);
+        let pesan = &a.langkah.iter().find(|l| l.kode == "ujian").unwrap().pesan;
+        assert!(pesan.contains("dilewati"), "{pesan}");
+
+        // Creator: CBT dilewati tetapi wawancara masih menunggu
+        let a = bangun_alur(&KonteksAlur {
+            status_pendaftaran: Some(status::MENUNGGU_PENGUMUMAN.to_string()),
+            cbt_dilewati: true,
+            ..Default::default()
+        });
+        assert_eq!(status_of(&a, "ujian"), StatusLangkah::Selesai);
+        let p7 = &a
+            .langkah
+            .iter()
+            .find(|l| l.kode == "pengumuman")
+            .unwrap()
+            .pesan;
+        assert!(p7.contains("wawancara"), "{p7}");
+    }
+
+    #[test]
+    fn tahap_interview_belum_membuka_daftar_ulang() {
+        // Selesai CBT, masih menunggu seleksi interview/pengumuman: daftar ulang & registrasi terkunci
+        for st in [status::MENUNGGU_UJIAN, status::MENUNGGU_PENGUMUMAN] {
+            let a = alur(Some(st));
+            assert_eq!(
+                status_of(&a, "bayar_daftar_ulang"),
+                StatusLangkah::Terkunci,
+                "{st}"
+            );
+            assert_eq!(
+                status_of(&a, "registrasi_ulang"),
+                StatusLangkah::Terkunci,
+                "{st}"
+            );
+        }
     }
 
     #[test]

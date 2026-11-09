@@ -155,6 +155,32 @@ pub fn pendaftaran_router() -> Router<AppState> {
         )
         .route("/langkah", get(get_langkah_progress_handler))
         .route("/alur", get(get_alur_handler))
+        // Admin: tahap seleksi, notifikasi, kuota & pindah jalur
+        .route("/admin/seleksi", get(super::seleksi::list_seleksi_handler))
+        .route(
+            "/admin/seleksi/{pendaftar_id}/{tahap}",
+            put(super::seleksi::simpan_hasil_seleksi_handler),
+        )
+        .route(
+            "/admin/notifikasi",
+            get(super::seleksi::list_notifikasi_handler),
+        )
+        .route(
+            "/admin/notifikasi/{id}/baca",
+            post(super::seleksi::baca_notifikasi_handler),
+        )
+        .route(
+            "/admin/kuota-jalur",
+            get(super::seleksi::list_kuota_jalur_handler),
+        )
+        .route(
+            "/admin/pindah-jalur",
+            get(super::seleksi::list_menunggu_pindah_handler),
+        )
+        .route(
+            "/admin/pindah-jalur/{pendaftar_id}",
+            post(super::seleksi::pindah_jalur_handler),
+        )
         // Admin Form Builder (Fields)
         .route(
             "/admin/form-builder/fields",

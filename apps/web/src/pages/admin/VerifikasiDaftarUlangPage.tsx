@@ -38,6 +38,9 @@ interface MahasiswaDaftarUlangItem {
   status_ukt: string;
   total_berkas_valid: number;
   total_berkas_pending: number;
+  berkas_wajib_valid: number;
+  berkas_wajib_total: number;
+  semua_berkas_valid: boolean;
 }
 
 export const VerifikasiDaftarUlangPage: React.FC = () => {
@@ -232,6 +235,12 @@ export const VerifikasiDaftarUlangPage: React.FC = () => {
       filterStatus === "ALL" || item.status_daftar_ulang === filterStatus;
     return matchSearch && matchStatus;
   });
+
+  // Data terkini calon yang sedang diperiksa (daftar dimuat ulang setelah tiap verifikasi)
+  const terkiniInspeksi = inspectStudent
+    ? (items.find((i) => i.pendaftar_id === inspectStudent.pendaftar_id) ??
+      inspectStudent)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -433,6 +442,10 @@ export const VerifikasiDaftarUlangPage: React.FC = () => {
                       ) : (
                         <span className="text-biru-600 font-normal italic">
                           Belum terbit
+                          <span className="block text-[11px] not-italic">
+                            Berkas valid {item.berkas_wajib_valid}/
+                            {item.berkas_wajib_total}
+                          </span>
                         </span>
                       )}
                     </td>
@@ -451,7 +464,13 @@ export const VerifikasiDaftarUlangPage: React.FC = () => {
                             variant="primary"
                             size="sm"
                             onClick={() => handleGenerateNim(item.pendaftar_id)}
-                            className="bg-biru-900 hover:bg-biru-950 text-putih font-bold text-[11px] px-2.5 py-1 gap-1"
+                            disabled={!item.semua_berkas_valid}
+                            title={
+                              item.semua_berkas_valid
+                                ? "Semua berkas valid"
+                                : `NIM baru dapat diterbitkan setelah semua berkas valid (${item.berkas_wajib_valid}/${item.berkas_wajib_total} valid)`
+                            }
+                            className="bg-biru-900 hover:bg-biru-950 text-putih font-bold text-[11px] px-2.5 py-1 gap-1 disabled:opacity-50"
                           >
                             <Sparkles className="w-3 h-3 text-putih" />
                             <span>Terbitkan NIM</span>
@@ -580,7 +599,13 @@ export const VerifikasiDaftarUlangPage: React.FC = () => {
                     onClick={() =>
                       handleGenerateNim(inspectStudent.pendaftar_id)
                     }
-                    className="bg-biru-900 hover:bg-biru-950 text-putih font-bold gap-1 text-xs"
+                    disabled={!terkiniInspeksi?.semua_berkas_valid}
+                    title={
+                      terkiniInspeksi?.semua_berkas_valid
+                        ? "Semua berkas valid"
+                        : "NIM baru dapat diterbitkan setelah semua berkas valid"
+                    }
+                    className="bg-biru-900 hover:bg-biru-950 text-putih font-bold gap-1 text-xs disabled:opacity-50"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-putih" />
                     <span>Terbitkan NIM Sekarang</span>

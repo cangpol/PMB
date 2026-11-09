@@ -196,6 +196,16 @@ const VerifikasiKeuanganPage = lazy(() =>
     default: m.VerifikasiKeuanganPage,
   })),
 );
+const LaporanRegistrasiPage = lazy(() =>
+  import("./pages/admin/LaporanRegistrasiPage").then((m) => ({
+    default: m.LaporanRegistrasiPage,
+  })),
+);
+const SeleksiTahapPage = lazy(() =>
+  import("./pages/admin/SeleksiTahapPage").then((m) => ({
+    default: m.SeleksiTahapPage,
+  })),
+);
 const SeleksiKelulusanPage = lazy(() =>
   import("./pages/admin/SeleksiKelulusanPage").then((m) => ({
     default: m.SeleksiKelulusanPage,
@@ -299,9 +309,19 @@ const JalurMasukConfigPage = lazy(() =>
     default: m.JalurMasukPage,
   })),
 );
+const RincianBiayaKuliahPage = lazy(() =>
+  import("./pages/admin/konfigurasi/RincianBiayaKuliahPage").then((m) => ({
+    default: m.RincianBiayaKuliahPage,
+  })),
+);
 const BiayaMatriksPage = lazy(() =>
   import("./pages/admin/konfigurasi/BiayaMatriksPage").then((m) => ({
     default: m.BiayaMatriksPage,
+  })),
+);
+const PotonganJalurPage = lazy(() =>
+  import("./pages/admin/konfigurasi/PotonganJalurPage").then((m) => ({
+    default: m.PotonganJalurPage,
   })),
 );
 const VoucherPage = lazy(() =>
@@ -571,6 +591,26 @@ export const App: React.FC = () => {
                         </RequireRole>
                       }
                     />
+                    <Route
+                      path="laporan-registrasi"
+                      element={
+                        <RequireRole
+                          allowedRoles={["admin_pmb", "super_admin"]}
+                        >
+                          <LaporanRegistrasiPage />
+                        </RequireRole>
+                      }
+                    />
+                    <Route
+                      path="seleksi-tahap"
+                      element={
+                        <RequireRole
+                          allowedRoles={["admin_pmb", "super_admin"]}
+                        >
+                          <SeleksiTahapPage />
+                        </RequireRole>
+                      }
+                    />
                     <Route path="seleksi" element={<SeleksiKelulusanPage />} />
                     <Route
                       path="daftar-ulang"
@@ -704,6 +744,14 @@ export const App: React.FC = () => {
                       <Route path="prodi" element={<FakultasProdiPage />} />
                       <Route path="jalur" element={<JalurMasukConfigPage />} />
                       <Route path="biaya" element={<BiayaMatriksPage />} />
+                      <Route
+                        path="biaya-kuliah"
+                        element={<RincianBiayaKuliahPage />}
+                      />
+                      <Route
+                        path="potongan-jalur"
+                        element={<PotonganJalurPage />}
+                      />
                       <Route path="vouchers" element={<VoucherPage />} />
                       <Route
                         path="form-builder"

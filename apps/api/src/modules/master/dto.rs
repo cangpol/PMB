@@ -80,4 +80,10 @@ pub struct GelombangResponse {
     pub tgl_selesai: DateTime<Utc>,
     pub kuota: i32,
     pub is_active: bool,
+    /// Tahap pendaftaran gelombang ini (kosong bila gelombang tidak dibagi tahap)
+    #[serde(default)]
+    pub tahap: Vec<crate::modules::pendaftaran::tahap::TahapResponse>,
+    /// Informasi untuk halaman depan (diatur admin)
+    pub deskripsi: Option<String>,
+    pub info_daftar_ulang: Option<String>,
 }

@@ -55,6 +55,8 @@ use crate::{
         list_jalur_admin_handler,
         create_jalur_handler,
         update_jalur_handler,
+        crate::modules::konfigurasi::potongan_jalur::list_potongan_jalur_handler,
+        crate::modules::konfigurasi::potongan_jalur::update_potongan_jalur_handler,
         delete_jalur_handler,
         list_komponen_biaya_handler,
         create_komponen_biaya_handler,
@@ -87,6 +89,8 @@ use crate::{
         KuotaProdiGelombangResponse,
         SetKuotaProdiGelombangRequest,
         JalurDetailResponse,
+        crate::modules::konfigurasi::potongan_jalur::PotonganJalurResponse,
+        crate::modules::konfigurasi::potongan_jalur::UpdatePotonganJalurRequest,
         CreateJalurKonfigurasiRequest,
         UpdateJalurKonfigurasiRequest,
         KomponenBiayaResponse,
@@ -128,6 +132,16 @@ pub fn konfigurasi_router() -> Router<AppState> {
         .route("/gelombang", post(create_gelombang_handler))
         .route("/gelombang/{id}", put(update_gelombang_handler))
         .route("/gelombang/{id}", delete(delete_gelombang_handler))
+        .route(
+            "/gelombang/{id}/info",
+            get(crate::modules::konfigurasi::info_gelombang::get_info_handler)
+                .put(crate::modules::konfigurasi::info_gelombang::simpan_info_handler),
+        )
+        .route(
+            "/gelombang/{id}/tahap",
+            get(crate::modules::pendaftaran::tahap::list_tahap_handler)
+                .put(crate::modules::pendaftaran::tahap::simpan_tahap_handler),
+        )
         // 4. Program Studi & Kuota
         .route("/prodi", get(list_prodi_admin_handler))
         .route("/prodi", post(create_prodi_handler))
@@ -140,6 +154,14 @@ pub fn konfigurasi_router() -> Router<AppState> {
         .route("/jalur", post(create_jalur_handler))
         .route("/jalur/{id}", put(update_jalur_handler))
         .route("/jalur/{id}", delete(delete_jalur_handler))
+        .route(
+            "/potongan-jalur",
+            get(crate::modules::konfigurasi::potongan_jalur::list_potongan_jalur_handler),
+        )
+        .route(
+            "/potongan-jalur/{id}",
+            put(crate::modules::konfigurasi::potongan_jalur::update_potongan_jalur_handler),
+        )
         // 6. Komponen Biaya
         .route("/komponen-biaya", get(list_komponen_biaya_handler))
         .route("/komponen-biaya", post(create_komponen_biaya_handler))
@@ -149,6 +171,10 @@ pub fn konfigurasi_router() -> Router<AppState> {
             delete(delete_komponen_biaya_handler),
         )
         // 7. Matriks Biaya & Kalkulator
+        .route(
+            "/rincian-biaya-kuliah/{prodi_id}",
+            put(crate::modules::master::rincian_biaya::simpan_rincian_biaya_handler),
+        )
         .route("/matriks-biaya", get(list_matriks_biaya_handler))
         .route("/matriks-biaya", post(create_matriks_biaya_handler))
         .route("/matriks-biaya/{id}", put(update_matriks_biaya_handler))

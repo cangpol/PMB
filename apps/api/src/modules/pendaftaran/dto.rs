@@ -302,6 +302,9 @@ pub struct PendaftarDetailResponse {
 pub struct PilihProdiRequest {
     pub jalur_id: Uuid,
     pub gelombang_id: Uuid,
+    /// Tahap gelombang yang dipilih; bila kosong dipakai tahap yang sedang dibuka
+    #[serde(default)]
+    pub tahap_id: Option<Uuid>,
     pub prodi_pilihan_1: Uuid,
     pub prodi_pilihan_2: Option<Uuid>,
 }

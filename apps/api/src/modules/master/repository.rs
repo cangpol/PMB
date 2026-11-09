@@ -91,6 +91,10 @@ impl MasterRepository {
         Ok(jalurs)
     }
 
+    pub fn pool(&self) -> &PgPool {
+        &self.pool
+    }
+
     pub async fn get_all_gelombang(&self) -> Result<Vec<Gelombang>, AppError> {
         let gelombangs = sqlx::query_as::<_, Gelombang>(
             "SELECT id, nama_gelombang, tgl_mulai, tgl_selesai, kuota, is_active, created_at 

@@ -58,6 +58,14 @@ pub fn dashboard_router() -> Router<AppState> {
         .route("/admin/stats", get(get_executive_dashboard_handler))
         .route("/admin/sumber-informasi", get(get_sumber_informasi_handler))
         .route("/admin/export-excel", get(export_excel_dashboard_handler))
+        .route(
+            "/admin/laporan-registrasi",
+            get(crate::modules::dashboard::laporan_registrasi::laporan_registrasi_handler),
+        )
+        .route(
+            "/admin/laporan-registrasi/pdf",
+            get(crate::modules::dashboard::laporan_registrasi::laporan_registrasi_pdf_handler),
+        )
 }
 
 #[utoipa::path(
@@ -181,6 +189,15 @@ pub struct SumberInformasiItem {
     pub label: String,
     pub jumlah: i64,
     pub persen: f64,
+    /// Rincian per nama platform (khusus MEDIA_SOSIAL)
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub rincian: Vec<RincianSumber>,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct RincianSumber {
+    pub nama: String,
+    pub jumlah: i64,
 }
 
 /// Rekap "dari mana calon tahu PMB UPITRA" untuk evaluasi strategi promosi.
@@ -213,6 +230,7 @@ pub async fn get_sumber_informasi_handler(
             label: label.to_string(),
             jumlah: hitung(Some(kode)),
             persen: 0.0,
+            rincian: Vec::new(),
         })
         .collect();
     items.push(SumberInformasiItem {
@@ -220,7 +238,24 @@ pub async fn get_sumber_informasi_handler(
         label: "Belum diisi".to_string(),
         jumlah: hitung(None),
         persen: 0.0,
+        rincian: Vec::new(),
     });
+    let platform: Vec<(Option<String>, i64)> = sqlx::query_as(
+        "SELECT sumber_informasi_lainnya, COUNT(*) FROM users
+         WHERE role = 'calon_mahasiswa' AND sumber_informasi = 'MEDIA_SOSIAL'
+         GROUP BY sumber_informasi_lainnya ORDER BY COUNT(*) DESC",
+    )
+    .fetch_all(&state.db)
+    .await?;
+    if let Some(ms) = items.iter_mut().find(|i| i.kode == "MEDIA_SOSIAL") {
+        ms.rincian = platform
+            .into_iter()
+            .map(|(nama, jumlah)| RincianSumber {
+                nama: nama.unwrap_or_else(|| "Tidak disebutkan".to_string()),
+                jumlah,
+            })
+            .collect();
+    }
     for it in items.iter_mut() {
         it.persen = if total > 0 {
             ((it.jumlah as f64 / total as f64) * 1000.0).round() / 10.0
@@ -256,6 +291,7 @@ pub async fn get_antrean_verifikasi_handler(
         .get_antrean_verifikasi(
             auth_user.is_admin(),
             auth_user.is_admin() || auth_user.is_keuangan(),
+            auth_user.is_admin(),
             auth_user.is_admin(),
             auth_user.is_admin(),
         )

@@ -89,7 +89,7 @@ export const HasilCbtPage: React.FC = () => {
     }
     const perluKeputusan = (x: BarisHasil) =>
       terbaru.has(x.peserta_sesi_id) &&
-      x.is_lulus === false &&
+      x.is_lulus != null &&
       !x.disetujui_admin;
     const lulus = (x: BarisHasil) =>
       terbaru.has(x.peserta_sesi_id) && x.is_lulus === true;
@@ -144,6 +144,37 @@ export const HasilCbtPage: React.FC = () => {
       await dialog.hasil({
         nada: "gagal",
         judul: "Gagal menyetujui",
+        deskripsi: pesanError(e),
+      });
+    }
+  };
+
+  const tolak = async (p: BarisHasil) => {
+    const alasan = await dialog.masukkanAlasan({
+      judul: `Nyatakan ${p.nama_peserta} tidak lolos CBT?`,
+      deskripsi: `Nilai ${p.nilai_akhir?.toFixed(2)}. Calon dinyatakan tidak lulus dan mendapat email pemberitahuan. Alasan hanya tersimpan di log audit.`,
+      label: "Alasan penilaian",
+      placeholder: "Contoh: nilai di bawah passing grade",
+      labelKirim: "Nyatakan Tidak Lolos",
+    });
+    if (!alasan) return;
+    try {
+      await fetchApi(`/api/cbt/admin/hasil/${p.peserta_sesi_id}/tolak`, {
+        method: "POST",
+        body: JSON.stringify({ alasan }),
+      });
+      await qc.invalidateQueries({ queryKey: ["hasil-cbt-admin"] });
+      await qc.invalidateQueries({ queryKey: KUNCI_ANTREAN });
+      await dialog.hasil({
+        nada: "sukses",
+        judul: "Peserta dinyatakan tidak lolos",
+        deskripsi: `${p.nama_peserta} tidak lolos seleksi CBT.`,
+        autoTutupMs: 3000,
+      });
+    } catch (e) {
+      await dialog.hasil({
+        nada: "gagal",
+        judul: "Gagal memproses",
         deskripsi: pesanError(e),
       });
     }
@@ -228,7 +259,7 @@ export const HasilCbtPage: React.FC = () => {
           ["Peserta", data?.total],
           ["Sudah selesai", data?.selesai],
           ["Memenuhi passing grade", jumlahLulus],
-          ["Perlu keputusan admin", jumlahKeputusan],
+          ["Menunggu penilaian admin", jumlahKeputusan],
           ["Rata-rata nilai", data?.rata_rata?.toFixed(2) ?? "-"],
         ].map(([judul, nilai]) => (
           <div
@@ -251,7 +282,7 @@ export const HasilCbtPage: React.FC = () => {
         {(
           [
             ["SEMUA", "Semua"],
-            ["KEPUTUSAN", `Perlu keputusan (${jumlahKeputusan})`],
+            ["KEPUTUSAN", `Menunggu penilaian (${jumlahKeputusan})`],
             ["LULUS", `Memenuhi passing grade (${jumlahLulus})`],
           ] as const
         ).map(([k, label]) => (
@@ -397,6 +428,15 @@ export const HasilCbtPage: React.FC = () => {
                             onClick={() => void setujui(p)}
                           >
                             Setujui
+                          </Button>
+                        )}
+                        {p.is_lulus != null && !p.disetujui_admin && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => void tolak(p)}
+                          >
+                            Tidak Lolos
                           </Button>
                         )}
                         <Button

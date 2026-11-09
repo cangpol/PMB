@@ -31,6 +31,8 @@ pub struct LoaPdfData {
     pub va_mandiri: Option<(String, String)>,
     pub ada_qris: bool,
     pub nomor_registrasi: Option<String>,
+    /// NIM resmi (bila sudah terbit); dicantumkan di tabel biodata surat.
+    pub nim_resmi: Option<String>,
 }
 
 /// Format rupiah dengan pemisah ribuan titik, mis. 5000000 -> "Rp 5.000.000".
@@ -158,13 +160,16 @@ pub fn generate_loa_pdf(data: &LoaPdfData) -> Vec<u8> {
     );
 
     // Tabel biodata
-    let baris: [(&str, &str); 5] = [
+    let mut baris: Vec<(&str, &str)> = vec![
         ("Nomor Pendaftaran", &data.nomor_pendaftaran),
         ("Nama Lengkap", &data.nama_lengkap),
         ("Nomor Induk Kependudukan", &data.nik),
         ("Asal Sekolah", &data.asal_sekolah),
         ("Jalur Penerimaan", &data.jalur_nama),
     ];
+    if let Some(nim) = &data.nim_resmi {
+        baris.push(("Nomor Induk Mahasiswa (NIM)", nim));
+    }
     let tinggi = 20.0;
     let atas = y + 2.0;
     h.garis(KIRI, atas, KIRI + LEBAR, atas, NAVY, 1.0);
@@ -406,7 +411,18 @@ mod tests_pembayaran {
             va_mandiri: Some(("8900012345678".into(), "UPITRA".into())),
             ada_qris: true,
             nomor_registrasi: Some("REG-2027-ABC234".into()),
+            nim_resmi: None,
         }
+    }
+
+    #[test]
+    fn loa_memuat_nim_hanya_bila_sudah_terbit() {
+        let mut d = data(vec![("Biaya Admisi".into(), 5_000_000)]);
+        let tanpa = generate_loa_pdf(&d);
+        assert!(!String::from_utf8_lossy(&tanpa).contains("27310001"));
+        d.nim_resmi = Some("27310001".into());
+        let dengan = generate_loa_pdf(&d);
+        assert!(String::from_utf8_lossy(&dengan).contains("27310001"));
     }
 
     #[test]

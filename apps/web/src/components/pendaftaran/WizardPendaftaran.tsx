@@ -27,9 +27,19 @@ import {
 } from "@/lib/pilihanAwal";
 import type { components } from "@/types/api";
 import { AlurStepper, useAlur } from "./AlurStepper";
+import { boleh_pilihan_2, PESAN_HANYA_PILIHAN_1 } from "../../lib/aturanProdi";
+import {
+  CATATAN_NOMOR_SEMENTARA,
+  labelNomorPendaftaran,
+  nomorSementara,
+} from "../../lib/nomorPendaftaran";
+import { PilihGelombangTahap } from "./PilihGelombangTahap";
+import { pilihAwal, type TahapGelombang } from "../../lib/gelombangTahap";
 
 type Jalur = components["schemas"]["JalurResponse"];
-type Gelombang = components["schemas"]["GelombangResponse"];
+type Gelombang = components["schemas"]["GelombangResponse"] & {
+  tahap?: TahapGelombang[];
+};
 type Prodi = components["schemas"]["ProdiResponse"];
 type SesiTersedia = components["schemas"]["SesiTersediaItem"];
 
@@ -87,6 +97,7 @@ export const WizardPendaftaran: React.FC = () => {
 
   const [jalurId, setJalurId] = useState("");
   const [gelombangId, setGelombangId] = useState("");
+  const [tahapId, setTahapId] = useState("");
   const [prodi1, setProdi1] = useState("");
   const [prodi2, setProdi2] = useState("");
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
@@ -123,9 +134,18 @@ export const WizardPendaftaran: React.FC = () => {
       // pernah memilih; tanpa itu calon wajib memilih sendiri (tidak ada default diam-diam).
       const awal = my ? {} : ambilPilihanAwal();
       setJalurId(my?.jalur_id ?? cariJalurAwal(j, awal.jalur)?.id ?? "");
-      setGelombangId(my?.gelombang_id ?? g[0]?.id ?? "");
+      // Gelombang calon dipertahankan; tahap yang dipilih = tahap yang sedang dibuka
+      const awalGel = pilihAwal(g, my?.gelombang_id);
+      setGelombangId(awalGel.gelombangId);
+      setTahapId(awalGel.tahapId);
       setProdi1(my?.prodi_pilihan_1 ?? cariProdiAwal(p, awal.prodi)?.id ?? "");
-      setProdi2(my?.prodi_pilihan_2 ?? "");
+      // Pilihan 2 lama yang kini dilarang (D3 Keperawatan) dikosongkan
+      const p2 = p.find((x) => x.id === my?.prodi_pilihan_2);
+      setProdi2(
+        p2 && !boleh_pilihan_2(p2.kode_prodi)
+          ? ""
+          : (my?.prodi_pilihan_2 ?? ""),
+      );
       setFormValues(my?.data_formulir ?? {});
       // Lanjutkan dari tahap yang belum diisi
       if (my) {
@@ -202,6 +222,28 @@ export const WizardPendaftaran: React.FC = () => {
       });
       return;
     }
+    const gelTerpilih = gelombangList.find((g) => g.id === gelombangId);
+    if (gelTerpilih?.tahap?.length) {
+      const t = gelTerpilih.tahap.find((x) => x.id === tahapId);
+      if (!t || t.status !== "DIBUKA") {
+        toast({
+          title: "Tahap pendaftaran belum dipilih",
+          description:
+            "Pilih tahap pendaftaran yang sedang dibuka (tahap yang sudah ditutup tidak dapat dipilih).",
+          variant: "peringatan",
+        });
+        return;
+      }
+    }
+    const prodi2Terpilih = prodiList.find((p) => p.id === prodi2);
+    if (prodi2Terpilih && !boleh_pilihan_2(prodi2Terpilih.kode_prodi)) {
+      toast({
+        title: "Pilihan prodi tidak valid",
+        description: PESAN_HANYA_PILIHAN_1,
+        variant: "peringatan",
+      });
+      return;
+    }
     if (prodi2 && prodi2 === prodi1) {
       toast({
         title: "Pilihan prodi tidak valid",
@@ -217,6 +259,7 @@ export const WizardPendaftaran: React.FC = () => {
         body: JSON.stringify({
           jalur_id: jalurId,
           gelombang_id: gelombangId,
+          tahap_id: tahapId || null,
           prodi_pilihan_1: prodi1,
           prodi_pilihan_2: prodi2 || null,
         }),
@@ -334,11 +377,16 @@ export const WizardPendaftaran: React.FC = () => {
       {saya?.nomor_pendaftaran && (
         <div className="p-3 bg-biru-50 border border-biru-200 rounded-2xl shrink-0">
           <span className="text-[11px] font-bold text-biru-700 block uppercase tracking-wider">
-            Nomor Pendaftaran
+            {labelNomorPendaftaran(saya.nomor_pendaftaran)}
           </span>
           <span className="font-mono text-base font-bold text-biru-950">
             {saya.nomor_pendaftaran}
           </span>
+          {nomorSementara(saya.nomor_pendaftaran) && (
+            <span className="text-[11px] text-biru-700 block mt-0.5">
+              {CATATAN_NOMOR_SEMENTARA}
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -455,22 +503,17 @@ export const WizardPendaftaran: React.FC = () => {
                 ))}
               </select>
             </label>
-            <label className="space-y-2 block">
-              <span className="text-xs font-bold text-biru-950 uppercase tracking-wider">
-                Gelombang *
-              </span>
-              <select
-                value={gelombangId}
-                onChange={(e) => setGelombangId(e.target.value)}
-                className={SELECT}
-              >
-                {gelombangList.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.nama_gelombang}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="md:col-span-2">
+              <PilihGelombangTahap
+                daftar={gelombangList}
+                gelombangId={gelombangId}
+                tahapId={tahapId}
+                onChange={(g, t) => {
+                  setGelombangId(g);
+                  setTahapId(t);
+                }}
+              />
+            </div>
             <label className="space-y-2 block">
               <span className="text-xs font-bold text-biru-950 uppercase tracking-wider">
                 Program studi pilihan 1 *
@@ -499,13 +542,18 @@ export const WizardPendaftaran: React.FC = () => {
               >
                 <option value="">-- Tidak memilih --</option>
                 {prodiList
-                  .filter((p) => p.id !== prodi1)
+                  .filter(
+                    (p) => p.id !== prodi1 && boleh_pilihan_2(p.kode_prodi),
+                  )
                   .map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.jenjang} {p.nama_prodi}
                     </option>
                   ))}
               </select>
+              <span className="block text-[11px] text-biru-700">
+                {PESAN_HANYA_PILIHAN_1}
+              </span>
             </label>
           </div>
           {gelombangList.length === 0 && (

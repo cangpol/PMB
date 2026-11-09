@@ -33,9 +33,21 @@ const BARIS: {
   },
   {
     kunci: "cbt_keputusan",
-    judul: "Hasil CBT di bawah passing grade",
+    judul: "Hasil CBT menunggu penilaian",
     tujuan: "/admin/cbt/hasil",
     satuan: "hasil",
+  },
+  {
+    kunci: "seleksi_rapor",
+    judul: "Calon perlu seleksi rapor",
+    tujuan: "/admin/seleksi-tahap?tab=RAPOR",
+    satuan: "calon",
+  },
+  {
+    kunci: "seleksi_interview",
+    judul: "Calon perlu seleksi interview",
+    tujuan: "/admin/seleksi-tahap?tab=INTERVIEW",
+    satuan: "calon",
   },
 ];
 

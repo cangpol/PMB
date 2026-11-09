@@ -45,6 +45,10 @@ pub fn master_router() -> Router<AppState> {
         .route("/fakultas", get(list_fakultas_prodi_handler))
         .route("/jalur", get(list_jalur_handler))
         .route("/gelombang", get(list_gelombang_handler))
+        .route(
+            "/rincian-biaya-kuliah",
+            get(super::rincian_biaya::list_rincian_biaya_handler),
+        )
 }
 
 #[utoipa::path(

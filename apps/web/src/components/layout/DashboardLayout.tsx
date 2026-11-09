@@ -46,7 +46,7 @@ export interface NavItem {
   badge?: string;
   /** Kode langkah alur PMB yang membuka menu ini; kosong = selalu terbuka. */
   langkah?: readonly string[];
-  /** Hanya untuk calon Jalur RPL; terkunci untuk jalur lain. */
+  /** Hanya untuk calon Jalur RPL; disembunyikan untuk jalur lain. */
   khususRpl?: boolean;
 }
 
@@ -111,7 +111,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   userRole,
   userName,
   userEmail,
-  navItems = DASHBOARD_NAV_ITEMS,
+  navItems: semuaNavItems = DASHBOARD_NAV_ITEMS,
 }) => {
   const { user, logout } = useAuth();
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
@@ -121,11 +121,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   /** Menu terkunci bila langkah alurnya belum terbuka (hanya di dalam portal). */
   const bukanJalurRpl = (item: NavItem) =>
     !!alurCtx && !!item.khususRpl && !alurCtx.alur?.jalur_rpl;
+  // Menu khusus RPL disembunyikan (bukan dikunci) bagi calon jalur lain
+  const navItems = semuaNavItems.filter((item) => !bukanJalurRpl(item));
   const terkunci = (item: NavItem) =>
-    bukanJalurRpl(item) ||
-    (!!alurCtx &&
-      !!item.langkah &&
-      !langkahTerbuka(alurCtx.alur, item.langkah));
+    !!alurCtx && !!item.langkah && !langkahTerbuka(alurCtx.alur, item.langkah);
 
   const resolvedRole =
     userRole ||
@@ -194,11 +193,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <div
                   key={item.href}
                   aria-disabled="true"
-                  title={
-                    bukanJalurRpl(item)
-                      ? "Terkunci: hanya untuk calon Jalur RPL"
-                      : "Terkunci: selesaikan langkah sebelumnya"
-                  }
+                  title="Terkunci: selesaikan langkah sebelumnya"
                   className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-biru-200/40 cursor-not-allowed select-none"
                 >
                   <div className="flex items-center gap-3">

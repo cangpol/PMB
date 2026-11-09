@@ -140,7 +140,8 @@ export const ProdiDetailPage: React.FC = () => {
             <div className="space-y-3 max-w-3xl">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <span className="px-3 py-1 rounded-lg bg-biru-100 text-biru-950 font-bold text-xs">
-                  {prodi.jenjang} &middot; {prodi.kode_singkat || prodi.kode_prodi}
+                  {prodi.jenjang} &middot;{" "}
+                  {prodi.kode_singkat || prodi.kode_prodi}
                 </span>
                 {prodi.akreditasi && (
                   <span className="px-2.5 py-1 rounded-lg bg-putih border border-biru-200 text-biru-800 font-semibold text-xs shadow-soft-xs">
@@ -415,7 +416,8 @@ export const ProdiDetailPage: React.FC = () => {
                   Program Studi Lain di {prodi.fakultas}
                 </h2>
                 <p className="text-xs text-biru-700 mt-0.5">
-                  Jelajahi program studi sejenis dalam lingkup fakultas yang sama
+                  Jelajahi program studi sejenis dalam lingkup fakultas yang
+                  sama
                 </p>
               </div>
               <Link

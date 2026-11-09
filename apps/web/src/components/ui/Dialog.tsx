@@ -84,18 +84,27 @@ export const DialogContent: React.FC<DialogContentProps> = ({
 
   const contentRef = useRef<HTMLDivElement>(null);
   const lastActiveRef = useRef<HTMLElement | null>(null);
+  // `context` dibuat ulang tiap Dialog dirender (mis. setiap ketikan di form). Efek tidak boleh
+  // bergantung padanya, kalau tidak fokus dipaksa pindah ke tombol X setiap kali mengetik.
+  const onOpenChangeRef = useRef(context.onOpenChange);
+  onOpenChangeRef.current = context.onOpenChange;
+  const open = context.open;
 
   useEffect(() => {
+    if (!open) return;
+
+    const FOKUSABLE =
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && context.open) {
-        context.onOpenChange(false);
+      if (e.key === "Escape") {
+        onOpenChangeRef.current(false);
+        return;
       }
 
-      if (e.key === "Tab" && context.open && contentRef.current) {
+      if (e.key === "Tab" && contentRef.current) {
         const focusables = Array.from(
-          contentRef.current.querySelectorAll<HTMLElement>(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-          ),
+          contentRef.current.querySelectorAll<HTMLElement>(FOKUSABLE),
         ).filter(
           (el) =>
             !el.hasAttribute("disabled") &&
@@ -124,27 +133,23 @@ export const DialogContent: React.FC<DialogContentProps> = ({
       }
     };
 
-    if (context.open) {
-      lastActiveRef.current = document.activeElement as HTMLElement;
-      document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", handleKeyDown);
-      // Fokuskan elemen pertama yang dapat difokuskan di dalam dialog
-      const focusable = contentRef.current?.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      focusable?.focus();
-    } else {
-      document.body.style.overflow = "";
-      if (lastActiveRef.current) {
-        lastActiveRef.current.focus();
-      }
-    }
+    lastActiveRef.current = document.activeElement as HTMLElement;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Fokus awal hanya saat dialog dibuka: isian pertama (bukan tombol tutup)
+    const awal =
+      contentRef.current?.querySelector<HTMLElement>(
+        "input:not([disabled]), select:not([disabled]), textarea:not([disabled])",
+      ) ?? contentRef.current?.querySelector<HTMLElement>(FOKUSABLE);
+    awal?.focus();
 
     return () => {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKeyDown);
+      lastActiveRef.current?.focus();
     };
-  }, [context.open, context]);
+  }, [open]);
 
   if (!context.open) return null;
 

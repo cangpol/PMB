@@ -3,10 +3,10 @@
 //! Token yang dikenali (huruf besar, dalam kurung kurawal):
 //!   {TAHUN} 4 digit, {TAHUN2} 2 digit, {KODE_JENJANG} (S1=1, S2=2, D3=3, D4=4),
 //!   {JENJANG} (S1/D3/...), {KODE_PRODI} atau {KODE_PRODI:N} (N karakter terakhir),
-//!   {KODE_FAKULTAS}, dan {URUT:N} nomor urut N digit (wajib, tepat satu).
+//!   {KODE_ANGKA} (kode prodi 2 digit, mis. 31), {KODE_FAKULTAS}, dan {URUT:N} nomor urut N digit (wajib, tepat satu).
 //! Karakter lain boleh huruf/angka/tanda hubung/titik/garis miring.
 
-pub const TEMPLATE_BAWAAN: &str = "{TAHUN2}{KODE_JENJANG}{KODE_PRODI:2}{URUT:4}";
+pub const TEMPLATE_BAWAAN: &str = "{TAHUN2}{KODE_ANGKA}{URUT:4}";
 /// Kolom `nim_resmi` bertipe VARCHAR(20).
 pub const PANJANG_MAKS: usize = 20;
 
@@ -25,9 +25,14 @@ pub const LINGKUP: [(&str, &str); 3] = [
     ),
 ];
 
-pub const TOKEN: [(&str, &str, &str); 7] = [
-    ("{TAHUN}", "Tahun masuk 4 digit", "2026"),
-    ("{TAHUN2}", "Tahun masuk 2 digit", "26"),
+pub const TOKEN: [(&str, &str, &str); 8] = [
+    ("{TAHUN}", "Tahun masuk 4 digit", "2027"),
+    ("{TAHUN2}", "Tahun masuk 2 digit", "27"),
+    (
+        "{KODE_ANGKA}",
+        "Kode prodi 2 digit (mis. 31 Bahasa Inggris)",
+        "31",
+    ),
     (
         "{KODE_JENJANG}",
         "Kode jenjang (S1=1, S2=2, D3=3, D4=4)",
@@ -44,6 +49,8 @@ pub struct KonteksNim {
     pub tahun: i32,
     pub jenjang: String,
     pub kode_prodi: String,
+    /// Kode prodi 2 digit untuk {KODE_ANGKA}
+    pub kode_angka: String,
     pub kode_fakultas: String,
     pub urut: i64,
 }
@@ -56,6 +63,7 @@ enum Potong {
     KodeJenjang,
     Jenjang,
     KodeProdi(Option<usize>),
+    KodeAngka,
     KodeFakultas,
     Urut(usize),
 }
@@ -110,6 +118,7 @@ fn parse(template: &str) -> Result<Vec<Potong>, String> {
                     "KODE_JENJANG" if arg.is_none() => Potong::KodeJenjang,
                     "JENJANG" if arg.is_none() => Potong::Jenjang,
                     "KODE_FAKULTAS" if arg.is_none() => Potong::KodeFakultas,
+                    "KODE_ANGKA" if arg.is_none() => Potong::KodeAngka,
                     "KODE_PRODI" => Potong::KodeProdi(match arg {
                         None => None,
                         a => Some(angka(a, 1, 10, "KODE_PRODI")?),
@@ -154,6 +163,7 @@ pub fn render(template: &str, k: &KonteksNim) -> Result<String, String> {
                 let e = ekor(&k.kode_prodi, n);
                 nim.push_str(&format!("{e:0>n$}"));
             }
+            Potong::KodeAngka => nim.push_str(&k.kode_angka),
             Potong::KodeFakultas => nim.push_str(&k.kode_fakultas),
             Potong::Urut(n) => {
                 let teks = format!("{:0>n$}", k.urut, n = n);
@@ -200,6 +210,7 @@ pub fn validasi(template: &str, maks_prodi: usize, maks_fakultas: usize) -> Resu
         tahun: 2026,
         jenjang: "S1".to_string(),
         kode_prodi: "A".repeat(maks_prodi.max(1)),
+        kode_angka: "99".to_string(),
         kode_fakultas: "B".repeat(maks_fakultas.max(1)),
         urut: 10_i64.pow(urut_digit as u32) - 1,
     };
@@ -234,21 +245,27 @@ mod tests {
             tahun: 2026,
             jenjang: "S1".into(),
             kode_prodi: "02".into(),
+            kode_angka: "31".into(),
             kode_fakultas: "FT".into(),
             urut,
         }
     }
 
     #[test]
-    fn bawaan_sama_dengan_rumus_lama() {
-        assert_eq!(render(TEMPLATE_BAWAAN, &k(1)).unwrap(), "261020001");
-        let d3 = KonteksNim {
-            jenjang: "D3".into(),
-            kode_prodi: "01".into(),
+    fn bawaan_tahun_kode_prodi_urut() {
+        // Tahun masuk 2027, Bahasa Inggris (31), urut 1 -> 27310001
+        let c = KonteksNim {
+            tahun: 2027,
+            ..k(1)
+        };
+        assert_eq!(render(TEMPLATE_BAWAAN, &c).unwrap(), "27310001");
+        let fis = KonteksNim {
+            tahun: 2027,
+            kode_angka: "42".into(),
             urut: 45,
             ..k(1)
         };
-        assert_eq!(render(TEMPLATE_BAWAAN, &d3).unwrap(), "263010045");
+        assert_eq!(render(TEMPLATE_BAWAAN, &fis).unwrap(), "27420045");
         assert!(validasi(TEMPLATE_BAWAAN, 10, 5).is_ok());
     }
 

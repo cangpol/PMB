@@ -8,7 +8,12 @@ import type { components } from "@/types/api";
 export type AntreanVerifikasi =
   components["schemas"]["AntreanVerifikasiResponse"];
 export type JenisAntrean =
-  "berkas" | "bukti_bayar" | "daftar_ulang" | "cbt_keputusan";
+  | "berkas"
+  | "bukti_bayar"
+  | "daftar_ulang"
+  | "cbt_keputusan"
+  | "seleksi_rapor"
+  | "seleksi_interview";
 
 export const KUNCI_ANTREAN = ["antrean-verifikasi"] as const;
 const JEDA_CEK_MS = 30_000;
@@ -39,7 +44,9 @@ const NAMA: Record<JenisAntrean, string> = {
   berkas: "berkas pendaftaran",
   bukti_bayar: "bukti pembayaran",
   daftar_ulang: "berkas daftar ulang",
-  cbt_keputusan: "hasil CBT di bawah passing grade",
+  cbt_keputusan: "hasil CBT menunggu penilaian",
+  seleksi_rapor: "calon perlu seleksi rapor",
+  seleksi_interview: "calon perlu seleksi interview",
 };
 
 /** Kalimat notifikasi untuk tambahan antrean; null bila tidak ada tambahan. */

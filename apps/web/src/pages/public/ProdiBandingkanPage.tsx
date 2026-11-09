@@ -74,7 +74,8 @@ export const ProdiBandingkanPage: React.FC = () => {
 
   // Tambah prodi ke perbandingan
   const handleAddProdi = (newId: string) => {
-    if (!newId || selectedIds.includes(newId) || selectedIds.length >= 3) return;
+    if (!newId || selectedIds.includes(newId) || selectedIds.length >= 3)
+      return;
     const nextIds = [...selectedIds, newId];
     setSearchParams({ ids: nextIds.join(",") });
   };
@@ -171,7 +172,8 @@ export const ProdiBandingkanPage: React.FC = () => {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-biru-800 text-biru-200">
-                            {p.jenjang} &middot; {p.kode_singkat || p.kode_prodi}
+                            {p.jenjang} &middot;{" "}
+                            {p.kode_singkat || p.kode_prodi}
                           </span>
                           <h3 className="font-serif text-lg font-bold text-putih mt-1.5 leading-snug">
                             {p.nama_prodi}
@@ -338,7 +340,8 @@ export const ProdiBandingkanPage: React.FC = () => {
                       key={p.id}
                       className="p-4 border-r last:border-r-0 border-biru-100"
                     >
-                      {p.kompetensi_lulusan && p.kompetensi_lulusan.length > 0 ? (
+                      {p.kompetensi_lulusan &&
+                      p.kompetensi_lulusan.length > 0 ? (
                         <ul className="space-y-1.5">
                           {p.kompetensi_lulusan.map((k, idx) => (
                             <li key={idx} className="flex items-start gap-1.5">

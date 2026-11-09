@@ -319,11 +319,13 @@ pub struct PresignBerkasDaftarUlangRequest {
     pub file_name: String,
 }
 
-pub const JENIS_BERKAS_DAFTAR_ULANG: [&str; 4] = [
-    "SURAT_PERNYATAAN_MABA",
-    "SURAT_BEBAS_NARKOBA",
-    "AKTA_KELAHIRAN",
-    "IJAZAH_LEGALISIR",
+pub const JENIS_BERKAS_DAFTAR_ULANG: [&str; 6] = [
+    "SPKP",
+    "BERKAS_PERATURAN",
+    "SURAT_PERNYATAAN_BEASISWA",
+    "KTP",
+    "KK",
+    "TRANSKRIP_NILAI",
 ];
 
 /// URL unggah berkas registrasi ulang (key berawalan `daftar_ulang/{pendaftar_id}/`).

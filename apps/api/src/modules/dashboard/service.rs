@@ -32,6 +32,7 @@ impl DashboardService {
         bukti_bayar: bool,
         daftar_ulang: bool,
         cbt_keputusan: bool,
+        seleksi: bool,
     ) -> Result<AntreanVerifikasiResponse, AppError> {
         let mut res = AntreanVerifikasiResponse::default();
         // Berkas terbaru per jenis saja: berkas lama yang sudah diunggah ulang tidak ikut dihitung
@@ -67,7 +68,7 @@ impl DashboardService {
                 )
                 .await?;
         }
-        // Hasil CBT terbaru per calon yang belum memenuhi passing grade dan belum diputuskan admin
+        // Hasil CBT terbaru per calon yang sudah selesai ujian dan menunggu dinilai admin
         if cbt_keputusan {
             res.cbt_keputusan = self
                 .hitung_antrean(
@@ -76,15 +77,35 @@ impl DashboardService {
                            FROM hasil_ujian
                            ORDER BY pendaftar_id, waktu_submit DESC) t
                      JOIN pendaftar p ON p.id = t.pendaftar_id
-                     WHERE t.is_lulus = FALSE
-                       AND p.status_pendaftaran IN ('MENUNGGU_UJIAN', 'MENUNGGU_PENGUMUMAN')",
+                     WHERE p.status_pendaftaran = 'MENUNGGU_UJIAN'",
+                )
+                .await?;
+        }
+        // Tahap seleksi: rapor (setelah berkas valid) dan interview (setelah CBT disetujui)
+        if seleksi {
+            res.seleksi_rapor = self
+                .hitung_antrean(
+                    "SELECT COUNT(*)::bigint, COUNT(*)::bigint, MIN(updated_at)
+                     FROM pendaftar
+                     WHERE status_pendaftaran IN ('BERKAS_VERIFIED', 'MENUNGGU_UJIAN')
+                       AND status_seleksi_rapor = 'MENUNGGU'",
+                )
+                .await?;
+            res.seleksi_interview = self
+                .hitung_antrean(
+                    "SELECT COUNT(*)::bigint, COUNT(*)::bigint, MIN(updated_at)
+                     FROM pendaftar
+                     WHERE status_pendaftaran = 'MENUNGGU_PENGUMUMAN'
+                       AND status_seleksi_interview = 'MENUNGGU'",
                 )
                 .await?;
         }
         res.total = res.berkas.menunggu
             + res.bukti_bayar.menunggu
             + res.daftar_ulang.menunggu
-            + res.cbt_keputusan.menunggu;
+            + res.cbt_keputusan.menunggu
+            + res.seleksi_rapor.menunggu
+            + res.seleksi_interview.menunggu;
         Ok(res)
     }
 

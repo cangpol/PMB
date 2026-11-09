@@ -123,7 +123,7 @@ export const CekKelulusanPublikPage: React.FC = () => {
                 type="text"
                 value={nomorInput}
                 onChange={(e) => setNomorInput(e.target.value.toUpperCase())}
-                placeholder="Contoh: PMB-2026-0001"
+                placeholder="Contoh: 270031-3132"
                 aria-label="Nomor Pendaftaran PMB"
                 className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-putih text-biru-950 placeholder:text-biru-400 border border-biru-200 focus:outline-none focus:ring-2 focus:ring-biru-400 text-sm font-semibold tracking-wide uppercase transition-all shadow-soft-sm"
               />
@@ -199,7 +199,11 @@ export const CekKelulusanPublikPage: React.FC = () => {
                 <span>Cari Nomor Lain</span>
               </Button>
               <Link to="/portal/dashboard">
-                <Button variant="secondary" size="sm" className="gap-1.5 text-xs">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                >
                   <LogIn className="w-3.5 h-3.5" />
                   <span>Masuk ke Portal</span>
                 </Button>
@@ -224,8 +228,12 @@ export const CekKelulusanPublikPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-putih/20 backdrop-blur-sm text-xs font-bold uppercase tracking-wider">
-                    {isLulus && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />}
-                    {isCadangan && <Clock className="w-3.5 h-3.5 text-amber-200" />}
+                    {isLulus && (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                    )}
+                    {isCadangan && (
+                      <Clock className="w-3.5 h-3.5 text-amber-200" />
+                    )}
                     <span>
                       {isLulus
                         ? "SELAMAT! ANDA DINYATAKAN LULUS"
@@ -246,7 +254,9 @@ export const CekKelulusanPublikPage: React.FC = () => {
                   <span className="block text-[11px] uppercase tracking-wider text-putih/70">
                     Jalur Penerimaan
                   </span>
-                  <span className="text-sm font-bold block">{data.jalur_nama}</span>
+                  <span className="text-sm font-bold block">
+                    {data.jalur_nama}
+                  </span>
                   <span className="text-xs text-putih/80 block">
                     {data.gelombang_nama}
                   </span>
@@ -293,11 +303,14 @@ export const CekKelulusanPublikPage: React.FC = () => {
                   <span>
                     Diumumkan:{" "}
                     {data.tgl_pengumuman
-                      ? new Date(data.tgl_pengumuman).toLocaleDateString("id-ID", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })
+                      ? new Date(data.tgl_pengumuman).toLocaleDateString(
+                          "id-ID",
+                          {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          },
+                        )
                       : "Resmi"}
                   </span>
                 </div>
@@ -345,7 +358,8 @@ export const CekKelulusanPublikPage: React.FC = () => {
               <p className="text-xs text-biru-800 leading-relaxed font-sans">
                 Nama peserta pada lembar pengecekan publik disensor sesuai
                 regulasi perlindungan data pribadi. Surat keputusan (SK) dan
-                Letter of Acceptance (LoA) lengkap dapat diunduh di Portal Calon.
+                Letter of Acceptance (LoA) lengkap dapat diunduh di Portal
+                Calon.
               </p>
             </div>
 
@@ -358,8 +372,8 @@ export const CekKelulusanPublikPage: React.FC = () => {
               </h3>
               <p className="text-xs text-biru-800 leading-relaxed font-sans">
                 Nomor Pendaftaran tercantum pada bukti formulir pendaftaran yang
-                dikirim ke email akun Anda atau di kartu peserta ujian. Anda juga
-                dapat masuk langsung ke portal calon mahasiswa.
+                dikirim ke email akun Anda atau di kartu peserta ujian. Anda
+                juga dapat masuk langsung ke portal calon mahasiswa.
               </p>
               <div className="pt-1">
                 <Link
@@ -377,4 +391,3 @@ export const CekKelulusanPublikPage: React.FC = () => {
     </div>
   );
 };
-

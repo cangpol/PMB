@@ -8,7 +8,8 @@
 
 use api::modules::pendaftaran::alur::{KonteksAlur, StatusLangkah, bangun_alur, peringkat, status};
 
-const MIGRASI_V2: &str = include_str!("../migrations/20261107000014_alur_pmb_v2.sql");
+// CHECK status terakhir didefinisikan ulang di migrasi jalur READY (menambah MENUNGGU_PINDAH_JALUR)
+const MIGRASI_V2: &str = include_str!("../migrations/20261110000028_jalur_ready_kuota_seleksi.sql");
 
 /// Ambil daftar nilai di dalam CHECK (status_pendaftaran IN (...)) dari migrasi v2.
 fn status_diizinkan_db() -> Vec<String> {
@@ -42,6 +43,7 @@ const SEMUA_STATUS: &[&str] = &[
     status::MENUNGGU_VERIFIKASI_DAFTAR_ULANG,
     status::DAFTAR_ULANG_LUNAS,
     status::TERDAFTAR,
+    status::MENUNGGU_PINDAH_JALUR,
 ];
 
 #[test]

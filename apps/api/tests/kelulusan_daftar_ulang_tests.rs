@@ -795,19 +795,27 @@ fn test_daftar_ulang_tagihan_dan_verifikasi_berkas() {
 
     let mut berkas_list = [
         BerkasItem {
-            jenis: "SURAT_PERNYATAAN_MABA",
+            jenis: "SPKP",
             status: "PENDING",
         },
         BerkasItem {
-            jenis: "SURAT_BEBAS_NARKOBA",
+            jenis: "BERKAS_PERATURAN",
             status: "PENDING",
         },
         BerkasItem {
-            jenis: "AKTA_KELAHIRAN",
+            jenis: "SURAT_PERNYATAAN_BEASISWA",
             status: "PENDING",
         },
         BerkasItem {
-            jenis: "IJAZAH_LEGALISIR",
+            jenis: "KTP",
+            status: "PENDING",
+        },
+        BerkasItem {
+            jenis: "KK",
+            status: "PENDING",
+        },
+        BerkasItem {
+            jenis: "TRANSKRIP_NILAI",
             status: "PENDING",
         },
     ];
@@ -825,10 +833,12 @@ fn test_daftar_ulang_tagihan_dan_verifikasi_berkas() {
     }
 
     let required = [
-        "SURAT_PERNYATAAN_MABA",
-        "SURAT_BEBAS_NARKOBA",
-        "AKTA_KELAHIRAN",
-        "IJAZAH_LEGALISIR",
+        "SPKP",
+        "BERKAS_PERATURAN",
+        "SURAT_PERNYATAAN_BEASISWA",
+        "KTP",
+        "KK",
+        "TRANSKRIP_NILAI",
     ];
     let all_valid = required.iter().all(|req| {
         berkas_list

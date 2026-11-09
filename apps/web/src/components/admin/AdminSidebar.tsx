@@ -29,6 +29,7 @@ import {
   ShieldCheck,
   ClipboardCheck,
   Hash,
+  Megaphone,
 } from "lucide-react";
 import { useAuth } from "@/context";
 import {
@@ -46,7 +47,7 @@ export interface NavSubItem {
   icon: React.ComponentType<{ className?: string }>;
   roles?: string[];
   /** Antrean pemeriksaan yang ditandai dengan lencana angka pada menu ini. */
-  antrean?: JenisAntrean;
+  antrean?: JenisAntrean | JenisAntrean[];
 }
 
 export interface NavGroup {
@@ -78,6 +79,13 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
         icon: UserPlus,
         roles: ["admin_pmb", "super_admin"],
       },
+      {
+        id: "laporan-registrasi",
+        label: "Laporan Registrasi & Sumber",
+        path: "/admin/laporan-registrasi",
+        icon: Megaphone,
+        roles: ["admin_pmb", "super_admin"],
+      },
     ],
   },
   {
@@ -93,6 +101,14 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
         path: "/admin/berkas",
         antrean: "berkas",
         icon: FileCheck2,
+      },
+      {
+        id: "seleksi-tahap",
+        label: "Seleksi & Kuota Jalur",
+        path: "/admin/seleksi-tahap",
+        antrean: ["seleksi_rapor", "seleksi_interview"],
+        icon: ClipboardCheck,
+        roles: ["admin_pmb", "super_admin"],
       },
       {
         id: "master",
@@ -273,6 +289,18 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
         icon: Coins,
       },
       {
+        id: "cfg-biaya-kuliah",
+        label: "Rincian Biaya Kuliah",
+        path: "/admin/konfigurasi/biaya-kuliah",
+        icon: Receipt,
+      },
+      {
+        id: "cfg-potongan-jalur",
+        label: "Potongan per Jalur",
+        path: "/admin/konfigurasi/potongan-jalur",
+        icon: Receipt,
+      },
+      {
         id: "cfg-vouchers",
         label: "Voucher Promosi",
         path: "/admin/konfigurasi/vouchers",
@@ -372,7 +400,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   // Lencana: jumlah berkas/bukti yang menunggu diperiksa
   const { data: antrean } = useAntreanVerifikasi();
   const jumlahItem = (item: NavSubItem): number =>
-    item.antrean && antrean ? antrean[item.antrean].menunggu : 0;
+    item.antrean && antrean
+      ? [item.antrean].flat().reduce((n, k) => n + antrean[k].menunggu, 0)
+      : 0;
   const jumlahGrup = (group: NavGroup): number =>
     group.items.reduce((n, item) => n + jumlahItem(item), 0);
 

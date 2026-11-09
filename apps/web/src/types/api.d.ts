@@ -2598,6 +2598,10 @@ export interface components {
             bukti_bayar: components["schemas"]["AntreanItem"];
             /** @description Hasil CBT di bawah passing grade yang menunggu keputusan admin (ujian ulang / setujui). */
             cbt_keputusan: components["schemas"]["AntreanItem"];
+            /** @description Calon yang berkasnya terverifikasi dan menunggu seleksi rapor oleh admin. */
+            seleksi_rapor: components["schemas"]["AntreanItem"];
+            /** @description Calon yang sudah selesai CBT dan menunggu seleksi interview oleh admin. */
+            seleksi_interview: components["schemas"]["AntreanItem"];
             /** @description Berkas daftar ulang (Verifikasi Daftar Ulang). */
             daftar_ulang: components["schemas"]["AntreanItem"];
             /**

@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Upload, CreditCard, FileCheck, Printer, Lock } from "lucide-react";
+import {
+  Upload,
+  CreditCard,
+  FileCheck,
+  Printer,
+  Lock,
+  Download,
+} from "lucide-react";
 import {
   Card,
   Button,
@@ -14,6 +21,11 @@ import {
   type BuktiPembayaranItem,
 } from "../../components/pembayaran/BuktiPembayaranCard";
 import { AlurStepper, useAlur } from "../../components/pendaftaran/AlurStepper";
+import {
+  PESAN_DAFTAR_ULANG_SELESAI,
+  berkasDaftarUlangLengkap,
+  berkasTerbaru,
+} from "../../lib/berkasDaftarUlang";
 import { KartuMahasiswa } from "../../components/dokumen/KartuMahasiswa";
 import {
   atributAccept,
@@ -65,28 +77,40 @@ interface DaftarUlangResponse {
   nomor_loa?: string | null;
   tagihan?: TagihanDto | null;
   berkas_list: BerkasDaftarUlang[];
+  potongan_persen?: number;
+  benefit_jalur?: string | null;
 }
 
 const REQUIRED_DOCS = [
   {
-    jenis: "SURAT_PERNYATAAN_MABA",
-    title: "Surat Pernyataan Mahasiswa Baru",
-    desc: "Format resmi bermaterai Rp 10.000 yang telah ditandatangani orang tua dan calon maba.",
+    jenis: "SPKP",
+    title: "SPKP",
+    desc: "Unggah SPKP yang telah ditandatangani.",
   },
   {
-    jenis: "SURAT_BEBAS_NARKOBA",
-    title: "Surat Keterangan Bebas Narkoba (SKBN)",
-    desc: "Diterbitkan dari Rumah Sakit / Puskesmas / BNN resmi.",
+    jenis: "BERKAS_PERATURAN",
+    title: "Berkas Peraturan",
+    desc: "Unggah berkas peraturan yang telah ditandatangani.",
   },
   {
-    jenis: "AKTA_KELAHIRAN",
-    title: "Salinan Akta Kelahiran",
-    desc: "Scan dokumen asli akta kelahiran calon mahasiswa.",
+    jenis: "SURAT_PERNYATAAN_BEASISWA",
+    title: "Surat Pernyataan (Beasiswa)",
+    desc: "Surat pernyataan penerima beasiswa yang telah ditandatangani.",
   },
   {
-    jenis: "IJAZAH_LEGALISIR",
-    title: "Ijazah / Surat Keterangan Lulus Legalisir",
-    desc: "Scan ijazah SMA/SMK/MA yang telah dilegalisasi kepala sekolah.",
+    jenis: "KTP",
+    title: "KTP",
+    desc: "Scan atau foto KTP yang jelas dan terbaca.",
+  },
+  {
+    jenis: "KK",
+    title: "KK",
+    desc: "Scan atau foto Kartu Keluarga (KK) yang jelas dan terbaca.",
+  },
+  {
+    jenis: "TRANSKRIP_NILAI",
+    title: "Transkrip Nilai",
+    desc: "Scan transkrip nilai dari sekolah asal.",
   },
 ];
 
@@ -172,9 +196,15 @@ export const DaftarUlangPage: React.FC = () => {
     }
   };
 
-  const getDocStatus = (jenis: string) => {
-    return data?.berkas_list.find((b) => b.jenis_berkas === jenis);
-  };
+  const getDocStatus = (jenis: string) =>
+    data ? berkasTerbaru(data.berkas_list, jenis) : undefined;
+
+  const berkasLengkap =
+    !!data &&
+    berkasDaftarUlangLengkap(
+      data.berkas_list,
+      REQUIRED_DOCS.map((d) => d.jenis),
+    );
 
   const isLunas =
     data?.status_daftar_ulang === "LUNAS" ||
@@ -276,6 +306,57 @@ export const DaftarUlangPage: React.FC = () => {
                 fakultas={data.fakultas}
                 nomorPendaftaran={data.nomor_pendaftaran}
               />
+            </section>
+          )}
+
+          {/* LoA yang memuat NIM, tersedia setelah NIM terbit */}
+          {isTerdaftarMaba && data.nim_resmi && (
+            <section
+              className="rounded-2xl border border-biru-200 bg-putih p-5 flex flex-wrap items-center justify-between gap-3"
+              aria-label="Surat Penerimaan (LoA)"
+            >
+              <div>
+                <h3 className="font-serif text-lg font-bold text-biru-950">
+                  Surat Penerimaan (LoA)
+                </h3>
+                <p className="text-xs text-biru-800">
+                  LoA sudah memuat NIM Anda ({data.nim_resmi}).
+                </p>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => window.open("/api/kelulusan/loa/pdf", "_blank")}
+                className="gap-1.5 text-xs"
+              >
+                <Download className="w-4 h-4" />
+                <span>Unduh LoA (PDF)</span>
+              </Button>
+            </section>
+          )}
+
+          {/* Beasiswa jalur READY */}
+          {((data.potongan_persen ?? 0) > 0 || data.benefit_jalur) && (
+            <section
+              className="rounded-2xl border border-biru-300 bg-biru-50 p-5 space-y-1 text-sm text-biru-950"
+              aria-label="Beasiswa jalur pendaftaran"
+            >
+              <h3 className="font-serif text-lg font-bold">
+                Beasiswa Jalur Pendaftaran Anda
+              </h3>
+              {(data.potongan_persen ?? 0) > 0 && (
+                <p>
+                  Potongan <strong>{data.potongan_persen}%</strong> untuk biaya
+                  DPP dan SKS.
+                </p>
+              )}
+              {data.benefit_jalur && <p>Benefit: {data.benefit_jalur}.</p>}
+              {data.tagihan && data.tagihan.nominal_akhir === 0 && (
+                <p className="font-semibold">
+                  Tagihan daftar ulang Anda Rp 0, sehingga pembayaran otomatis
+                  lunas. Silakan lengkapi berkas registrasi di bawah.
+                </p>
+              )}
             </section>
           )}
 
@@ -398,6 +479,15 @@ export const DaftarUlangPage: React.FC = () => {
                 Unggah berkas registrasi ulang dibuka setelah pembayaran daftar
                 ulang disetujui admin PMB.
               </p>
+            )}
+            {berkasLengkap && !data?.nim_resmi && (
+              <div
+                role="status"
+                className="rounded-xl border border-biru-300 bg-biru-50 p-4 text-sm text-biru-950"
+              >
+                <p className="font-bold">Pendaftaran Anda telah selesai</p>
+                <p>{PESAN_DAFTAR_ULANG_SELESAI}</p>
+              </div>
             )}
             {berkasError && (
               <p className="text-xs font-semibold text-rose-700" role="alert">

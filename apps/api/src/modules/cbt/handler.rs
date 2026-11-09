@@ -41,7 +41,7 @@ use crate::{
     paths(
         get_my_sesi_handler,
         get_riwayat_handler,
-        lanjut_setelah_cbt_handler,
+        tolak_hasil_handler,
         list_hasil_admin_handler,
         setujui_hasil_handler,
         ujian_ulang_handler,
@@ -99,7 +99,6 @@ pub fn cbt_router() -> Router<AppState> {
         .route("/mulai", post(mulai_ujian_handler))
         .route("/autosave", post(autosave_jawaban_handler))
         .route("/submit", post(submit_ujian_handler))
-        .route("/lanjut", post(lanjut_setelah_cbt_handler))
         .route("/pelanggaran", post(lapor_pelanggaran_handler))
         // Jalur Presensi & Pengawas
         .route("/admin/presensi/check-in", post(check_in_presensi_handler))
@@ -109,6 +108,7 @@ pub fn cbt_router() -> Router<AppState> {
         )
         .route("/admin/hasil", get(list_hasil_admin_handler))
         .route("/admin/hasil/{id}/setujui", post(setujui_hasil_handler))
+        .route("/admin/hasil/{id}/tolak", post(tolak_hasil_handler))
         .route("/admin/hasil/{id}/ujian-ulang", post(ujian_ulang_handler))
         .route("/admin/sesi/{id}/snapshot", get(get_sesi_snapshot_handler))
         .route("/admin/sesi/{id}/peserta", get(get_sesi_snapshot_handler))
@@ -155,7 +155,10 @@ pub async fn get_my_sesi_handler(
         })?;
 
     let boleh_ujian = crate::modules::pendaftaran::alur::status::BOLEH_UJIAN
-        .contains(&pendaftar.status_pendaftaran.as_str());
+        .contains(&pendaftar.status_pendaftaran.as_str())
+        && crate::modules::pendaftaran::seleksi::pastikan_lulus_rapor(&state.db, pendaftar.id)
+            .await
+            .is_ok();
     let service = CbtService::new(CbtRepository::new(state.db.clone()));
     let res = service.get_my_sesi_info(pendaftar.id, boleh_ujian).await?;
     Ok(Json(res))
@@ -244,6 +247,9 @@ pub async fn mulai_ujian_handler(
         "Ujian CBT dapat diikuti setelah seluruh berkas pendaftaran Anda diverifikasi admin PMB.",
     )?;
 
+    // Seleksi berurutan: Rapor -> CBT Online -> Interview
+    crate::modules::pendaftaran::seleksi::pastikan_lulus_rapor(&state.db, pendaftar.id).await?;
+
     let service = CbtService::new(CbtRepository::new(state.db.clone()));
     let res = service.mulai_ujian_calon(pendaftar.id, None, None).await?;
     Ok(Json(res))
@@ -313,31 +319,6 @@ pub async fn submit_ujian_handler(
     let service = CbtService::new(CbtRepository::new(state.db.clone()));
     let res = service.submit_ujian_calon(pendaftar.id).await?;
     Ok(Json(res))
-}
-
-#[utoipa::path(
-    post,
-    path = "/api/cbt/lanjut",
-    tag = "CBT Calon",
-    responses(
-        (status = 200, description = "Tahap berikutnya (pengumuman) dibuka", body = AksiHasilCbtResponse),
-        (status = 409, description = "Belum memenuhi passing grade / belum selesai ujian", body = ApiErrorResponse)
-    )
-)]
-pub async fn lanjut_setelah_cbt_handler(
-    auth_user: AuthUser,
-    State(state): State<AppState>,
-) -> Result<impl IntoResponse, AppError> {
-    let pendaftar = PendaftaranRepository::new(state.db.clone())
-        .find_by_user_id(auth_user.user_id)
-        .await?
-        .ok_or_else(|| AppError::NotFound("Data pendaftar tidak ditemukan".to_string()))?;
-    CbtRepository::new(state.db.clone())
-        .lanjut_setelah_cbt(pendaftar.id)
-        .await?;
-    Ok(Json(AksiHasilCbtResponse {
-        pesan: "Tahap berikutnya telah dibuka: menunggu pengumuman hasil seleksi.".to_string(),
-    }))
 }
 
 // =========================================================================
@@ -756,6 +737,54 @@ pub async fn setujui_hasil_handler(
         } else {
             "Hasil CBT disetujui. Peserta dapat melanjutkan proses seleksi.".to_string()
         },
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/cbt/admin/hasil/{id}/tolak",
+    tag = "CBT Pengawas",
+    params(("id" = Uuid, Path, description = "ID peserta sesi")),
+    request_body = SetujuiHasilCbtRequest,
+    responses(
+        (status = 200, description = "Hasil CBT dinyatakan tidak lolos", body = AksiHasilCbtResponse),
+        (status = 409, description = "Hasil sudah diproses", body = ApiErrorResponse)
+    )
+)]
+pub async fn tolak_hasil_handler(
+    auth_user: AuthUser,
+    Path(id): Path<Uuid>,
+    State(state): State<AppState>,
+    ValidatedJson(req): ValidatedJson<SetujuiHasilCbtRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    wajib_admin(&auth_user)?;
+    let alasan = req.alasan.as_deref().map(str::trim).unwrap_or_default();
+    if alasan.chars().count() < 5 {
+        return Err(AppError::BadRequest(
+            "Alasan wajib diisi (minimal 5 karakter)".into(),
+        ));
+    }
+    let (pendaftar_id, nilai) = CbtRepository::new(state.db.clone()).tolak_hasil(id).await?;
+    let _ = crate::security::record_audit_log(
+        &state.db,
+        Some(auth_user.user_id),
+        "CBT_TOLAK_HASIL",
+        "hasil_ujian",
+        Some(pendaftar_id),
+        Some(serde_json::json!({ "nilai_akhir": nilai })),
+        Some(serde_json::json!({ "alasan": alasan })),
+    )
+    .await;
+    crate::modules::pendaftaran::alur::kirim_notifikasi(
+        &state.db,
+        pendaftar_id,
+        "Hasil Seleksi CBT",
+        "Mohon maaf, Anda belum dinyatakan lolos pada seleksi CBT pendaftaran ini.",
+        "CBT_TIDAK_LOLOS",
+    )
+    .await;
+    Ok(Json(AksiHasilCbtResponse {
+        pesan: "Peserta dinyatakan tidak lolos seleksi CBT.".to_string(),
     }))
 }
 

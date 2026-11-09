@@ -416,6 +416,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         prodi_ids.push(p_id);
     }
 
+    // Kode prodi 2 digit untuk nomor pendaftaran & NIM (sama dengan migrasi 20261109000023)
+    for (kode_prodi, kode_angka) in [
+        ("MNJ", "11"),
+        ("AKT", "12"),
+        ("IF", "21"),
+        ("SI", "22"),
+        ("SE", "23"),
+        ("BIG", "31"),
+        ("PAR", "32"),
+        ("K3", "41"),
+        ("FIS", "42"),
+        ("KEP", "43"),
+    ] {
+        sqlx::query("UPDATE program_studi SET kode_angka = $2 WHERE kode_prodi = $1")
+            .bind(kode_prodi)
+            .bind(kode_angka)
+            .execute(&pool)
+            .await?;
+    }
+
     // 5. Seeding Jalur Masuk [CONTOH]
     println!("[5/9] Melakukan seeding Master Jalur Masuk [CONTOH]...");
     let list_jalur = vec![
@@ -474,6 +494,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         jalur_ids.push(j_id);
     }
 
+    // Jalur READY (kuota READY Early 70) + kolom seleksi: jalankan ulang migrasinya (idempoten)
+    sqlx::raw_sql(include_str!(
+        "../../migrations/20261110000028_jalur_ready_kuota_seleksi.sql"
+    ))
+    .execute(&pool)
+    .await?;
+
     // Kurikulum RPL & langkah RPL bergantung pada prodi dan jalur di atas, yang
     // dibuat setelah migrasi berjalan. Jalankan ulang file migrasinya (idempoten).
     sqlx::raw_sql(include_str!(
@@ -507,18 +534,87 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    for p_id in &prodi_ids {
+    // Gelombang II & III + informasi gelombang untuk halaman depan (dapat diedit admin)
+    let info_gelombang = [
+        (
+            "[CONTOH] Gelombang I (Early Bird)",
+            1,
+            "-7 days",
+            "60 days",
+            "Periode pendaftaran awal dengan fasilitas beasiswa dan potongan DPP terbesar.",
+            "Maksimal 14 hari setelah pengumuman",
+        ),
+        (
+            "[CONTOH] Gelombang II (Reguler)",
+            2,
+            "61 days",
+            "120 days",
+            "Periode seleksi reguler untuk seluruh lulusan SMA/SMK/MA dan pindahan.",
+            "Maksimal 14 hari setelah pengumuman",
+        ),
+        (
+            "[CONTOH] Gelombang III (Penutupan Kuota)",
+            3,
+            "121 days",
+            "150 days",
+            "Periode seleksi akhir untuk pengisian sisa kuota program studi yang masih tersedia.",
+            "Maksimal 7 hari setelah pengumuman",
+        ),
+    ];
+    let mut gelombang_semua = vec![gelombang_id];
+    for (nama, nomor, mulai, selesai, deskripsi, ulang) in info_gelombang {
         sqlx::query(
             r#"
-            INSERT INTO kuota_prodi_gelombang (prodi_id, gelombang_id, kuota, kuota_terisi)
-            VALUES ($1, $2, 40, 0)
-            ON CONFLICT (prodi_id, gelombang_id) DO UPDATE SET kuota = EXCLUDED.kuota;
+            INSERT INTO gelombang (nama_gelombang, tahun_akademik_id, nomor_gelombang, status, tgl_mulai, tgl_selesai, kuota, is_active)
+            SELECT $1, $2, $3, 'DIBUKA', NOW() + $4::interval, NOW() + $5::interval, 150, TRUE
+            WHERE NOT EXISTS (SELECT 1 FROM gelombang WHERE nama_gelombang = $1)
             "#,
         )
-        .bind(p_id)
-        .bind(gelombang_id)
+        .bind(nama)
+        .bind(ta_id)
+        .bind(nomor)
+        .bind(mulai)
+        .bind(selesai)
         .execute(&pool)
         .await?;
+        // Isi informasi hanya bila admin belum mengisinya sendiri
+        sqlx::query(
+            r#"
+            UPDATE gelombang SET deskripsi = $2, info_daftar_ulang = $3
+            WHERE nama_gelombang = $1 AND deskripsi IS NULL
+            "#,
+        )
+        .bind(nama)
+        .bind(deskripsi)
+        .bind(ulang)
+        .execute(&pool)
+        .await?;
+        if let Some(id) =
+            sqlx::query_scalar::<_, Uuid>("SELECT id FROM gelombang WHERE nama_gelombang = $1")
+                .bind(nama)
+                .fetch_optional(&pool)
+                .await?
+        {
+            if id != gelombang_id {
+                gelombang_semua.push(id);
+            }
+        }
+    }
+
+    for p_id in &prodi_ids {
+        for g_id in &gelombang_semua {
+            sqlx::query(
+                r#"
+                INSERT INTO kuota_prodi_gelombang (prodi_id, gelombang_id, kuota, kuota_terisi)
+                VALUES ($1, $2, 40, 0)
+                ON CONFLICT (prodi_id, gelombang_id) DO UPDATE SET kuota = EXCLUDED.kuota;
+                "#,
+            )
+            .bind(p_id)
+            .bind(g_id)
+            .execute(&pool)
+            .await?;
+        }
     }
 
     // 7. Seeding Komponen Biaya & Matriks Biaya [CONTOH]

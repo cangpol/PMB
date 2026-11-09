@@ -27,18 +27,28 @@ pub struct RegisterRequest {
     #[validate(length(max = 40))]
     pub sumber_informasi: Option<String>,
 
-    /// Keterangan tambahan jika sumber = LAINNYA
+    /// Keterangan tambahan: nama platform jika sumber = MEDIA_SOSIAL, atau uraian jika LAINNYA
     #[serde(default)]
     #[validate(length(max = 150))]
     pub sumber_informasi_lainnya: Option<String>,
+
+    /// Asal sekolah: provinsi -> kabupaten/kota -> nama sekolah (opsional)
+    #[serde(default)]
+    #[validate(length(max = 100))]
+    pub provinsi_asal_sekolah: Option<String>,
+
+    #[serde(default)]
+    #[validate(length(max = 100))]
+    pub kabupaten_asal_sekolah: Option<String>,
+
+    #[serde(default)]
+    #[validate(length(max = 255))]
+    pub asal_sekolah: Option<String>,
 }
 
 /// Daftar sumber informasi yang valid (kode, label)
-pub const SUMBER_INFORMASI: [(&str, &str); 14] = [
-    ("INSTAGRAM", "Instagram"),
-    ("TIKTOK", "TikTok"),
-    ("FACEBOOK", "Facebook"),
-    ("YOUTUBE", "YouTube"),
+pub const SUMBER_INFORMASI: [(&str, &str); 11] = [
+    ("MEDIA_SOSIAL", "Media Sosial"),
     ("WEBSITE_UPITRA", "Website UPITRA"),
     ("GOOGLE", "Pencarian Google"),
     ("WHATSAPP", "WhatsApp / Broadcast"),

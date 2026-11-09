@@ -821,9 +821,10 @@ impl CbtService {
     }
 
     pub async fn create_sesi(&self, req: CreateSesiRequest) -> Result<SesiUjian, AppError> {
-        if req.mode != "ONLINE" && req.mode != "LURING" {
+        // Ujian CBT hanya diselenggarakan online
+        if req.mode != "ONLINE" {
             return Err(AppError::BadRequest(
-                "Mode sesi harus ONLINE atau LURING".to_string(),
+                "Ujian CBT hanya dapat diselenggarakan online (mode ONLINE)".to_string(),
             ));
         }
         if req.jadwal_selesai <= req.jadwal_mulai {

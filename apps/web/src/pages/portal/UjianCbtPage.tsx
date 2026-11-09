@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Clock,
   CheckCircle2,
@@ -37,27 +37,6 @@ type SubmitUjianResponse = components["schemas"]["SubmitUjianResponse"];
 
 export const UjianCbtPage: React.FC = () => {
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const [melanjutkan, setMelanjutkan] = useState(false);
-
-  // Calon yang lulus CBT menekan tombol ini untuk membuka tahap berikutnya (pengumuman)
-  const lanjutKeTahapBerikutnya = async () => {
-    try {
-      setMelanjutkan(true);
-      await fetchApi("/api/cbt/lanjut", { method: "POST" });
-      navigate("/portal/hasil");
-    } catch (err: unknown) {
-      toast({
-        title: "Belum dapat melanjutkan",
-        description:
-          (err as ApiError).pesan ||
-          "Tahap berikutnya belum dapat dibuka. Silakan coba lagi.",
-        type: "error",
-      });
-    } finally {
-      setMelanjutkan(false);
-    }
-  };
 
   // State Utama Sesi
   const [loading, setLoading] = useState<boolean>(true);
@@ -79,7 +58,6 @@ export const UjianCbtPage: React.FC = () => {
   const [hasilUjian, setHasilUjian] = useState<SubmitUjianResponse | null>(
     null,
   );
-  const [errorSkor, setErrorSkor] = useState(false);
 
   // Ref untuk interval timer server
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -111,7 +89,7 @@ export const UjianCbtPage: React.FC = () => {
         res.status_ujian === "SELESAI" ||
         res.status_ujian === "WAKTU_HABIS"
       ) {
-        // Ujian sudah berakhir (muat ulang halaman / ditutup otomatis): ambil skornya.
+        // Ujian sudah berakhir (muat ulang halaman / ditutup otomatis): ambil ringkasannya.
         // Endpoint submit idempoten: untuk ujian yang sudah selesai ia hanya mengembalikan hasil.
         try {
           setHasilUjian(
@@ -120,7 +98,7 @@ export const UjianCbtPage: React.FC = () => {
             }),
           );
         } catch {
-          setErrorSkor(true);
+          // Hasil tidak ditampilkan ke calon; tidak ada yang perlu dilaporkan
         }
       }
     } catch (err: unknown) {
@@ -473,75 +451,25 @@ export const UjianCbtPage: React.FC = () => {
             </div>
             <div>
               <p className="text-xs text-slate-500 uppercase tracking-wider">
-                Skor
+                Penilaian
               </p>
-              <p className="text-xl font-bold text-biru-950">
-                {hasilUjian
-                  ? hasilUjian.nilai_akhir.toFixed(2)
-                  : errorSkor
-                    ? "Gagal dimuat"
-                    : "Memuat..."}
+              <p className="text-sm font-semibold text-biru-800 mt-1">
+                Diproses admin
               </p>
             </div>
           </div>
 
-          {hasilUjian && (
-            <p className="-mt-4 mb-8 text-sm text-slate-600">
-              Benar{" "}
-              <strong className="text-biru-950">
-                {hasilUjian.jumlah_benar}
-              </strong>
-              {" · "}Salah{" "}
-              <strong className="text-biru-950">
-                {hasilUjian.jumlah_salah}
-              </strong>
-              {" · "}Kosong{" "}
-              <strong className="text-biru-950">
-                {hasilUjian.jumlah_kosong}
-              </strong>
-              {" · "}Batas lulus {hasilUjian.passing_grade}
+          <div
+            role="status"
+            className="mx-auto mb-8 max-w-xl rounded-xl border border-biru-200 bg-biru-50 p-4 text-left text-sm text-biru-900"
+          >
+            <p className="font-bold">Nilai CBT kamu akan kami nilai dulu</p>
+            <p>
+              Admin yang akan menilai apakah kamu lolos atau tidak sesuai dengan
+              ketentuan passing grade. Pantau perkembangannya di dashboard; kami
+              juga akan mengabari lewat email.
             </p>
-          )}
-
-          {hasilUjian && (
-            <div
-              role="status"
-              className={`mx-auto mb-8 max-w-xl rounded-xl border p-4 text-left text-sm ${
-                hasilUjian.is_lulus
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                  : "border-amber-200 bg-amber-50 text-amber-900"
-              }`}
-            >
-              {hasilUjian.is_lulus ? (
-                <>
-                  <p className="font-bold">Memenuhi passing grade</p>
-                  <p>
-                    Nilai Anda mencapai batas lulus CBT. Tekan tombol di bawah
-                    untuk membuka tahap berikutnya: pengumuman hasil seleksi.
-                  </p>
-                  <Button
-                    variant="primary"
-                    className="mt-3 gap-2"
-                    isLoading={melanjutkan}
-                    onClick={() => void lanjutKeTahapBerikutnya()}
-                  >
-                    Lanjut ke Tahap Berikutnya{" "}
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <p className="font-bold">Belum memenuhi passing grade</p>
-                  <p>
-                    Nilai Anda di bawah batas lulus ({hasilUjian.passing_grade}
-                    ). Panitia akan memutuskan apakah Anda mengikuti ujian ulang
-                    atau melanjutkan proses. Pantau halaman ini; bila ujian
-                    ulang diizinkan, tombol mulai akan muncul kembali.
-                  </p>
-                </>
-              )}
-            </div>
-          )}
+          </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/portal/dashboard">

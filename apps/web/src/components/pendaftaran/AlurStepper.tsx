@@ -95,6 +95,13 @@ export function langkahTerbuka(
   );
 }
 
+/** Langkah "Cek Pengumuman": satu sumber keterangan untuk dashboard dan halaman pengumuman. */
+export function langkahPengumuman(
+  alur: AlurResponse | null,
+): LangkahAlur | undefined {
+  return alur?.langkah.find((l) => l.kode === "pengumuman");
+}
+
 const GAYA: Record<
   StatusLangkah,
   { icon: LucideIcon; bulat: string; label: string; teks: string }

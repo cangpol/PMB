@@ -89,7 +89,7 @@ pub struct NimCounter {
 pub struct BerkasDaftarUlang {
     pub id: Uuid,
     pub pendaftar_id: Uuid,
-    pub jenis_berkas: String, // 'SURAT_PERNYATAAN_MABA', 'SURAT_BEBAS_NARKOBA', 'AKTA_KELAHIRAN', 'IJAZAH_LEGALISIR'
+    pub jenis_berkas: String, // 'SPKP', 'BERKAS_PERATURAN', 'SURAT_PERNYATAAN_BEASISWA', 'KTP', 'KK', 'TRANSKRIP_NILAI'
     pub file_key: String,
     pub file_name: String,
     pub mime_type: String,

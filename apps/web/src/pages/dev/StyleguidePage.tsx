@@ -485,8 +485,9 @@ export const StyleguidePage: React.FC = () => {
                   Identitas Institusi & Logo (Official Logo & Monogram Fallback)
                 </CardTitle>
                 <CardDescription>
-                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit (mencegah CLS)
-                  dan fallback monogram institusi jika terjadi kegagalan pemuatan gambar.
+                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit
+                  (mencegah CLS) dan fallback monogram institusi jika terjadi
+                  kegagalan pemuatan gambar.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -511,7 +512,11 @@ export const StyleguidePage: React.FC = () => {
                     Fallback Monogram Otomatis (Saat URL Gambar Invalid)
                   </h4>
                   <div className="p-4 rounded-xl border border-biru-100 bg-biru-50/50 inline-block">
-                    <Logo width={220} height={44} src="/invalid-path-to-logo.svg" />
+                    <Logo
+                      width={220}
+                      height={44}
+                      src="/invalid-path-to-logo.svg"
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -584,8 +589,9 @@ export const StyleguidePage: React.FC = () => {
                   Identitas Institusi & Logo (Official Logo & Monogram Fallback)
                 </CardTitle>
                 <CardDescription>
-                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit (mencegah CLS)
-                  dan fallback monogram institusi jika terjadi kegagalan pemuatan gambar.
+                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit
+                  (mencegah CLS) dan fallback monogram institusi jika terjadi
+                  kegagalan pemuatan gambar.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -610,7 +616,11 @@ export const StyleguidePage: React.FC = () => {
                     Fallback Monogram Otomatis (Saat URL Gambar Invalid)
                   </h4>
                   <div className="p-4 rounded-xl border border-biru-100 bg-biru-50/50 inline-block">
-                    <Logo width={220} height={44} src="/invalid-path-to-logo.svg" />
+                    <Logo
+                      width={220}
+                      height={44}
+                      src="/invalid-path-to-logo.svg"
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -671,8 +681,9 @@ export const StyleguidePage: React.FC = () => {
                   Identitas Institusi & Logo (Official Logo & Monogram Fallback)
                 </CardTitle>
                 <CardDescription>
-                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit (mencegah CLS)
-                  dan fallback monogram institusi jika terjadi kegagalan pemuatan gambar.
+                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit
+                  (mencegah CLS) dan fallback monogram institusi jika terjadi
+                  kegagalan pemuatan gambar.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -697,7 +708,11 @@ export const StyleguidePage: React.FC = () => {
                     Fallback Monogram Otomatis (Saat URL Gambar Invalid)
                   </h4>
                   <div className="p-4 rounded-xl border border-biru-100 bg-biru-50/50 inline-block">
-                    <Logo width={220} height={44} src="/invalid-path-to-logo.svg" />
+                    <Logo
+                      width={220}
+                      height={44}
+                      src="/invalid-path-to-logo.svg"
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -727,15 +742,23 @@ export const StyleguidePage: React.FC = () => {
                     <Button variant="ghost">Tombol Ghost</Button>
                   </div>
                   <div className="mt-3 p-4 rounded-xl bg-biru-950 flex flex-wrap items-center gap-3">
-                    <span className="text-xs text-biru-300 mr-2">Varian Hero (Latar Gelap):</span>
+                    <span className="text-xs text-biru-300 mr-2">
+                      Varian Hero (Latar Gelap):
+                    </span>
                     <Button variant="white">Tombol White (Hero CTA)</Button>
-                    <Button variant="outline-white">Tombol Outline White</Button>
+                    <Button variant="outline-white">
+                      Tombol Outline White
+                    </Button>
                   </div>
                   {/* Varian Hero / Latar Gelap */}
                   <div className="mt-3 p-4 rounded-xl bg-biru-950 flex flex-wrap items-center gap-3">
-                    <span className="text-xs text-biru-300 mr-2">Varian Hero (Latar Gelap):</span>
+                    <span className="text-xs text-biru-300 mr-2">
+                      Varian Hero (Latar Gelap):
+                    </span>
                     <Button variant="white">Tombol White (Hero CTA)</Button>
-                    <Button variant="outline-white">Tombol Outline White</Button>
+                    <Button variant="outline-white">
+                      Tombol Outline White
+                    </Button>
                   </div>
                 </div>
 
@@ -793,8 +816,9 @@ export const StyleguidePage: React.FC = () => {
                   Identitas Institusi & Logo (Official Logo & Monogram Fallback)
                 </CardTitle>
                 <CardDescription>
-                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit (mencegah CLS)
-                  dan fallback monogram institusi jika terjadi kegagalan pemuatan gambar.
+                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit
+                  (mencegah CLS) dan fallback monogram institusi jika terjadi
+                  kegagalan pemuatan gambar.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -819,7 +843,11 @@ export const StyleguidePage: React.FC = () => {
                     Fallback Monogram Otomatis (Saat URL Gambar Invalid)
                   </h4>
                   <div className="p-4 rounded-xl border border-biru-100 bg-biru-50/50 inline-block">
-                    <Logo width={220} height={44} src="/invalid-path-to-logo.svg" />
+                    <Logo
+                      width={220}
+                      height={44}
+                      src="/invalid-path-to-logo.svg"
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -1133,7 +1161,9 @@ export const StyleguidePage: React.FC = () => {
                   Identitas Institusi & Logo (Official Logo & Monogram Fallback)
                 </CardTitle>
                 <CardDescription>
-                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit (mencegah CLS) dan fallback monogram institusi jika terjadi kegagalan pemuatan gambar.
+                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit
+                  (mencegah CLS) dan fallback monogram institusi jika terjadi
+                  kegagalan pemuatan gambar.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -1158,7 +1188,11 @@ export const StyleguidePage: React.FC = () => {
                     Fallback Monogram Otomatis (Saat URL Gambar Invalid)
                   </h4>
                   <div className="p-4 rounded-xl border border-biru-100 bg-biru-50/50 inline-block">
-                    <Logo width={220} height={44} src="/invalid-path-to-logo.svg" />
+                    <Logo
+                      width={220}
+                      height={44}
+                      src="/invalid-path-to-logo.svg"
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -1171,8 +1205,9 @@ export const StyleguidePage: React.FC = () => {
                   Identitas Institusi & Logo (Official Logo & Monogram Fallback)
                 </CardTitle>
                 <CardDescription>
-                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit (mencegah CLS)
-                  dan fallback monogram institusi jika terjadi kegagalan pemuatan gambar.
+                  Komponen Logo resmi berbasis SVG dengan dimensi eksplisit
+                  (mencegah CLS) dan fallback monogram institusi jika terjadi
+                  kegagalan pemuatan gambar.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -1197,7 +1232,11 @@ export const StyleguidePage: React.FC = () => {
                     Fallback Monogram Otomatis (Saat URL Gambar Invalid)
                   </h4>
                   <div className="p-4 rounded-xl border border-biru-100 bg-biru-50/50 inline-block">
-                    <Logo width={220} height={44} src="/invalid-path-to-logo.svg" />
+                    <Logo
+                      width={220}
+                      height={44}
+                      src="/invalid-path-to-logo.svg"
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -1317,11 +1356,19 @@ export const StyleguidePage: React.FC = () => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="left">
                       <DropdownMenuLabel>Pilihan Tindakan</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => toast({ title: "Lihat Detail", variant: "info" })}>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          toast({ title: "Lihat Detail", variant: "info" })
+                        }
+                      >
                         <User className="h-4 w-4" />
                         <span>Lihat Biodata</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => toast({ title: "Unduh Formulir", variant: "info" })}>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          toast({ title: "Unduh Formulir", variant: "info" })
+                        }
+                      >
                         <Download className="h-4 w-4" />
                         <span>Unduh Bukti PDF</span>
                       </DropdownMenuItem>

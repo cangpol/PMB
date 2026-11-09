@@ -3,10 +3,7 @@ export const SUMBER_INFORMASI_OPTIONS: ReadonlyArray<{
   kode: string;
   label: string;
 }> = [
-  { kode: "INSTAGRAM", label: "Instagram" },
-  { kode: "TIKTOK", label: "TikTok" },
-  { kode: "FACEBOOK", label: "Facebook" },
-  { kode: "YOUTUBE", label: "YouTube" },
+  { kode: "MEDIA_SOSIAL", label: "Media Sosial" },
   { kode: "WEBSITE_UPITRA", label: "Website UPITRA" },
   { kode: "GOOGLE", label: "Pencarian Google" },
   { kode: "WHATSAPP", label: "WhatsApp / Broadcast" },
@@ -17,4 +14,18 @@ export const SUMBER_INFORMASI_OPTIONS: ReadonlyArray<{
   { kode: "PAMERAN_EDUFAIR", label: "Pameran Pendidikan / Edufair" },
   { kode: "IKLAN_MEDIA", label: "Iklan Media (Radio/TV/Koran)" },
   { kode: "LAINNYA", label: "Lainnya" },
+];
+
+/** Pilihan nama media sosial bila sumber = Media Sosial. */
+export const LAINNYA_PLATFORM = "Lainnya";
+export const PLATFORM_MEDIA_SOSIAL: ReadonlyArray<string> = [
+  "Instagram",
+  "TikTok",
+  "YouTube",
+  "Facebook",
+  "X (Twitter)",
+  "Threads",
+  "LinkedIn",
+  "Telegram",
+  LAINNYA_PLATFORM,
 ];

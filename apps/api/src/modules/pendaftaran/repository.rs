@@ -732,6 +732,8 @@ impl PendaftaranRepository {
                 let pattern = format!("%{}%", s.trim());
                 builder.push(" AND (p.nomor_pendaftaran ILIKE ");
                 builder.push_bind(pattern.clone());
+                builder.push(" OR p.nomor_sementara ILIKE ");
+                builder.push_bind(pattern.clone());
                 builder.push(" OR u.nama_lengkap ILIKE ");
                 builder.push_bind(pattern.clone());
                 builder.push(" OR u.email ILIKE ");
@@ -799,6 +801,8 @@ impl PendaftaranRepository {
         if let Some(s) = search.map(str::trim).filter(|s| !s.is_empty()) {
             let pola = format!("%{s}%");
             builder.push(" AND (p.nomor_pendaftaran ILIKE ");
+            builder.push_bind(pola.clone());
+            builder.push(" OR p.nomor_sementara ILIKE ");
             builder.push_bind(pola.clone());
             builder.push(" OR u.nama_lengkap ILIKE ");
             builder.push_bind(pola.clone());

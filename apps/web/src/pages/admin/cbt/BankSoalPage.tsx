@@ -685,20 +685,21 @@ export const BankSoalPage: React.FC = () => {
                   </span>
                 </div>
 
-                {importResult.error_baris && importResult.error_baris.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-slate-200">
-                    <p className="font-semibold text-rose-700 mb-1">
-                      Rincian Baris Error:
-                    </p>
-                    <ul className="max-h-32 overflow-y-auto space-y-1 text-[11px] text-rose-600">
-                      {importResult.error_baris.map((err, i) => (
-                        <li key={i}>
-                          Baris {err.baris}: {err.pesan}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {importResult.error_baris &&
+                  importResult.error_baris.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-slate-200">
+                      <p className="font-semibold text-rose-700 mb-1">
+                        Rincian Baris Error:
+                      </p>
+                      <ul className="max-h-32 overflow-y-auto space-y-1 text-[11px] text-rose-600">
+                        {importResult.error_baris.map((err, i) => (
+                          <li key={i}>
+                            Baris {err.baris}: {err.pesan}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
               </div>
             )}
 

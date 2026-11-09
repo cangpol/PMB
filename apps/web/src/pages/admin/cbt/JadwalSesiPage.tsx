@@ -40,12 +40,11 @@ export const JadwalSesiPage: React.FC = () => {
   // Form Tambah Sesi
   const [formPaketId, setFormPaketId] = useState<string>("");
   const [formNamaSesi, setFormNamaSesi] = useState<string>("");
-  const [formRuang, setFormRuang] = useState<string>("Lab Komputer CBT 1");
+  const [formRuang, setFormRuang] = useState<string>("Online (dari rumah)");
   const [formKuota, setFormKuota] = useState<number>(40);
   const [formMulai, setFormMulai] = useState<string>("");
   const [formSelesai, setFormSelesai] = useState<string>("");
   const [isCreating, setIsCreating] = useState<boolean>(false);
-  const [formMode, setFormMode] = useState<"ONLINE" | "LURING">("ONLINE");
   const [formGelombangId, setFormGelombangId] = useState<string>("");
   const [formJalurId, setFormJalurId] = useState<string>("");
   const [formDibuka, setFormDibuka] = useState<boolean>(true);
@@ -117,10 +116,9 @@ export const JadwalSesiPage: React.FC = () => {
           nama_sesi: formNamaSesi.trim(),
           jadwal_mulai: new Date(formMulai).toISOString(),
           jadwal_selesai: new Date(formSelesai).toISOString(),
-          ruang:
-            formMode === "ONLINE" ? "Online (dari rumah)" : formRuang.trim(),
+          ruang: formRuang.trim() || "Online (dari rumah)",
           kuota: formKuota,
-          mode: formMode,
+          mode: "ONLINE",
           gelombang_id: formGelombangId || null,
           jalur_id: formJalurId || null,
           is_dibuka_pendaftaran: formDibuka,
@@ -462,27 +460,13 @@ export const JadwalSesiPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label
-                    className="block text-xs font-semibold text-slate-700 mb-1"
-                    htmlFor="sesi-mode"
-                  >
-                    Mode pelaksanaan *
-                  </label>
-                  <select
-                    id="sesi-mode"
-                    value={formMode}
-                    onChange={(e) =>
-                      setFormMode(e.target.value as "ONLINE" | "LURING")
-                    }
-                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-biru-600"
-                  >
-                    <option value="ONLINE">
-                      Online dari rumah (tanpa presensi)
-                    </option>
-                    <option value="LURING">
-                      Luring di kampus (wajib presensi QR)
-                    </option>
-                  </select>
+                  <span className="block text-xs font-semibold text-slate-700 mb-1">
+                    Mode pelaksanaan
+                  </span>
+                  <p className="px-3 py-2 rounded-lg bg-biru-50 border border-biru-200 text-xs text-biru-900">
+                    Ujian CBT diselenggarakan online dari rumah (tanpa
+                    presensi).
+                  </p>
                 </div>
                 <div>
                   <label

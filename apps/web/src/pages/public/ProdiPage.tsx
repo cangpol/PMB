@@ -224,7 +224,8 @@ export const ProdiPage: React.FC = () => {
             </h1>
 
             <p className="text-sm sm:text-base text-biru-800 leading-relaxed font-sans font-normal">
-              Setiap program studi dirancang dan dibina bersama konsorsium industri{" "}
+              Setiap program studi dirancang dan dibina bersama konsorsium
+              industri{" "}
               <strong className="font-semibold text-biru-950">
                 Triputra Group
               </strong>{" "}

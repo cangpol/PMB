@@ -12,6 +12,8 @@ const a = (b: number, p: number, d: number): AntreanVerifikasi => {
     bukti_bayar: x(p),
     daftar_ulang: x(d),
     cbt_keputusan: x(0),
+    seleksi_rapor: x(0),
+    seleksi_interview: x(0),
     total: b + p + d,
   };
 };

@@ -16,7 +16,12 @@ const TestCountdownComponent: React.FC<TestCountdownProps> = ({
   isActive,
 }) => {
   const [isClosed, setIsClosed] = React.useState<boolean>(false);
-  const [time, setTime] = React.useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [time, setTime] = React.useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
 
   React.useEffect(() => {
     if (!isActive || !tglSelesai) {
@@ -43,7 +48,9 @@ const TestCountdownComponent: React.FC<TestCountdownProps> = ({
   if (isClosed) {
     return (
       <div>
-        <span data-testid="closed-badge">{GELOMBANG_CONTENT.stateDitutup.badge}</span>
+        <span data-testid="closed-badge">
+          {GELOMBANG_CONTENT.stateDitutup.badge}
+        </span>
         <h3>{GELOMBANG_CONTENT.stateDitutup.judul}</h3>
         <p>{GELOMBANG_CONTENT.stateDitutup.jadwalBerikutnya}</p>
         <button>{GELOMBANG_CONTENT.stateDitutup.cta}</button>

@@ -11,6 +11,7 @@ import {
   Shield,
 } from "lucide-react";
 import { useAuth } from "@/context";
+import { useNotifikasiAdmin } from "@/hooks/useNotifikasiAdmin";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -41,6 +42,8 @@ const BREADCRUMB_MAP: Record<string, string> = {
   berkas: "Verifikasi Berkas",
   master: "Master Data",
   keuangan: "Verifikasi Keuangan",
+  "laporan-registrasi": "Laporan Registrasi & Sumber",
+  "seleksi-tahap": "Seleksi & Kuota Jalur",
   seleksi: "Seleksi Kelulusan",
   "daftar-ulang": "Daftar Ulang & NIM",
   cbt: "Ujian CBT",
@@ -59,6 +62,8 @@ const BREADCRUMB_MAP: Record<string, string> = {
   prodi: "Fakultas & Prodi",
   jalur: "Jalur Pendaftaran",
   biaya: "Matriks Biaya",
+  "biaya-kuliah": "Rincian Biaya Kuliah",
+  "potongan-jalur": "Potongan per Jalur",
   vouchers: "Voucher Promosi",
   "form-builder": "Form & Berkas Builder",
   pengaturan: "Pengaturan Sistem",
@@ -71,6 +76,10 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Notifikasi admin (mis. kuota jalur penuh); gagal memuat = tanpa penanda, bukan error halaman
+  const { data: notifikasi = [] } = useNotifikasiAdmin();
+  const belumDibaca = notifikasi.filter((n) => !n.sudah_dibaca).length;
 
   const handleLogout = async () => {
     await logout();
@@ -185,11 +194,20 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
             type="button"
             className="p-2 rounded-xl text-biru-700 hover:text-biru-950 hover:bg-biru-50 border border-biru-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-biru-500 cursor-pointer"
             title="Pemberitahuan Sistem"
-            aria-label="Pemberitahuan Sistem"
+            aria-label={
+              belumDibaca > 0
+                ? `Pemberitahuan Sistem, ${belumDibaca} belum dibaca`
+                : "Pemberitahuan Sistem"
+            }
+            onClick={() => navigate("/admin/seleksi-tahap")}
           >
             <Bell className="w-4 h-4" />
           </button>
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-biru-600 ring-2 ring-putih animate-pulse" />
+          {belumDibaca > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-biru-700 text-putih text-[10px] font-bold leading-4 text-center ring-2 ring-putih">
+              {belumDibaca > 9 ? "9+" : belumDibaca}
+            </span>
+          )}
         </div>
 
         {/* Menu Profil Pengguna (Dropdown) */}

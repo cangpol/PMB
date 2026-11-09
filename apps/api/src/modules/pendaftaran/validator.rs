@@ -314,20 +314,17 @@ impl DynamicFormValidator {
                 }
 
                 "wilayah" => {
-                    // Wilayah dapat berupa Object { provinsi: String, kabupaten: String, ... } atau String
+                    // Wilayah domisili: { negara (bawaan Indonesia), provinsi, kabupaten, kecamatan }
+                    // atau string tunggal (data lama).
                     let valid_wilayah = match val {
                         serde_json::Value::Object(obj) => {
-                            let prov = obj
-                                .get("provinsi")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("")
-                                .trim();
-                            let kab = obj
-                                .get("kabupaten")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("")
-                                .trim();
-                            !prov.is_empty() && !kab.is_empty()
+                            let ada = |k: &str| {
+                                obj.get(k)
+                                    .and_then(|v| v.as_str())
+                                    .is_some_and(|s| !s.trim().is_empty())
+                            };
+                            let negara_ok = obj.get("negara").is_none() || ada("negara");
+                            negara_ok && ada("provinsi") && ada("kabupaten") && ada("kecamatan")
                         }
                         serde_json::Value::String(s) => !s.trim().is_empty(),
                         _ => false,
@@ -337,7 +334,7 @@ impl DynamicFormValidator {
                         errors.push(ValidationErrorItem {
                             field: field.kode_field.clone(),
                             message: format!(
-                                "Data {} (Provinsi dan Kabupaten/Kota) wajib diisi lengkap",
+                                "Data {} (Negara, Provinsi, Kabupaten/Kota, dan Kecamatan) wajib diisi lengkap",
                                 field.label
                             ),
                         });
@@ -448,5 +445,35 @@ mod tests {
         let invalid = json!({"agama": "AgamaTidakDikenal"});
         let res = DynamicFormValidator::validate(&fields, &invalid);
         assert!(!res.is_valid);
+    }
+
+    #[test]
+    fn test_wilayah_domisili_wajib_lengkap_sampai_kecamatan() {
+        let fields = vec![make_field(
+            "domisili_wilayah",
+            "Wilayah Domisili Saat Ini",
+            "wilayah",
+            true,
+            json!([]),
+            json!({}),
+        )];
+        let ok = json!({"domisili_wilayah": {"negara": "Indonesia", "provinsi": "Jawa Tengah",
+            "kabupaten": "Kota Surakarta", "kecamatan": "Laweyan"}});
+        assert!(DynamicFormValidator::validate(&fields, &ok).is_valid);
+
+        // Negara luar negeri dengan isian bebas juga sah
+        let luar = json!({"domisili_wilayah": {"negara": "Malaysia", "provinsi": "Selangor",
+            "kabupaten": "Shah Alam", "kecamatan": "Seksyen 7"}});
+        assert!(DynamicFormValidator::validate(&fields, &luar).is_valid);
+
+        // Tanpa kecamatan ditolak
+        let tanpa_kec = json!({"domisili_wilayah": {"negara": "Indonesia", "provinsi": "Jawa Tengah",
+            "kabupaten": "Kota Surakarta", "kecamatan": " "}});
+        assert!(!DynamicFormValidator::validate(&fields, &tanpa_kec).is_valid);
+
+        // Negara dikosongkan ditolak
+        let tanpa_negara = json!({"domisili_wilayah": {"negara": "", "provinsi": "A",
+            "kabupaten": "B", "kecamatan": "C"}});
+        assert!(!DynamicFormValidator::validate(&fields, &tanpa_negara).is_valid);
     }
 }

@@ -869,6 +869,30 @@ impl PembayaranRepository {
     }
 }
 
+/// Tagihan daftar ulang bernilai Rp 0 (mis. potongan beasiswa 100%) langsung dilunasi tanpa
+/// pembayaran/bukti, lalu alur calon dimajukan seperti pelunasan biasa. Mengembalikan `true`
+/// bila tagihan baru saja dilunasi.
+pub async fn lunasi_tagihan_gratis(
+    pool: &sqlx::PgPool,
+    tagihan_id: Uuid,
+) -> Result<bool, AppError> {
+    let mut db_tx = pool.begin().await?;
+    let tagihan = sqlx::query_as::<_, Tagihan>(
+        "UPDATE tagihan SET status = 'LUNAS', lunas_at = NOW(), updated_at = NOW()
+         WHERE id = $1 AND status = 'MENUNGGU_PEMBAYARAN' AND nominal_akhir = 0
+         RETURNING *",
+    )
+    .bind(tagihan_id)
+    .fetch_optional(&mut *db_tx)
+    .await?;
+    let Some(tagihan) = tagihan else {
+        return Ok(false);
+    };
+    lanjutkan_alur_setelah_lunas(&mut db_tx, &tagihan, "GRATIS", Utc::now()).await?;
+    db_tx.commit().await?;
+    Ok(true)
+}
+
 /// Majukan alur pendaftar setelah sebuah tagihan lunas (dijalankan di dalam transaksi settle).
 async fn lanjutkan_alur_setelah_lunas(
     db_tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -893,6 +917,15 @@ async fn lanjutkan_alur_setelah_lunas(
             .await?;
         }
         "DAFTAR_ULANG_UKT" => {
+            // Kuota jalur (mis. READY Early = 70) dihitung dari calon yang sudah daftar ulang
+            if crate::modules::pendaftaran::seleksi::tahan_jika_kuota_penuh(
+                db_tx,
+                tagihan.pendaftar_id,
+            )
+            .await?
+            {
+                return Ok(());
+            }
             sqlx::query(
                 "UPDATE hasil_kelulusan SET status_daftar_ulang = 'LUNAS', updated_at = NOW()
                  WHERE pendaftar_id = $1
@@ -967,6 +1000,10 @@ pub async fn majukan_alur_formulir_lunas(
     .bind(waktu)
     .execute(&mut *conn)
     .await?;
+
+    // Formulir lunas (bayar, beasiswa/gratis, voucher 100%, atau loket) = nomor pendaftaran asli.
+    // Idempoten, jadi aman dipanggil berulang.
+    crate::modules::pendaftaran::nomor::terbitkan_resmi(&mut *conn, pendaftar_id).await?;
 
     Ok(maju)
 }

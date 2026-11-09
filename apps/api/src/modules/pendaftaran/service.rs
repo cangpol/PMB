@@ -104,6 +104,7 @@ impl PendaftaranService {
                 ));
             }
         }
+        pastikan_prodi_2_boleh(self.repo.pool(), prodi_2).await?;
 
         // 1. Ambil definisi field aktif
         let fields = self.repo.list_fields(Some(jalur_id)).await?;
@@ -120,12 +121,18 @@ impl PendaftaranService {
         }
 
         // 3. Tentukan nomor pendaftaran
-        let nomor_pendaftaran = match existing {
-            Some(ref p) => p.nomor_pendaftaran.clone(),
-            None => {
-                let seq = self.repo.get_next_sequence().await?;
-                format!("PMB-2026-{:04}", seq)
-            }
+        let nomor_pendaftaran = {
+            let mut conn = self.repo.pool().acquire().await?;
+            super::nomor::nomor_draft(
+                &mut conn,
+                existing
+                    .as_ref()
+                    .map(|p| (p.id, p.nomor_pendaftaran.clone())),
+                gelombang_id,
+                prodi_1,
+                prodi_2,
+            )
+            .await?
         };
 
         // 4. Petakan isian formulir dinamis ke kolom identitas pendaftar
@@ -728,8 +735,8 @@ impl PendaftaranService {
         let nomor_pendaftaran = match existing {
             Some(ref p) => p.nomor_pendaftaran.clone(),
             None => {
-                let seq = self.repo.get_next_sequence().await?;
-                format!("PMB-2026-{:04}", seq)
+                let mut conn = self.repo.pool().acquire().await?;
+                super::nomor::buat_sementara_tanpa_prodi(&mut conn, req.gelombang_id).await?
             }
         };
 
@@ -774,6 +781,7 @@ impl PendaftaranService {
                 ));
             }
         }
+        pastikan_prodi_2_boleh(self.repo.pool(), req.prodi_pilihan_2).await?;
 
         self.repo
             .update_akademik(
@@ -1058,6 +1066,13 @@ impl PendaftaranService {
         .fetch_optional(pool)
         .await?;
 
+        let cbt_dilewati: bool =
+            sqlx::query_scalar("SELECT cbt_dilewati FROM pendaftar WHERE id = $1")
+                .bind(p.id)
+                .fetch_optional(pool)
+                .await?
+                .unwrap_or(false);
+
         let jalur_rpl = crate::modules::rpl::repository::RplRepository::new(pool.clone())
             .check_jalur_has_rpl_step(p.jalur_id)
             .await?;
@@ -1076,6 +1091,7 @@ impl PendaftaranService {
             mode_ujian: sesi.map(|(_, mode)| mode),
             nim,
             cbt_lulus,
+            cbt_dilewati,
         });
         hasil.jalur_rpl = jalur_rpl;
         Ok(hasil)
@@ -1150,7 +1166,7 @@ impl PendaftaranService {
             };
             alur::transisi_status(pool, p.id, &tahap_berkas, ke, "").await?;
             let pesan = if butuh_cbt {
-                "Seluruh berkas Anda telah terverifikasi. Kartu peserta sudah dapat diunduh dan Anda dapat mengikuti ujian CBT sesuai jadwal yang dipilih."
+                "Seluruh berkas Anda telah terverifikasi. Selanjutnya admin menilai seleksi rapor; setelah dinyatakan lulus, Anda dapat mengikuti ujian CBT online sesuai jadwal yang dipilih, lalu seleksi interview."
             } else {
                 "Seluruh berkas Anda telah terverifikasi. Silakan menunggu pengumuman hasil seleksi sesuai jadwal."
             };
@@ -1293,15 +1309,11 @@ impl PendaftaranService {
                 ));
             }
         }
+        pastikan_prodi_2_boleh(self.repo.pool(), req.prodi_pilihan_2).await?;
 
-        // 2. Validasi status gelombang aktif
-        let gelombang_aktif = self.repo.check_gelombang_active(req.gelombang_id).await?;
-        if !gelombang_aktif {
-            return Err(AppError::BadRequest(
-                "Gelombang pendaftaran yang dipilih sedang tidak aktif atau sudah ditutup"
-                    .to_string(),
-            ));
-        }
+        // 2. Validasi gelombang & tahap pendaftaran yang dibuka (tahap lewat tidak dapat dipilih)
+        let tahap_id =
+            super::tahap::pastikan_tahap(self.repo.pool(), req.gelombang_id, req.tahap_id).await?;
 
         // 3. Validasi kuota prodi pilihan 1
         let kuota_tersedia = self
@@ -1317,17 +1329,27 @@ impl PendaftaranService {
 
         // 4. Cek existing pendaftaran untuk user_id
         let existing = self.repo.find_by_user_id(user_id).await?;
-        let nomor_pendaftaran = if let Some(ref ex) = existing {
+        if let Some(ref ex) = existing {
             if ex.status_pendaftaran != "DRAFT" {
                 return Err(AppError::BadRequest(format!(
                     "Pendaftaran Anda telah berstatus {} dan tidak dapat diubah kembali ke pemilihan prodi",
                     ex.status_pendaftaran
                 )));
             }
-            ex.nomor_pendaftaran.clone()
-        } else {
-            let seq = self.repo.get_next_sequence().await?;
-            format!("PMB-2026-{:04}", seq)
+        }
+        // Nomor sementara (W...) mengikuti pilihan prodi terkini
+        let nomor_pendaftaran = {
+            let mut conn = self.repo.pool().acquire().await?;
+            super::nomor::nomor_draft(
+                &mut conn,
+                existing
+                    .as_ref()
+                    .map(|p| (p.id, p.nomor_pendaftaran.clone())),
+                req.gelombang_id,
+                req.prodi_pilihan_1,
+                req.prodi_pilihan_2,
+            )
+            .await?
         };
 
         // 5. Upsert draft pendaftaran
@@ -1342,6 +1364,8 @@ impl PendaftaranService {
                 req.prodi_pilihan_2,
             )
             .await?;
+
+        super::tahap::simpan_ke_pendaftar(self.repo.pool(), pendaftar.id, tahap_id).await?;
 
         // 6. Update state_langkah_pendaftar jika ada definisi_langkah dengan tipe_langkah = 'pilih_prodi'
         let langkah_list = self.repo.list_definisi_langkah(Some(req.jalur_id)).await?;
@@ -1412,15 +1436,11 @@ impl PendaftaranService {
                 ));
             }
         }
+        pastikan_prodi_2_boleh(self.repo.pool(), req.prodi_pilihan_2).await?;
 
-        // 2. Validasi gelombang aktif
-        let gelombang_aktif = self.repo.check_gelombang_active(req.gelombang_id).await?;
-        if !gelombang_aktif {
-            return Err(AppError::BadRequest(
-                "Gelombang pendaftaran yang dipilih sedang tidak aktif atau sudah ditutup"
-                    .to_string(),
-            ));
-        }
+        // 2. Validasi gelombang aktif & tahap yang sedang dibuka
+        let tahap_id =
+            super::tahap::pastikan_tahap(self.repo.pool(), req.gelombang_id, None).await?;
 
         // 3. Validasi kuota prodi pilihan 1
         let kuota_tersedia = self
@@ -1478,15 +1498,35 @@ impl PendaftaranService {
             }
         };
 
-        // 5. Generate nomor pendaftaran
-        let seq = self.repo.get_next_sequence().await?;
-        let nomor_pendaftaran = format!("PMB-2026-{:04}", seq);
+        // 5. Generate nomor pendaftaran (sementara; nomor asli terbit bila formulir lunas)
+        let nomor_pendaftaran = {
+            let mut conn = self.repo.pool().acquire().await?;
+            super::nomor::buat_sementara(
+                &mut conn,
+                req.gelombang_id,
+                req.prodi_pilihan_1,
+                req.prodi_pilihan_2,
+            )
+            .await?
+        };
 
         // 6. Buat record pendaftar offline
         let pendaftar = self
             .repo
             .create_pendaftaran_offline(calon_user_id, &nomor_pendaftaran, &req)
             .await?;
+
+        super::tahap::simpan_ke_pendaftar(self.repo.pool(), pendaftar.id, tahap_id).await?;
+
+        // Bayar tunai di loket = formulir sudah lunas -> langsung nomor pendaftaran asli
+        let nomor_pendaftaran = if req.lunas_loket {
+            let mut conn = self.repo.pool().acquire().await?;
+            super::nomor::terbitkan_resmi(&mut conn, pendaftar.id)
+                .await?
+                .unwrap_or(nomor_pendaftaran)
+        } else {
+            nomor_pendaftaran
+        };
 
         // 7. Jika lunas loket, buat pembayaran TUNAI_LOKET
         let nomor_tagihan = if req.lunas_loket {
@@ -1753,6 +1793,7 @@ impl PendaftaranService {
                             let rincian =
                                 crate::modules::kelulusan::service::rincian_biaya_daftar_ulang(
                                     pool,
+                                    p.id,
                                     prodi_id,
                                     p.jalur_id,
                                     p.gelombang_id,
@@ -2141,6 +2182,33 @@ pub(crate) fn validasi_format_berkas(
         return Err(AppError::BadRequest(format!(
             "Ekstensi berkas yang Anda masukkan salah, silakan ulangi kembali. Format yang diterima: {label}"
         )));
+    }
+    Ok(())
+}
+
+/// Prodi (menurut `kode_prodi`) yang hanya boleh dipilih sebagai pilihan 1.
+/// D3 Keperawatan butuh surat keterangan sehat & bebas buta warna, jadi tidak boleh menjadi
+/// pilihan cadangan (pilihan 2) bagi calon prodi lain.
+pub const HANYA_PILIHAN_1: [&str; 1] = ["KEP"];
+
+pub async fn pastikan_prodi_2_boleh(
+    pool: &sqlx::PgPool,
+    prodi_2: Option<Uuid>,
+) -> Result<(), AppError> {
+    let Some(id) = prodi_2 else {
+        return Ok(());
+    };
+    let baris: Option<(String, String)> =
+        sqlx::query_as("SELECT kode_prodi, nama_prodi FROM program_studi WHERE id = $1")
+            .bind(id)
+            .fetch_optional(pool)
+            .await?;
+    if let Some((kode, nama)) = baris {
+        if HANYA_PILIHAN_1.contains(&kode.as_str()) {
+            return Err(AppError::BadRequest(format!(
+                "{nama} hanya dapat dipilih sebagai pilihan program studi 1"
+            )));
+        }
     }
     Ok(())
 }

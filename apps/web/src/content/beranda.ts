@@ -67,12 +67,6 @@ export const GELOMBANG_CONTENT = {
   badgeDefault: "GELOMBANG 1",
   judulDefault: "Pendaftaran Early Bird",
   subjudulTarget: "Batas Akhir Pendaftaran & Verifikasi:",
-  keuntunganJudul: "Keuntungan Gelombang 1:",
-  keuntunganList: [
-    "Potongan Dana Pengembangan Pendidikan (DPP) Rp 2.000.000",
-    "Peluang beasiswa kemitraan industri prioritas utama",
-    "Jadwal seleksi & verifikasi berkas lebih fleksibel",
-  ],
   ctaAktif: "Amankan Kuota Anda Sekarang",
   stateDitutup: {
     badge: "Gelombang Ditutup",
@@ -84,3 +78,70 @@ export const GELOMBANG_CONTENT = {
   },
 };
 
+export const JALUR_PENERIMAAN = [
+  {
+    kode: "early",
+    nama: "READY Early",
+    keterangan: "Dibuka sesuai gelombang",
+    ketentuan: [
+      "Seleksi rapor kelas 11 semester 4, rata-rata keseluruhan minimal 80",
+      "Formulir gratis",
+      "Potongan 100% biaya DPP dan SKS",
+      "Kuota 70 calon yang sudah daftar ulang",
+    ],
+  },
+  {
+    kode: "partner",
+    nama: "READY Partner Scholarship",
+    keterangan: "Jalur Mitra Sekolah",
+    ketentuan: [
+      "Rapor semester 1-4 rata-rata minimal 75",
+      "Surat Rekomendasi Sekolah",
+      "Potongan 75% biaya DPP dan SKS",
+    ],
+  },
+  {
+    kode: "achievement",
+    nama: "READY Achievement",
+    keterangan: "Jalur Prestasi Siswa",
+    ketentuan: [
+      "Nilai rapor + sertifikat prestasi",
+      "Rapor > 88: 100%, 83-87,9: 75%, 78-82,9: 50%, 75-77,9: 25%",
+      "Sertifikat: Internasional 100%, Nasional 75%, Provinsi 50%, Kota/Kabupaten 25%",
+      "Berkesempatan menjadi Duta UPITRA",
+    ],
+  },
+  {
+    kode: "admission",
+    nama: "READY Admission",
+    keterangan: "Jalur Reguler",
+    ketentuan: ["Seleksi rapor, CBT online, lalu wawancara"],
+  },
+  {
+    kode: "legacy",
+    nama: "READY Legacy Scholarship",
+    keterangan: "Jalur Alumni UPITRA",
+    ketentuan: ["Seleksi berkas Kartu Keluarga (KK) dan ijazah alumni"],
+  },
+  {
+    kode: "future-leader",
+    nama: "READY Future Leader",
+    keterangan: "Jalur Aktivis Organisasi (Osis, OMK, dll)",
+    ketentuan: [
+      "Rapor semester 1-4 rata-rata minimal 75",
+      "Surat Rekomendasi Sekolah/Gereja/Organisasi lain",
+      "Beasiswa up to 75%",
+      "Dapat mengikuti Student Leadership Camp Forum",
+    ],
+  },
+  {
+    kode: "creator",
+    nama: "READY Creator",
+    keterangan: "Jalur Konten dan Talenta Digital",
+    ketentuan: [
+      "Berkas portofolio dan seleksi wawancara",
+      "Follower minimal 10K (khusus content creator): potongan 50% biaya DPP dan SKS",
+      "Berkesempatan mengikuti Portfolio Development",
+    ],
+  },
+] as const;

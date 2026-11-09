@@ -49,6 +49,65 @@ pub fn hitung_skor_bobot(
     (skor / total_bobot * 100.0).round() / 100.0
 }
 
+/// Keputusan kelulusan satu calon.
+#[derive(Debug, PartialEq)]
+pub struct Keputusan {
+    pub status: &'static str,
+    pub prodi_diterima_id: Option<Uuid>,
+    pub pilihan_ke: Option<i32>,
+}
+
+/// Tentukan hasil seleksi satu calon dari skor akhirnya (ujian CBT hanya sekali).
+/// 1. Lulus pilihan 1 bila skor mencapai passing grade dan kuota masih ada.
+/// 2. Gagal di pilihan 1 (nilai kurang atau kuota penuh) -> otomatis dialihkan ke pilihan 2
+///    memakai skor yang sama, tanpa ujian ulang, selama memenuhi passing grade dan kuota prodi 2.
+/// 3. Selain itu CADANGAN (skor tidak jauh di bawah ambang) atau TIDAK_LULUS.
+///    `kuota_terisi` diperbarui bila calon diterima.
+pub fn tentukan_keputusan(
+    skor_akhir: f64,
+    p1: Option<&crate::modules::kelulusan::repository::ProdiQuotaInfo>,
+    p2: Option<&crate::modules::kelulusan::repository::ProdiQuotaInfo>,
+    kuota_terisi: &mut HashMap<Uuid, i32>,
+) -> Keputusan {
+    let mut terima = |prodi: &crate::modules::kelulusan::repository::ProdiQuotaInfo| {
+        let terisi = *kuota_terisi.get(&prodi.id).unwrap_or(&0);
+        if skor_akhir >= prodi.passing_grade && terisi < prodi.kuota {
+            kuota_terisi.insert(prodi.id, terisi + 1);
+            true
+        } else {
+            false
+        }
+    };
+    if let Some(p) = p1 {
+        if terima(p) {
+            return Keputusan {
+                status: "LULUS_PILIHAN_1",
+                prodi_diterima_id: Some(p.id),
+                pilihan_ke: Some(1),
+            };
+        }
+    }
+    if let Some(p) = p2 {
+        if terima(p) {
+            return Keputusan {
+                status: "LULUS_PILIHAN_2",
+                prodi_diterima_id: Some(p.id),
+                pilihan_ke: Some(2),
+            };
+        }
+    }
+    let min_passing = p1.map(|p| p.passing_grade).unwrap_or(65.0);
+    Keputusan {
+        status: if skor_akhir >= min_passing - 5.0 {
+            "CADANGAN"
+        } else {
+            "TIDAK_LULUS"
+        },
+        prodi_diterima_id: None,
+        pilihan_ke: None,
+    }
+}
+
 pub fn format_nim_resmi(tahun: i32, jenjang: &str, kode_prodi: &str, sequence: i32) -> String {
     let thn = tahun % 100;
     let j_code = match jenjang {
@@ -262,41 +321,12 @@ impl KelulusanService {
             let p1 = prodi_map.get(&c.prodi_pilihan_1_id);
             let p2 = c.prodi_pilihan_2_id.and_then(|id| prodi_map.get(&id));
 
-            let mut status = "TIDAK_LULUS";
-            let mut prodi_diterima_id = None;
-            let mut pilihan_ke = None;
-
-            // Cek Pilihan 1
-            if let Some(p1_info) = p1 {
-                let terisi = *kuota_terisi.get(&p1_info.id).unwrap_or(&0);
-                if skor_akhir >= p1_info.passing_grade && terisi < p1_info.kuota {
-                    status = "LULUS_PILIHAN_1";
-                    prodi_diterima_id = Some(p1_info.id);
-                    pilihan_ke = Some(1);
-                    kuota_terisi.insert(p1_info.id, terisi + 1);
-                }
-            }
-
-            // Jika belum lulus di Pilihan 1, cek Pilihan 2
-            if status == "TIDAK_LULUS" {
-                if let Some(p2_info) = p2 {
-                    let terisi = *kuota_terisi.get(&p2_info.id).unwrap_or(&0);
-                    if skor_akhir >= p2_info.passing_grade && terisi < p2_info.kuota {
-                        status = "LULUS_PILIHAN_2";
-                        prodi_diterima_id = Some(p2_info.id);
-                        pilihan_ke = Some(2);
-                        kuota_terisi.insert(p2_info.id, terisi + 1);
-                    }
-                }
-            }
-
-            // Jika kuota penuh tetapi skor di atas ambang batas cadangan
-            if status == "TIDAK_LULUS" {
-                let min_passing = p1.map(|p| p.passing_grade).unwrap_or(65.0);
-                if skor_akhir >= (min_passing - 5.0) {
-                    status = "CADANGAN";
-                }
-            }
+            // Pilihan 1 -> (bila gagal) otomatis pilihan 2 dengan skor yang sama, tanpa ujian ulang
+            let Keputusan {
+                status,
+                prodi_diterima_id,
+                pilihan_ke,
+            } = tentukan_keputusan(skor_akhir, p1, p2, &mut kuota_terisi);
 
             let nomor_loa = if status.starts_with("LULUS") {
                 total_lulus += 1;
@@ -508,6 +538,20 @@ impl KelulusanService {
             .ok_or_else(|| {
                 AppError::NotFound("Data kelulusan kandidat tidak ditemukan".to_string())
             })?;
+
+        // Memindahkan penempatan prodi (pilihan 1 <-> 2) tidak boleh setelah calon membayar daftar ulang
+        if req.status_baru.starts_with("LULUS")
+            && hasil_lama.prodi_diterima_id != req.prodi_diterima_id
+            && self
+                .repo
+                .ada_pembayaran_daftar_ulang_berjalan(req.pendaftar_id)
+                .await?
+        {
+            return Err(AppError::Conflict(
+                "Calon sudah mengirim/menyelesaikan pembayaran daftar ulang; penempatan prodi tidak dapat diubah"
+                    .to_string(),
+            ));
+        }
 
         let res = self
             .repo
@@ -1006,6 +1050,7 @@ impl KelulusanService {
         let prodi_diterima = hasil.prodi_diterima_id.unwrap_or(pendaftar.prodi_pilihan_1);
         let rincian = rincian_biaya_daftar_ulang(
             self.repo.pool(),
+            pendaftar.id,
             prodi_diterima,
             pendaftar.jalur_id,
             pendaftar.gelombang_id,
@@ -1087,6 +1132,7 @@ impl KelulusanService {
             va_mandiri,
             ada_qris,
             nomor_registrasi,
+            nim_resmi: hasil.nim_resmi.clone(),
         };
 
         Ok(generate_loa_pdf(&loa_data))
@@ -1147,6 +1193,7 @@ impl KelulusanService {
         let prodi_diterima = hasil.prodi_diterima_id.unwrap_or(pendaftar.prodi_pilihan_1);
         let rincian = rincian_biaya_daftar_ulang(
             self.repo.pool(),
+            pendaftar.id,
             prodi_diterima,
             pendaftar.jalur_id,
             pendaftar.gelombang_id,
@@ -1215,6 +1262,43 @@ impl KelulusanService {
             }
         };
 
+        // Tagihan yang belum dibayar mengikuti rumus biaya terbaru (admisi dikurangi biaya formulir),
+        // selama belum ada bukti bayar yang sedang diperiksa.
+        let nominal_terbaru: i64 = rincian.iter().map(|r| r.nominal).sum();
+        let mut tagihan_row = tagihan_row;
+        if tagihan_row.5 == "MENUNGGU_PEMBAYARAN" && tagihan_row.2 != nominal_terbaru {
+            let diperbarui = sqlx::query(
+                "UPDATE tagihan SET nominal_asli = $2, nominal_akhir = GREATEST($2 - diskon_voucher, 0),
+                        updated_at = NOW()
+                 WHERE id = $1 AND status = 'MENUNGGU_PEMBAYARAN'
+                   AND NOT EXISTS (SELECT 1 FROM bukti_pembayaran b
+                                   WHERE b.tagihan_id = tagihan.id AND b.status = 'PENDING')",
+            )
+            .bind(tagihan_row.0)
+            .bind(nominal_terbaru)
+            .execute(self.repo.pool())
+            .await?
+            .rows_affected();
+            if diperbarui > 0 {
+                tagihan_row.2 = nominal_terbaru;
+                tagihan_row.3 = (nominal_terbaru - tagihan_row.4).max(0);
+            }
+        }
+
+        // Potongan 100%: tagihan Rp 0 langsung lunas dan calon lanjut ke pengunggahan berkas
+        let mut hasil = hasil;
+        if tagihan_row.5 == "MENUNGGU_PEMBAYARAN"
+            && tagihan_row.3 == 0
+            && crate::modules::pembayaran::repository::lunasi_tagihan_gratis(
+                self.repo.pool(),
+                tagihan_row.0,
+            )
+            .await?
+        {
+            tagihan_row.5 = "LUNAS".to_string();
+            hasil.status_daftar_ulang = "LUNAS".to_string();
+        }
+
         let tagihan_dto = Some(TagihanDaftarUlangDto {
             id: tagihan_row.0,
             nomor_tagihan: tagihan_row.1,
@@ -1247,6 +1331,14 @@ impl KelulusanService {
         .fetch_optional(self.repo.pool())
         .await?;
 
+        let (potongan_persen, benefit_jalur): (i32, Option<String>) = sqlx::query_as(
+            "SELECT p.potongan_persen, j.benefit_tambahan
+             FROM pendaftar p JOIN jalur_masuk j ON j.id = p.jalur_id WHERE p.id = $1",
+        )
+        .bind(pendaftar.id)
+        .fetch_one(self.repo.pool())
+        .await?;
+
         Ok(DaftarUlangInfoResponse {
             pendaftar_id: pendaftar.id,
             nomor_pendaftaran: pendaftar.nomor_pendaftaran,
@@ -1272,6 +1364,8 @@ impl KelulusanService {
             nomor_loa: hasil.nomor_surat_loa,
             tagihan: tagihan_dto,
             berkas_list,
+            potongan_persen,
+            benefit_jalur,
         })
     }
 
@@ -1312,6 +1406,9 @@ impl KelulusanService {
             return Err(AppError::BadRequest("Kunci berkas tidak valid".to_string()));
         }
 
+        let lengkap_sebelum =
+            berkas_daftar_ulang_lengkap(&self.repo.list_berkas_daftar_ulang(pendaftar.id).await?);
+
         let b = self
             .repo
             .insert_berkas_daftar_ulang(
@@ -1323,6 +1420,27 @@ impl KelulusanService {
                 req.file_size_bytes,
             )
             .await?;
+
+        // Unggahan baru berstatus PENDING: penanda "berkas lengkap" sebelum NIM terbit tidak berlaku lagi
+        if hasil.status_daftar_ulang == "BERKAS_LENGKAP" && hasil.nim_resmi.is_none() {
+            self.repo
+                .update_status_daftar_ulang(pendaftar.id, "LUNAS")
+                .await?;
+        }
+
+        // Berkas terakhir terunggah: beri tahu calon bahwa pendaftarannya selesai dan tinggal menunggu admin
+        if !lengkap_sebelum
+            && berkas_daftar_ulang_lengkap(&self.repo.list_berkas_daftar_ulang(pendaftar.id).await?)
+        {
+            crate::modules::pendaftaran::alur::kirim_notifikasi(
+                self.repo.pool(),
+                pendaftar.id,
+                "Pendaftaran Anda Telah Selesai",
+                PESAN_DAFTAR_ULANG_SELESAI,
+                "DAFTAR_ULANG_SELESAI",
+            )
+            .await;
+        }
 
         Ok(b)
     }
@@ -1345,21 +1463,17 @@ impl KelulusanService {
 
         // Cek jika seluruh berkas daftar ulang sudah berstatus VALID
         let all_berkas = self.repo.list_berkas_daftar_ulang(b.pendaftar_id).await?;
-        let required_docs = [
-            "SURAT_PERNYATAAN_MABA",
-            "SURAT_BEBAS_NARKOBA",
-            "AKTA_KELAHIRAN",
-            "IJAZAH_LEGALISIR",
-        ];
+        let all_valid = semua_berkas_daftar_ulang_valid(&all_berkas);
 
-        let mut all_valid = true;
-        for req_doc in &required_docs {
-            let has_valid = all_berkas
-                .iter()
-                .any(|d| d.jenis_berkas == *req_doc && d.status_verifikasi == "VALID");
-            if !has_valid {
-                all_valid = false;
-                break;
+        if !all_valid {
+            // Ada berkas yang tidak (lagi) valid: batalkan penanda lengkap yang sebelumnya terpasang
+            let hasil = self.repo.find_by_pendaftar_id(b.pendaftar_id).await?;
+            if hasil
+                .is_some_and(|h| h.status_daftar_ulang == "BERKAS_LENGKAP" && h.nim_resmi.is_none())
+            {
+                self.repo
+                    .update_status_daftar_ulang(b.pendaftar_id, "LUNAS")
+                    .await?;
             }
         }
 
@@ -1383,7 +1497,7 @@ impl KelulusanService {
                     b.pendaftar_id,
                     "Selamat! NIM Resmi Anda Telah Terbit",
                     &format!(
-                        "Registrasi ulang Anda telah selesai. NIM resmi Anda: {}. Selamat bergabung di Universitas Pignatelli Triputra.",
+                        "Registrasi ulang Anda telah selesai. NIM resmi Anda: {}. Surat penerimaan (LoA) yang memuat NIM dapat diunduh di menu Daftar Ulang. Selamat bergabung di Universitas Pignatelli Triputra.",
                         nim.nim_resmi
                     ),
                     "NIM_TERBIT",
@@ -1435,6 +1549,19 @@ impl KelulusanService {
             ));
         }
 
+        // Penerbitan NIM baru: seluruh berkas daftar ulang wajib harus valid (dicek langsung, bukan
+        // hanya dari penanda status)
+        if hasil.nim_resmi.is_none()
+            && !semua_berkas_daftar_ulang_valid(
+                &self.repo.list_berkas_daftar_ulang(pendaftar_id).await?,
+            )
+        {
+            return Err(AppError::Conflict(
+                "NIM baru dapat diterbitkan setelah SEMUA berkas daftar ulang berstatus valid"
+                    .to_string(),
+            ));
+        }
+
         let prodi_id = hasil
             .prodi_diterima_id
             .ok_or_else(|| AppError::BadRequest("Prodi diterima belum ditentukan".to_string()))?;
@@ -1460,9 +1587,14 @@ impl KelulusanService {
 
         // Rumus NIM diatur admin (templat + lingkup nomor urut). Nomor urut diambil atomik;
         // bila rumus yang diubah menghasilkan NIM yang sudah pernah terbit, ambil nomor berikutnya.
-        let tahun = {
-            use chrono::Datelike;
-            Utc::now().year()
+        // Tahun masuk mengikuti gelombang tempat calon mendaftar (mis. 2027 -> "27")
+        let (tahun, kode_angka) = {
+            let mut conn = self.repo.pool().acquire().await?;
+            (
+                crate::modules::pendaftaran::nomor::tahun_masuk(&mut conn, pendaftar.gelombang_id)
+                    .await?,
+                crate::modules::pendaftaran::nomor::kode_prodi(&mut conn, prodi_id).await?,
+            )
         };
         let (template, lingkup, _, _) = self.repo.get_pengaturan_nim().await?;
         let kunci = crate::modules::kelulusan::nim::kunci_pencacah(&lingkup, tahun, prodi_id);
@@ -1475,6 +1607,7 @@ impl KelulusanService {
                     tahun,
                     jenjang: prodi.jenjang.clone(),
                     kode_prodi: prodi.kode_prodi.clone(),
+                    kode_angka: kode_angka.clone(),
                     kode_fakultas: prodi.kode_fakultas.clone(),
                     urut,
                 },
@@ -1580,19 +1713,24 @@ impl KelulusanService {
             return Ok(gagal(e));
         }
         let tahun = {
-            use chrono::Datelike;
-            Utc::now().year()
+            let mut conn = self.repo.pool().acquire().await?;
+            crate::modules::pendaftaran::nomor::tahun_masuk_aktif(&mut conn).await?
         };
         let mut contoh = Vec::new();
         for p in self.master_repo.get_all_prodi().await?.into_iter().take(10) {
             let kunci = nim::kunci_pencacah(lingkup, tahun, p.id);
             let urut = self.repo.nomor_urut_terakhir(&kunci).await? + 1;
+            let kode_angka = {
+                let mut conn = self.repo.pool().acquire().await?;
+                crate::modules::pendaftaran::nomor::kode_prodi(&mut conn, p.id).await?
+            };
             match nim::render(
                 template,
                 &nim::KonteksNim {
                     tahun,
                     jenjang: p.jenjang.clone(),
                     kode_prodi: p.kode_prodi.clone(),
+                    kode_angka,
                     kode_fakultas: p.kode_fakultas.clone(),
                     urut,
                 },
@@ -1816,15 +1954,122 @@ type BarisTagihanDu = (Uuid, String, i64, i64, i64, String, chrono::DateTime<Utc
 // HELPER BIAYA DAFTAR ULANG (dipakai halaman daftar ulang & surat penerimaan)
 // =========================================================================
 
-/// Rincian biaya daftar ulang dari matriks biaya (prodi x jalur x gelombang).
-/// Bila matriks belum diisi, memakai UKT pokok prodi sebagai satu-satunya komponen.
+/// Pesan untuk calon setelah seluruh berkas daftar ulang terunggah.
+pub const PESAN_DAFTAR_ULANG_SELESAI: &str =
+    "Pendaftaran telah selesai. Admin akan memeriksa berkas dan menerbitkan NIM. Mohon menunggu.";
+
+/// Seluruh jenis berkas daftar ulang sudah terunggah (berkas yang ditolak dan belum diunggah ulang
+/// tidak dihitung).
+pub fn berkas_daftar_ulang_lengkap(berkas: &[BerkasDaftarUlang]) -> bool {
+    crate::modules::kelulusan::handler::JENIS_BERKAS_DAFTAR_ULANG
+        .iter()
+        .all(|jenis| {
+            berkas
+                .iter()
+                .rfind(|b| b.jenis_berkas == *jenis)
+                .is_some_and(|b| b.status_verifikasi != "INVALID")
+        })
+}
+
+/// Jumlah jenis berkas daftar ulang wajib yang unggahan terbarunya berstatus VALID.
+pub fn jumlah_berkas_wajib_valid(berkas: &[BerkasDaftarUlang]) -> usize {
+    crate::modules::kelulusan::handler::JENIS_BERKAS_DAFTAR_ULANG
+        .iter()
+        .filter(|jenis| {
+            berkas
+                .iter()
+                .rfind(|b| b.jenis_berkas == **jenis)
+                .is_some_and(|b| b.status_verifikasi == "VALID")
+        })
+        .count()
+}
+
+/// NIM hanya boleh terbit bila SEMUA berkas daftar ulang wajib valid (unggahan terbarunya).
+pub fn semua_berkas_daftar_ulang_valid(berkas: &[BerkasDaftarUlang]) -> bool {
+    jumlah_berkas_wajib_valid(berkas)
+        == crate::modules::kelulusan::handler::JENIS_BERKAS_DAFTAR_ULANG.len()
+}
+
+/// Biaya daftar ulang = biaya admisi program studi dikurangi biaya formulir pendaftaran
+/// yang sudah dibayar calon. Hasilnya tidak pernah di bawah nol.
+pub fn biaya_daftar_ulang(admisi: i64, biaya_formulir: i64) -> i64 {
+    (admisi - biaya_formulir).max(0)
+}
+
+/// Biaya formulir yang sudah dibayar calon (setelah voucher); bila tagihan formulir belum ada,
+/// memakai biaya formulir jalurnya.
+async fn biaya_formulir_calon(
+    pool: &sqlx::PgPool,
+    pendaftar_id: Uuid,
+    jalur_id: Uuid,
+) -> Result<i64, AppError> {
+    let tagihan: Option<i64> = sqlx::query_scalar(
+        "SELECT nominal_akhir FROM tagihan
+         WHERE pendaftar_id = $1 AND jenis_tagihan = 'FORMULIR' AND status <> 'BATAL'
+         ORDER BY (status = 'LUNAS') DESC, tgl_terbit DESC LIMIT 1",
+    )
+    .bind(pendaftar_id)
+    .fetch_optional(pool)
+    .await?;
+    if let Some(n) = tagihan {
+        return Ok(n);
+    }
+    Ok(
+        sqlx::query_scalar("SELECT biaya_formulir FROM jalur_masuk WHERE id = $1")
+            .bind(jalur_id)
+            .fetch_optional(pool)
+            .await?
+            .unwrap_or(0),
+    )
+}
+
+/// Rincian biaya daftar ulang: Biaya Admisi program studi (Rincian Biaya Kuliah) dikurangi
+/// biaya formulir pendaftaran yang sudah dibayar. Bila admisi prodi belum diisi, memakai matriks
+/// biaya (prodi x jalur x gelombang) atau UKT pokok prodi seperti sebelumnya.
 pub(crate) async fn rincian_biaya_daftar_ulang(
     pool: &sqlx::PgPool,
+    pendaftar_id: Uuid,
     prodi_id: Uuid,
     jalur_id: Uuid,
     gelombang_id: Uuid,
 ) -> Result<Vec<crate::modules::kelulusan::dto::RincianBiayaDto>, AppError> {
     use crate::modules::kelulusan::dto::RincianBiayaDto;
+
+    let admisi: i64 =
+        sqlx::query_scalar("SELECT admisi FROM rincian_biaya_kuliah WHERE prodi_id = $1")
+            .bind(prodi_id)
+            .fetch_optional(pool)
+            .await?
+            .unwrap_or(0);
+    // Potongan beasiswa jalur READY (persen) untuk biaya DPP dan SKS
+    let potongan: i64 =
+        sqlx::query_scalar("SELECT potongan_persen::bigint FROM pendaftar WHERE id = $1")
+            .bind(pendaftar_id)
+            .fetch_optional(pool)
+            .await?
+            .unwrap_or(0);
+    if admisi > 0 {
+        let formulir = biaya_formulir_calon(pool, pendaftar_id, jalur_id).await?;
+        let potongan_rp = admisi * potongan / 100;
+        let setelah_potongan = admisi - potongan_rp;
+        let dibayar = biaya_daftar_ulang(setelah_potongan, formulir);
+        let mut baris = vec![RincianBiayaDto {
+            komponen: "Biaya Admisi".to_string(),
+            nominal: admisi,
+        }];
+        if potongan_rp > 0 {
+            baris.push(RincianBiayaDto {
+                komponen: format!("Potongan beasiswa {potongan}%"),
+                nominal: -potongan_rp,
+            });
+        }
+        // Jumlah baris selalu sama dengan biaya akhir (tidak negatif)
+        baris.push(RincianBiayaDto {
+            komponen: "Dikurangi biaya formulir pendaftaran".to_string(),
+            nominal: dibayar - setelah_potongan,
+        });
+        return Ok(baris);
+    }
 
     let rows: Vec<(String, i64)> = sqlx::query_as(
         "SELECT k.nama_komponen, m.nominal
@@ -1841,10 +2086,18 @@ pub(crate) async fn rincian_biaya_daftar_ulang(
     .await?;
 
     if !rows.is_empty() {
-        return Ok(rows
+        let mut baris: Vec<RincianBiayaDto> = rows
             .into_iter()
             .map(|(komponen, nominal)| RincianBiayaDto { komponen, nominal })
-            .collect());
+            .collect();
+        let total: i64 = baris.iter().map(|r| r.nominal).sum();
+        if potongan > 0 {
+            baris.push(RincianBiayaDto {
+                komponen: format!("Potongan beasiswa {potongan}%"),
+                nominal: -(total * potongan / 100),
+            });
+        }
+        return Ok(baris);
     }
 
     let ukt: Option<i64> =
@@ -1855,10 +2108,17 @@ pub(crate) async fn rincian_biaya_daftar_ulang(
     let ukt = ukt.ok_or_else(|| {
         AppError::Internal("Biaya daftar ulang untuk program studi ini belum diatur".to_string())
     })?;
-    Ok(vec![RincianBiayaDto {
+    let mut baris = vec![RincianBiayaDto {
         komponen: "UKT Semester 1".to_string(),
         nominal: ukt,
-    }])
+    }];
+    if potongan > 0 {
+        baris.push(RincianBiayaDto {
+            komponen: format!("Potongan beasiswa {potongan}%"),
+            nominal: -(ukt * potongan / 100),
+        });
+    }
+    Ok(baris)
 }
 
 /// Batas bayar daftar ulang: tanggal batas gelombang (akhir hari WIB), atau 14 hari dari sekarang.
@@ -1885,6 +2145,136 @@ pub(crate) async fn batas_daftar_ulang(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn berkas(jenis: &str, status: &str) -> BerkasDaftarUlang {
+        BerkasDaftarUlang {
+            id: Uuid::new_v4(),
+            pendaftar_id: Uuid::nil(),
+            jenis_berkas: jenis.to_string(),
+            file_key: "k".into(),
+            file_name: "f.pdf".into(),
+            mime_type: "application/pdf".into(),
+            file_size_bytes: 1,
+            status_verifikasi: status.to_string(),
+            catatan: None,
+            uploaded_at: Utc::now(),
+            verified_by: None,
+            verified_at: None,
+        }
+    }
+
+    #[test]
+    fn nim_hanya_bila_semua_berkas_wajib_valid() {
+        let jenis = crate::modules::kelulusan::handler::JENIS_BERKAS_DAFTAR_ULANG;
+        let mut l: Vec<_> = jenis.iter().map(|j| berkas(j, "VALID")).collect();
+        assert!(semua_berkas_daftar_ulang_valid(&l));
+        assert_eq!(jumlah_berkas_wajib_valid(&l), jenis.len());
+        // satu berkas belum diperiksa -> belum boleh
+        l[2].status_verifikasi = "PENDING".into();
+        assert!(!semua_berkas_daftar_ulang_valid(&l));
+        // unggahan lama VALID tidak menolong bila unggahan terbaru ditolak/menunggu
+        let mut l: Vec<_> = jenis.iter().map(|j| berkas(j, "VALID")).collect();
+        l.push(berkas(jenis[0], "PENDING"));
+        assert!(!semua_berkas_daftar_ulang_valid(&l));
+        // berkas kurang
+        assert!(!semua_berkas_daftar_ulang_valid(&l[..3]));
+    }
+
+    #[test]
+    fn berkas_daftar_ulang_lengkap_bila_semua_jenis_terunggah() {
+        let semua: Vec<_> = crate::modules::kelulusan::handler::JENIS_BERKAS_DAFTAR_ULANG
+            .iter()
+            .map(|j| berkas(j, "PENDING"))
+            .collect();
+        assert!(berkas_daftar_ulang_lengkap(&semua));
+        assert!(!berkas_daftar_ulang_lengkap(&semua[..5]));
+        assert!(!berkas_daftar_ulang_lengkap(&[]));
+    }
+
+    #[test]
+    fn berkas_ditolak_dihitung_belum_terunggah_sampai_diunggah_ulang() {
+        let mut semua: Vec<_> = crate::modules::kelulusan::handler::JENIS_BERKAS_DAFTAR_ULANG
+            .iter()
+            .map(|j| berkas(j, "PENDING"))
+            .collect();
+        semua[3].status_verifikasi = "INVALID".into();
+        assert!(!berkas_daftar_ulang_lengkap(&semua));
+        // diunggah ulang (baris terbaru) -> kembali lengkap
+        semua.push(berkas(&semua[3].jenis_berkas.clone(), "PENDING"));
+        assert!(berkas_daftar_ulang_lengkap(&semua));
+    }
+
+    #[test]
+    fn biaya_daftar_ulang_admisi_dikurangi_formulir() {
+        assert_eq!(biaya_daftar_ulang(5_000_000, 250_000), 4_750_000);
+        // formulir gratis (beasiswa/voucher penuh): tidak ada pengurang
+        assert_eq!(biaya_daftar_ulang(5_000_000, 0), 5_000_000);
+        // tidak pernah negatif
+        assert_eq!(biaya_daftar_ulang(200_000, 250_000), 0);
+    }
+
+    fn prodi(passing: f64, kuota: i32) -> crate::modules::kelulusan::repository::ProdiQuotaInfo {
+        crate::modules::kelulusan::repository::ProdiQuotaInfo {
+            id: Uuid::new_v4(),
+            nama: "P".into(),
+            kode: "P".into(),
+            jenjang: "S1".into(),
+            kuota,
+            passing_grade: passing,
+            fakultas: "F".into(),
+        }
+    }
+
+    #[test]
+    fn keputusan_lulus_pilihan_1() {
+        let (p1, p2) = (prodi(75.0, 10), prodi(60.0, 10));
+        let mut kuota = HashMap::new();
+        let k = tentukan_keputusan(80.0, Some(&p1), Some(&p2), &mut kuota);
+        assert_eq!(k.status, "LULUS_PILIHAN_1");
+        assert_eq!(k.prodi_diterima_id, Some(p1.id));
+        assert_eq!(kuota[&p1.id], 1);
+    }
+
+    #[test]
+    fn gagal_pilihan_1_otomatis_ke_pilihan_2_tanpa_ujian_ulang() {
+        // Skor 68 < passing prodi 1 (75) tetapi >= passing prodi 2 (60): dialihkan otomatis
+        let (p1, p2) = (prodi(75.0, 10), prodi(60.0, 10));
+        let mut kuota = HashMap::new();
+        let k = tentukan_keputusan(68.0, Some(&p1), Some(&p2), &mut kuota);
+        assert_eq!(k.status, "LULUS_PILIHAN_2");
+        assert_eq!(k.prodi_diterima_id, Some(p2.id));
+        assert_eq!(k.pilihan_ke, Some(2));
+        assert!(!kuota.contains_key(&p1.id));
+    }
+
+    #[test]
+    fn kuota_pilihan_1_penuh_dialihkan_ke_pilihan_2() {
+        let (p1, p2) = (prodi(60.0, 1), prodi(60.0, 5));
+        let mut kuota = HashMap::new();
+        assert_eq!(
+            tentukan_keputusan(90.0, Some(&p1), Some(&p2), &mut kuota).status,
+            "LULUS_PILIHAN_1"
+        );
+        let k = tentukan_keputusan(85.0, Some(&p1), Some(&p2), &mut kuota);
+        assert_eq!(k.status, "LULUS_PILIHAN_2");
+        assert_eq!(k.prodi_diterima_id, Some(p2.id));
+    }
+
+    #[test]
+    fn tanpa_pilihan_2_atau_gagal_keduanya() {
+        let (p1, p2) = (prodi(75.0, 10), prodi(70.0, 10));
+        let mut kuota = HashMap::new();
+        // dekat ambang -> cadangan; jauh -> tidak lulus
+        assert_eq!(
+            tentukan_keputusan(72.0, Some(&p1), None, &mut kuota).status,
+            "CADANGAN"
+        );
+        assert_eq!(
+            tentukan_keputusan(50.0, Some(&p1), Some(&p2), &mut kuota).status,
+            "TIDAK_LULUS"
+        );
+        assert!(kuota.is_empty());
+    }
 
     #[test]
     fn test_format_nim_resmi_s1_dan_d3() {

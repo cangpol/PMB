@@ -68,6 +68,20 @@ impl AuthService {
             }
         }
 
+        let bersih = |v: &Option<String>| -> Option<String> {
+            v.as_deref()
+                .map(str::trim)
+                .filter(|t| !t.is_empty())
+                .map(str::to_string)
+        };
+        // Media sosial wajib menyebut nama platformnya (Instagram, TikTok, dst.)
+        let keterangan = bersih(&req.sumber_informasi_lainnya);
+        if sumber == Some("MEDIA_SOSIAL") && keterangan.is_none() {
+            return Err(AppError::BadRequest(
+                "Sebutkan nama media sosialnya".to_string(),
+            ));
+        }
+
         let hashed = hash_password(&req.password).map_err(AppError::Internal)?;
 
         let user = self
@@ -82,11 +96,8 @@ impl AuthService {
             .await?;
 
         if let Some(s) = sumber {
-            let lain = if s == "LAINNYA" {
-                req.sumber_informasi_lainnya
-                    .as_deref()
-                    .map(str::trim)
-                    .filter(|t| !t.is_empty())
+            let lain = if s == "LAINNYA" || s == "MEDIA_SOSIAL" {
+                keterangan.as_deref()
             } else {
                 None
             };
@@ -96,6 +107,23 @@ impl AuthService {
             .bind(user.id)
             .bind(s)
             .bind(lain)
+            .execute(self.user_repo.pool())
+            .await?;
+        }
+
+        // Asal sekolah hanya dicatat bila sumber informasinya "Sosialisasi di Sekolah"
+        let dari_sekolah = sumber == Some("SOSIALISASI_SEKOLAH");
+        let provinsi = bersih(&req.provinsi_asal_sekolah).filter(|_| dari_sekolah);
+        let kabupaten = bersih(&req.kabupaten_asal_sekolah).filter(|_| dari_sekolah);
+        let sekolah = bersih(&req.asal_sekolah).filter(|_| dari_sekolah);
+        if provinsi.is_some() || kabupaten.is_some() || sekolah.is_some() {
+            sqlx::query(
+                "UPDATE users SET provinsi_asal_sekolah = $2, kabupaten_asal_sekolah = $3, asal_sekolah = $4 WHERE id = $1",
+            )
+            .bind(user.id)
+            .bind(provinsi)
+            .bind(kabupaten)
+            .bind(sekolah)
             .execute(self.user_repo.pool())
             .await?;
         }

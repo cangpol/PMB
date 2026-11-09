@@ -97,28 +97,11 @@ const RiwayatBaris: React.FC<{ r: RiwayatCbtItem }> = ({ r }) => {
 
       <div className="sm:text-right shrink-0">
         {dinilai ? (
-          <>
-            <p className="text-[11px] uppercase tracking-wider font-semibold text-biru-700">
-              Skor
-            </p>
-            <p className="font-serif text-3xl font-bold text-biru-950 leading-none">
-              {r.nilai_akhir!.toFixed(2)}
-            </p>
-            <p className="text-[11px] text-biru-800 mt-1">
-              Benar {r.jumlah_benar ?? 0} · Salah {r.jumlah_salah ?? 0} · Kosong{" "}
-              {r.jumlah_kosong ?? 0}
-            </p>
-            <p
-              className={`text-[11px] font-semibold mt-0.5 ${
-                r.is_lulus ? "text-emerald-700" : "text-amber-700"
-              }`}
-            >
-              {r.is_lulus ? "Memenuhi" : "Di bawah"} passing grade{" "}
-              {r.passing_grade}
-            </p>
-          </>
+          <p className="max-w-[14rem] text-xs font-semibold text-biru-800 sm:ml-auto">
+            Nilai CBT akan kami nilai dulu oleh admin
+          </p>
         ) : (
-          <p className="text-xs text-biru-700/80">Belum ada skor</p>
+          <p className="text-xs text-biru-700/80">Belum selesai</p>
         )}
       </div>
     </li>

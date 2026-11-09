@@ -59,15 +59,18 @@ describe("format waktu WIB", () => {
 });
 
 describe("RiwayatCbtCard", () => {
-  it("menampilkan tanggal, jam, dan skor pengerjaan", async () => {
+  it("menampilkan tanggal dan jam pengerjaan tanpa skor maupun passing grade", async () => {
     fetchApi.mockResolvedValue([selesai]);
     render(<RiwayatCbtCard />);
 
-    expect(await screen.findByText("80.00")).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Nilai CBT akan kami nilai dulu oleh admin/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("80.00")).not.toBeInTheDocument();
     expect(screen.getByText("Sabtu, 7 November 2026")).toBeInTheDocument();
     expect(screen.getByText(/Mulai 08\.30/)).toBeInTheDocument();
-    expect(screen.getByText(/Benar 40/)).toBeInTheDocument();
-    expect(screen.getByText(/Memenuhi passing grade 65/)).toBeInTheDocument();
+    expect(screen.queryByText(/Benar 40/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/passing grade/i)).not.toBeInTheDocument();
   });
 
   it("menampilkan pesan kosong bila belum pernah ujian", async () => {

@@ -324,6 +324,95 @@ pub fn bangun_pdf(konten: &str) -> Vec<u8> {
     pdf
 }
 
+/// Rakit PDF beberapa halaman dengan ukuran halaman bebas (mis. A4 lanskap 841.89 x 595.28).
+/// Sumber daya sama dengan `bangun_pdf`: F1 Helvetica, F2 Helvetica-Bold, logo /Im1, /GS1.
+pub fn bangun_pdf_banyak(halaman: &[String], lebar: f64, tinggi: f64) -> Vec<u8> {
+    let mut pdf: Vec<u8> = Vec::with_capacity(64 * 1024);
+    let mut offset: Vec<usize> = vec![0];
+    pdf.extend_from_slice(b"%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+    let mut obj = |pdf: &mut Vec<u8>, isi: &[u8]| {
+        offset.push(pdf.len());
+        pdf.extend_from_slice(isi);
+    };
+
+    // Urutan objek: 1 katalog, 2 daftar halaman, 3 F1, 4 F2, 5 logo, 6 masker, 7 GS1,
+    // lalu pasangan (halaman, isi) mulai objek 8.
+    let kids: String = (0..halaman.len())
+        .map(|i| format!("{} 0 R", 8 + 2 * i))
+        .collect::<Vec<_>>()
+        .join(" ");
+    obj(
+        &mut pdf,
+        b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+    );
+    obj(
+        &mut pdf,
+        format!(
+            "2 0 obj\n<< /Type /Pages /Kids [{kids}] /Count {} /MediaBox [0 0 {lebar:.2} {tinggi:.2}] >>\nendobj\n",
+            halaman.len()
+        )
+        .as_bytes(),
+    );
+    obj(
+        &mut pdf,
+        b"3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n",
+    );
+    obj(
+        &mut pdf,
+        b"4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj\n",
+    );
+    let mut gambar = format!(
+        "5 0 obj\n<< /Type /XObject /Subtype /Image /Width {LOGO_PX} /Height {LOGO_PX} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /SMask 6 0 R /Length {} >>\nstream\n",
+        LOGO_RGB_Z.len()
+    )
+    .into_bytes();
+    gambar.extend_from_slice(LOGO_RGB_Z);
+    gambar.extend_from_slice(b"\nendstream\nendobj\n");
+    obj(&mut pdf, &gambar);
+    let mut masker = format!(
+        "6 0 obj\n<< /Type /XObject /Subtype /Image /Width {LOGO_PX} /Height {LOGO_PX} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length {} >>\nstream\n",
+        LOGO_ALPHA_Z.len()
+    )
+    .into_bytes();
+    masker.extend_from_slice(LOGO_ALPHA_Z);
+    masker.extend_from_slice(b"\nendstream\nendobj\n");
+    obj(&mut pdf, &masker);
+    obj(
+        &mut pdf,
+        b"7 0 obj\n<< /Type /ExtGState /ca 0.07 /CA 0.07 >>\nendobj\n",
+    );
+
+    for (i, konten) in halaman.iter().enumerate() {
+        let (hal, isi_obj) = (8 + 2 * i, 9 + 2 * i);
+        obj(
+            &mut pdf,
+            format!(
+                "{hal} 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Im1 5 0 R >> /ExtGState << /GS1 7 0 R >> >> /Contents {isi_obj} 0 R >>\nendobj\n"
+            )
+            .as_bytes(),
+        );
+        let mut isi =
+            format!("{isi_obj} 0 obj\n<< /Length {} >>\nstream\n", konten.len()).into_bytes();
+        isi.extend_from_slice(konten.as_bytes());
+        isi.extend_from_slice(b"\nendstream\nendobj\n");
+        obj(&mut pdf, &isi);
+    }
+
+    let xref = pdf.len();
+    pdf.extend_from_slice(format!("xref\n0 {}\n0000000000 65535 f \n", offset.len()).as_bytes());
+    for o in &offset[1..] {
+        pdf.extend_from_slice(format!("{o:010} 00000 n \n").as_bytes());
+    }
+    pdf.extend_from_slice(
+        format!(
+            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n",
+            offset.len()
+        )
+        .as_bytes(),
+    );
+    pdf
+}
+
 /// Kop surat standar (logo + "PMB" + nama universitas + alamat) pada halaman A4.
 /// Mengembalikan y tepat di bawah garis kop.
 pub fn kop_surat(h: &mut Halaman, subjudul: &str) -> f64 {
@@ -379,6 +468,21 @@ mod tests {
         assert!(teks.starts_with("%PDF-1.4"));
         assert!(teks.contains("/Subtype /Image"));
         assert!(teks.contains("/SMask 8 0 R"));
+        assert!(teks.trim_end().ends_with("%%EOF"));
+    }
+
+    #[test]
+    fn pdf_banyak_halaman_valid() {
+        let mut a = Halaman::baru();
+        a.teks(40.0, 500.0, true, 12.0, NAVY, "Halaman satu");
+        let mut b = Halaman::baru();
+        b.teks(40.0, 500.0, false, 12.0, NAVY, "Halaman dua");
+        let pdf = bangun_pdf_banyak(&[a.s, b.s], 841.89, 595.28);
+        let teks = String::from_utf8_lossy(&pdf);
+        assert!(teks.starts_with("%PDF-1.4"));
+        assert!(teks.contains("/Count 2"));
+        assert!(teks.contains("/Kids [8 0 R 10 0 R]"));
+        assert!(teks.contains("/MediaBox [0 0 841.89 595.28]"));
         assert!(teks.trim_end().ends_with("%%EOF"));
     }
 

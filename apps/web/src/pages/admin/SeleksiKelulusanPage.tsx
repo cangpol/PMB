@@ -69,6 +69,29 @@ interface DrafKelulusanItem {
   prodi_diterima_nama?: string | null;
   pilihan_ke?: number | null;
   catatan?: string | null;
+  status_seleksi_rapor?: string;
+  status_seleksi_interview?: string;
+  nilai_seleksi_interview?: number | null;
+  lulus_cbt?: boolean | null;
+}
+
+const labelHasil = (h?: string) =>
+  h === "LULUS" ? "Lulus" : h === "TIDAK_LULUS" ? "Tidak lulus" : "Menunggu";
+
+/** Ringkasan hasil tiga seleksi untuk pertimbangan pleno. */
+export function ringkasanSeleksi(
+  item: Pick<
+    DrafKelulusanItem,
+    "status_seleksi_rapor" | "status_seleksi_interview" | "lulus_cbt"
+  >,
+): string {
+  const cbt =
+    item.lulus_cbt == null
+      ? "Menunggu"
+      : item.lulus_cbt
+        ? "Lulus"
+        : "Tidak lulus";
+  return `Rapor: ${labelHasil(item.status_seleksi_rapor)} · CBT: ${cbt} · Interview: ${labelHasil(item.status_seleksi_interview)}.`;
 }
 
 interface AuditLog {
@@ -335,44 +358,48 @@ export const SeleksiKelulusanPage: React.FC = () => {
     }
   };
 
-  // Tidak diterima di pilihan 1: admin mengarahkan calon ke program studi pilihan ke-2
-  const handleArahkanPilihan2 = async (item: DrafKelulusanItem) => {
+  // Pleno menempatkan calon di pilihan 1 atau 2 berdasarkan hasil rapor, CBT, dan interview
+  const handleTempatkan = async (item: DrafKelulusanItem, pilihan: 1 | 2) => {
+    const prodiId =
+      pilihan === 1 ? item.prodi_pilihan_1_id : item.prodi_pilihan_2_id;
+    const prodiNama =
+      pilihan === 1 ? item.prodi_pilihan_1_nama : item.prodi_pilihan_2_nama;
+    if (!prodiId) return;
     const catatan = await dialog.masukkanAlasan({
-      judul: `Arahkan ${item.nama_lengkap} ke pilihan 2?`,
-      deskripsi: `Calon tidak diterima di ${item.prodi_pilihan_1_nama}. Setelah diarahkan, calon diterima di ${item.prodi_pilihan_2_nama} (pilihan kedua), mendapat LoA, dan dapat melanjutkan ke daftar ulang.`,
-      label: "Catatan / dasar keputusan",
+      judul: `Tempatkan ${item.nama_lengkap} di pilihan ${pilihan}?`,
+      deskripsi: `Calon diterima di ${prodiNama} (pilihan ${pilihan}), mendapat LoA, dan melanjutkan ke daftar ulang. ${ringkasanSeleksi(item)}`,
+      label: "Catatan / dasar keputusan pleno",
       placeholder:
-        "Contoh: kuota prodi pilihan 1 penuh, calon bersedia pilihan 2",
-      labelKirim: "Arahkan ke Pilihan 2",
+        pilihan === 1
+          ? "Contoh: lulus ketiga seleksi, skor memenuhi passing grade pilihan 1"
+          : "Contoh: kuota pilihan 1 penuh, calon bersedia pilihan 2",
+      labelKirim: `Tempatkan di Pilihan ${pilihan}`,
     });
     if (!catatan) return;
     try {
-      const res = await fetchApi<{
-        pesan: string;
-        prodi_baru: string;
-        nomor_surat_loa?: string | null;
-      }>("/api/kelulusan/admin/arahkan-pilihan-2", {
+      await fetchApi("/api/kelulusan/admin/kandidat/status", {
         method: "POST",
-        body: JSON.stringify({ pendaftar_id: item.pendaftar_id, catatan }),
+        body: JSON.stringify({
+          pendaftar_id: item.pendaftar_id,
+          status_baru: pilihan === 1 ? "LULUS_PILIHAN_1" : "LULUS_PILIHAN_2",
+          prodi_diterima_id: prodiId,
+          catatan,
+        }),
       });
       await loadData();
       void dialog.hasil({
         nada: "sukses",
-        judul: "Calon diarahkan ke pilihan 2",
-        deskripsi: res.pesan,
-        rincian: [
-          `Program studi: ${res.prodi_baru}`,
-          ...(res.nomor_surat_loa ? [`No. LoA: ${res.nomor_surat_loa}`] : []),
-        ],
-        autoTutupMs: 4500,
+        judul: `Calon ditempatkan di pilihan ${pilihan}`,
+        deskripsi: `${item.nama_lengkap} diterima di ${prodiNama}.`,
+        autoTutupMs: 3000,
       });
     } catch (err: unknown) {
       void dialog.hasil({
         nada: "gagal",
-        judul: "Gagal mengarahkan ke pilihan 2",
+        judul: "Penempatan prodi gagal",
         deskripsi:
           (err as { pesan?: string }).pesan ||
-          "Calon tidak dapat diarahkan ke pilihan kedua.",
+          "Calon tidak dapat ditempatkan di program studi tersebut.",
       });
     }
   };
@@ -614,6 +641,7 @@ export const SeleksiKelulusanPage: React.FC = () => {
                   <th className="py-3 px-4 text-center">CBT</th>
                   <th className="py-3 px-4 text-center">Rapor</th>
                   <th className="py-3 px-4 text-center">Prestasi</th>
+                  <th className="py-3 px-4">Hasil 3 Seleksi</th>
                   <th className="py-3 px-4 text-center">Skor Akhir</th>
                   <th className="py-3 px-4 text-center">Status Keputusan</th>
                   <th className="py-3 px-4">Prodi Diterima</th>
@@ -662,6 +690,20 @@ export const SeleksiKelulusanPage: React.FC = () => {
                     <td className="py-3 px-4 text-center font-mono">
                       {item.nilai_prestasi.toFixed(1)}
                     </td>
+                    <td className="py-3 px-4 text-[11px] leading-relaxed">
+                      <div>Rapor: {labelHasil(item.status_seleksi_rapor)}</div>
+                      <div>
+                        CBT:{" "}
+                        {item.lulus_cbt == null
+                          ? "Menunggu"
+                          : item.lulus_cbt
+                            ? "Lulus"
+                            : "Tidak lulus"}
+                      </div>
+                      <div>
+                        Interview: {labelHasil(item.status_seleksi_interview)}
+                      </div>
+                    </td>
                     <td className="py-3 px-4 text-center font-bold text-biru-950 font-mono text-sm">
                       {item.skor_akhir.toFixed(2)}
                     </td>
@@ -696,19 +738,33 @@ export const SeleksiKelulusanPage: React.FC = () => {
                     </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex flex-wrap items-center justify-center gap-1.5">
-                        {(item.status_kelulusan === "TIDAK_LULUS" ||
-                          item.status_kelulusan === "CADANGAN") &&
-                          item.prodi_pilihan_2_id && (
+                        {([1, 2] as const).map((n) => {
+                          const prodiId =
+                            n === 1
+                              ? item.prodi_pilihan_1_id
+                              : item.prodi_pilihan_2_id;
+                          if (!prodiId) return null;
+                          const aktif =
+                            item.status_kelulusan.startsWith("LULUS") &&
+                            item.prodi_diterima_id === prodiId;
+                          return (
                             <Button
-                              variant="primary"
+                              key={n}
+                              variant={aktif ? "primary" : "outline"}
                               size="sm"
-                              onClick={() => void handleArahkanPilihan2(item)}
-                              title={`Arahkan ke ${item.prodi_pilihan_2_nama}`}
+                              disabled={aktif}
+                              onClick={() => void handleTempatkan(item, n)}
+                              title={`Tempatkan di pilihan ${n}: ${
+                                n === 1
+                                  ? item.prodi_pilihan_1_nama
+                                  : item.prodi_pilihan_2_nama
+                              }`}
                               className="text-[11px] px-2 py-1"
                             >
-                              Arahkan ke Pil. 2
+                              Pil. {n}
                             </Button>
-                          )}
+                          );
+                        })}
                         <Button
                           variant="secondary"
                           size="sm"

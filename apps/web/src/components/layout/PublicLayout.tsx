@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Link, Outlet } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   ShieldCheck,
   Mail,
@@ -13,6 +14,47 @@ import { Button } from "../ui/Button";
 import { PublicNavbar } from "./PublicNavbar";
 
 const CURRENT_YEAR = 2026;
+
+interface BannerCms {
+  id: string;
+  judul: string;
+  link_url: string | null;
+}
+
+const TEKS_BANNER_BAWAAN =
+  "PMB Tahun Akademik 2026/2027 Telah Dibuka Resmi · Beasiswa Unggulan Triputra Group";
+
+/** Teks banner bagian atas: banner aktif pertama dari Kelola Banner (admin); bawaan bila kosong. */
+const BannerAtas: React.FC = () => {
+  const { data } = useQuery<BannerCms[]>({
+    queryKey: ["cms-banner-atas"],
+    queryFn: async () => {
+      const res = await fetch("/api/cms/banners");
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+  const banner = data?.[0];
+  const teks = banner?.judul ?? TEKS_BANNER_BAWAAN;
+  const kelas = "font-medium truncate";
+  if (banner?.link_url) {
+    return banner.link_url.startsWith("/") ? (
+      <Link to={banner.link_url} className={`${kelas} hover:text-putih`}>
+        {teks}
+      </Link>
+    ) : (
+      <a
+        href={banner.link_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${kelas} hover:text-putih`}
+      >
+        {teks}
+      </a>
+    );
+  }
+  return <span className={kelas}>{teks}</span>;
+};
 
 export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
   children,
@@ -32,10 +74,7 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
         <div className="mx-auto flex max-w-[1280px] items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-biru-400 shrink-0" />
-            <span className="font-medium truncate">
-              PMB Tahun Akademik 2026/2027 Telah Dibuka Resmi &middot; Beasiswa
-              Unggulan Triputra Group
-            </span>
+            <BannerAtas />
           </div>
           <div className="hidden md:flex items-center gap-6 text-biru-200 shrink-0">
             <a

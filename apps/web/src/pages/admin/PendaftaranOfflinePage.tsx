@@ -18,6 +18,7 @@ import {
   ErrorState,
 } from "../../components/common";
 import { useToast } from "@/components/ui/useToast";
+import { boleh_pilihan_2, PESAN_HANYA_PILIHAN_1 } from "../../lib/aturanProdi";
 
 interface MasterOption {
   id: string;
@@ -724,13 +725,16 @@ export const PendaftaranOfflinePage: React.FC = () => {
               >
                 <option value="">-- Tidak Memilih Pilihan 2 --</option>
                 {prodiList
-                  .filter((p) => p.id !== prodi1)
+                  .filter((p) => p.id !== prodi1 && boleh_pilihan_2(p.kode))
                   .map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.jenjang} {p.nama}
                     </option>
                   ))}
               </select>
+              <p className="text-[11px] text-biru-700">
+                {PESAN_HANYA_PILIHAN_1}
+              </p>
             </div>
           </div>
 
