@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { RingkasanProspekCard } from "../../components/admin/RingkasanProspekCard";
 import { SumberInformasiCard } from "../../components/admin/SumberInformasiCard";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -414,6 +415,8 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </Card>
           </div>
+
+          <RingkasanProspekCard />
 
           {/* ========================================================================= */}
           {/* 4. GRAFIK RECHARTS: TREN HARIAN & FUNNEL SELEKSI */}

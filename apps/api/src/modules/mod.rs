@@ -3,6 +3,7 @@ pub mod cbt;
 pub mod cms;
 pub mod dashboard;
 pub mod email_queue;
+pub mod files;
 pub mod fitur;
 pub mod health;
 pub mod kelulusan;

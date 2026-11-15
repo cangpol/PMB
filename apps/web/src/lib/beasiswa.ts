@@ -2,6 +2,10 @@
 export const JALUR_ACHIEVEMENT = "READY-ACHIEVEMENT";
 export const JALUR_CREATOR = "READY-CREATOR";
 export const JALUR_LEGACY = "READY-LEGACY";
+export const HUBUNGAN_ALUMNI = [
+  { kode: "ANAK", label: "Anak alumni (50%)", persen: 50 },
+  { kode: "SAUDARA", label: "Saudara alumni (25%)", persen: 25 },
+] as const;
 export const FOLLOWER_MINIMAL_CREATOR = 10_000;
 
 export const TINGKAT_PRESTASI = [
@@ -17,12 +21,17 @@ export interface AturanJalur {
   rapor_minimal: number | null;
   potongan_tetap: number | null;
   potongan_maks: number | null;
+  /** Rapor >= ambang mendapat potongan_tetap; di bawahnya potongan_di_bawah_ambang */
+  potongan_ambang_rapor?: number | null;
+  potongan_di_bawah_ambang?: number | null;
 }
 
 export interface MasukanPotongan {
   rataRapor: number | null;
   tingkatPrestasi: string;
   follower: number | null;
+  /** READY Legacy: ANAK | SAUDARA */
+  hubunganAlumni?: string;
   potonganAdmin: number | null;
 }
 
@@ -47,6 +56,7 @@ export function potonganDariPrestasi(tingkat: string): number {
 /** Rapor dipakai pada jalur ini (ada batas minimal, Achievement, atau seleksi penuh). */
 export const memakaiRapor = (a: AturanJalur) =>
   a.rapor_minimal !== null ||
+  (a.potongan_ambang_rapor ?? null) !== null ||
   a.kode_jalur === JALUR_ACHIEVEMENT ||
   a.alur_seleksi === "PENUH";
 
@@ -55,7 +65,8 @@ export const potonganDitentukanAdmin = (a: AturanJalur) =>
   a.potongan_tetap === null &&
   a.kode_jalur !== JALUR_ACHIEVEMENT &&
   a.kode_jalur !== JALUR_CREATOR &&
-  (a.potongan_maks !== null || a.kode_jalur === JALUR_LEGACY);
+  a.kode_jalur !== JALUR_LEGACY &&
+  a.potongan_maks !== null;
 
 export function hitungPotongan(
   a: AturanJalur,
@@ -82,8 +93,27 @@ export function hitungPotongan(
           ? (a.potongan_tetap ?? 0)
           : 0,
     };
+  if (a.kode_jalur === JALUR_LEGACY) {
+    const h = HUBUNGAN_ALUMNI.find((x) => x.kode === m.hubunganAlumni);
+    return h
+      ? { persen: h.persen }
+      : {
+          galat:
+            "Pilih hubungan dengan alumni: anak alumni (50%) atau saudara alumni (25%)",
+        };
+  }
+  // Potongan bertingkat menurut rapor: >= ambang = potongan tetap, di bawahnya potongan lain
+  const ambang = a.potongan_ambang_rapor ?? null;
+  if (ambang !== null) {
+    if (m.rataRapor === null) return { galat: "Rata-rata rapor wajib diisi" };
+    if (m.rataRapor >= ambang) return { persen: a.potongan_tetap ?? 0 };
+    const bawah = a.potongan_di_bawah_ambang ?? null;
+    return bawah === null
+      ? { galat: `Rata-rata rapor minimal ${ambang}` }
+      : { persen: bawah };
+  }
   if (a.potongan_tetap !== null) return { persen: a.potongan_tetap };
-  const batas = a.potongan_maks ?? (a.kode_jalur === JALUR_LEGACY ? 100 : 0);
+  const batas = a.potongan_maks ?? 0;
   const p = m.potonganAdmin ?? Math.min(batas, a.potongan_maks ?? 0);
   return p >= 0 && p <= batas
     ? { persen: p }

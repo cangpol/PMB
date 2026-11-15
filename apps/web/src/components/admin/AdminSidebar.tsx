@@ -73,6 +73,13 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
         icon: LayoutDashboard,
       },
       {
+        id: "prospek",
+        label: "Calon Prospek",
+        path: "/admin/cms/prospek",
+        icon: UserPlus,
+        roles: ["admin_pmb", "super_admin"],
+      },
+      {
         id: "offline",
         label: "Pendaftaran Offline Loket",
         path: "/admin/pendaftaran-offline",

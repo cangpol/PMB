@@ -11,10 +11,8 @@ pub struct AppConfig {
     pub cookie_same_site: String,
     pub app_env: String,
     pub cors_origin: Vec<String>,
-    pub s3_endpoint: String,
-    pub s3_access_key: String,
-    pub s3_secret_key: String,
-    pub s3_bucket: String,
+    /// Folder penyimpanan berkas unggahan pada server aplikasi. Env UPLOAD_DIR.
+    pub upload_dir: String,
     pub payment_gateway_provider: String,
     pub midtrans_server_key: String,
     pub midtrans_client_key: String,
@@ -58,6 +56,44 @@ impl std::fmt::Debug for SmtpConfig {
 }
 
 impl AppConfig {
+    /// Periksa pengaturan berbahaya saat `APP_ENV=production`.
+    /// Mengembalikan (galat_fatal, peringatan). Galat fatal menghentikan server.
+    pub fn masalah_produksi(&self) -> (Vec<String>, Vec<String>) {
+        let mut fatal = Vec::new();
+        let mut peringatan = Vec::new();
+        if self.app_env != "production" {
+            return (fatal, peringatan);
+        }
+        // SESSION_SECRET kini menandatangani tautan unggah/unduh berkas
+        if self.session_secret.len() < 32
+            || self.session_secret.contains("super_secret_session_key")
+        {
+            fatal.push("SESSION_SECRET wajib diisi acak minimal 32 karakter (menandatangani tautan berkas)".into());
+        }
+        if self.database_url.contains("postgres:postgres@")
+            || self.database_url.contains("pmb_password")
+        {
+            fatal.push("DATABASE_URL memakai kredensial bawaan".into());
+        }
+        if self.payment_gateway_provider.eq_ignore_ascii_case("mock") {
+            peringatan
+                .push("PAYMENT_GATEWAY_PROVIDER=mock: pembayaran otomatis tidak nyata".into());
+        }
+        if !self.cookie_secure {
+            fatal.push(
+                "COOKIE_SECURE harus true di produksi (cookie sesi wajib flag Secure)".into(),
+            );
+        }
+        if self
+            .cors_origin
+            .iter()
+            .any(|o| o.contains("localhost") || o.contains("127.0.0.1"))
+        {
+            peringatan.push("CORS_ORIGIN masih memuat localhost".into());
+        }
+        (fatal, peringatan)
+    }
+
     pub fn from_env() -> Self {
         dotenvy::dotenv().ok();
 
@@ -93,11 +129,10 @@ impl AppConfig {
             .filter(|s| !s.is_empty())
             .collect();
 
-        let s3_endpoint =
-            env::var("S3_ENDPOINT").unwrap_or_else(|_| "http://localhost:9000".to_string());
-        let s3_access_key = env::var("S3_ACCESS_KEY").unwrap_or_else(|_| "minioadmin".to_string());
-        let s3_secret_key = env::var("S3_SECRET_KEY").unwrap_or_else(|_| "minioadmin".to_string());
-        let s3_bucket = env::var("S3_BUCKET").unwrap_or_else(|_| "pmb-berkas".to_string());
+        let upload_dir = env::var("UPLOAD_DIR")
+            .ok()
+            .filter(|v| !v.trim().is_empty())
+            .unwrap_or_else(|| "./uploads".to_string());
 
         let payment_gateway_provider =
             env::var("PAYMENT_GATEWAY_PROVIDER").unwrap_or_else(|_| "mock".to_string());
@@ -159,10 +194,7 @@ impl AppConfig {
             cookie_same_site,
             app_env,
             cors_origin,
-            s3_endpoint,
-            s3_access_key,
-            s3_secret_key,
-            s3_bucket,
+            upload_dir,
             payment_gateway_provider,
             midtrans_server_key,
             midtrans_client_key,

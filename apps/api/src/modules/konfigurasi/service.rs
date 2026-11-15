@@ -548,6 +548,7 @@ impl KonfigurasiService {
         operator: &AuthUser,
         req: CreateJalurKonfigurasiRequest,
     ) -> Result<JalurDetailResponse, AppError> {
+        pastikan_tipe_seleksi(&req.tipe_seleksi)?;
         let item = self.repo.create_jalur(&req).await?;
         self.repo
             .record_audit(
@@ -579,6 +580,7 @@ impl KonfigurasiService {
         id: Uuid,
         req: UpdateJalurKonfigurasiRequest,
     ) -> Result<JalurDetailResponse, AppError> {
+        pastikan_tipe_seleksi(&req.tipe_seleksi)?;
         let item = self.repo.update_jalur(id, &req).await?;
         self.repo
             .record_audit(
@@ -1088,5 +1090,16 @@ mod tests_voucher {
         assert!(!kode_voucher_valid("[CONTOH] TRIPUTRA50"));
         assert!(!kode_voucher_valid("HE MAT"));
         assert!(!kode_voucher_valid("AB"));
+    }
+}
+
+/// Tipe seleksi harus sesuai constraint basis data agar pelanggaran menjadi 400, bukan 500.
+fn pastikan_tipe_seleksi(tipe: &str) -> Result<(), AppError> {
+    if matches!(tipe, "CBT" | "BERKAS" | "CAMPURAN" | "RPL") {
+        Ok(())
+    } else {
+        Err(AppError::BadRequest(
+            "Tipe seleksi harus salah satu dari: CBT, BERKAS, CAMPURAN, RPL".to_string(),
+        ))
     }
 }

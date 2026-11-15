@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { parseNominal, totalHinggaLulus } from "./biayaKuliah";
+import {
+  kelompokkanPerFakultas,
+  parseNominal,
+  totalHinggaLulus,
+  type RincianBiayaKuliah,
+} from "./biayaKuliah";
 
 describe("biayaKuliah", () => {
   it("menghitung total S1 delapan semester", () => {
@@ -19,5 +24,31 @@ describe("biayaKuliah", () => {
     expect(parseNominal("")).toBeNull();
     expect(parseNominal("-5")).toBeNull();
     expect(parseNominal("12abc")).toBeNull();
+  });
+});
+
+describe("kelompokkanPerFakultas", () => {
+  const p = (fakultas: string, jenjang: string, nama: string) =>
+    ({ fakultas, jenjang, nama_prodi: nama }) as RincianBiayaKuliah;
+
+  it("mengurutkan per fakultas, lalu jenjang dan nama prodi", () => {
+    const hasil = kelompokkanPerFakultas([
+      p("Fakultas Teknik", "S1", "Informatika"),
+      p("Fakultas Ekonomi", "S1", "Manajemen"),
+      p("Fakultas Teknik", "D3", "Teknik Mesin"),
+      p("Fakultas Ekonomi", "S1", "Akuntansi"),
+    ]);
+    expect(hasil.map((h) => h.fakultas)).toEqual([
+      "Fakultas Ekonomi",
+      "Fakultas Teknik",
+    ]);
+    expect(hasil[0].prodi.map((x) => x.nama_prodi)).toEqual([
+      "Akuntansi",
+      "Manajemen",
+    ]);
+    expect(hasil[1].prodi.map((x) => x.nama_prodi)).toEqual([
+      "Teknik Mesin",
+      "Informatika",
+    ]);
   });
 });

@@ -171,11 +171,15 @@ pub struct SeleksiItem {
     pub rapor_minimal: Option<f64>,
     pub potongan_tetap: Option<i32>,
     pub potongan_maks: Option<i32>,
+    pub potongan_ambang_rapor: Option<f64>,
+    pub potongan_di_bawah_ambang: Option<i32>,
     pub kriteria_seleksi: Option<String>,
     pub benefit_tambahan: Option<String>,
     pub potongan_persen: i32,
     pub tingkat_prestasi: Option<String>,
     pub jumlah_follower: Option<i64>,
+    /// READY Legacy: ANAK | SAUDARA
+    pub hubungan_alumni: Option<String>,
     pub cbt_dilewati: bool,
     pub prodi_pilihan_1_nama: String,
     pub prodi_pilihan_2_nama: Option<String>,
@@ -199,8 +203,9 @@ const SELECT_SELEKSI: &str = "SELECT p.id AS pendaftar_id, p.nomor_pendaftaran, 
                                                     'file_name', b.file_name) ORDER BY b.uploaded_at), '[]'::json)
            FROM berkas_pendaftar b WHERE b.pendaftar_id = p.id) AS berkas,
         j.kode_jalur, j.alur_seleksi, j.rapor_minimal, j.potongan_tetap, j.potongan_maks,
+        j.potongan_ambang_rapor, j.potongan_di_bawah_ambang,
         j.kriteria_seleksi, j.benefit_tambahan,
-        p.potongan_persen, p.tingkat_prestasi, p.jumlah_follower, p.cbt_dilewati,
+        p.potongan_persen, p.tingkat_prestasi, p.jumlah_follower, p.hubungan_alumni, p.cbt_dilewati,
         pr1.nama_prodi AS prodi_pilihan_1_nama, pr2.nama_prodi AS prodi_pilihan_2_nama,
         (SELECT hk.pilihan_ke FROM hasil_kelulusan hk WHERE hk.pendaftar_id = p.id) AS pilihan_ke_diterima
      FROM pendaftar p
@@ -251,6 +256,8 @@ pub struct SimpanHasilSeleksiRequest {
     pub tingkat_prestasi: Option<String>,
     /// READY Creator: jumlah follower
     pub jumlah_follower: Option<i64>,
+    /// READY Legacy: ANAK (potongan 50%) | SAUDARA (potongan 25%)
+    pub hubungan_alumni: Option<String>,
     /// Potongan DPP & SKS pilihan admin (jalur yang potongannya ditentukan admin)
     pub potongan_persen: Option<i32>,
 }
@@ -440,6 +447,8 @@ struct KonfigJalurCalon {
     rapor_minimal: Option<f64>,
     potongan_tetap: Option<i32>,
     potongan_maks: Option<i32>,
+    potongan_ambang_rapor: Option<f64>,
+    potongan_di_bawah_ambang: Option<i32>,
     status_pendaftaran: String,
     punya_pilihan_2: bool,
 }
@@ -456,6 +465,7 @@ pub(crate) async fn luluskan_tahap_pertama(
 ) -> Result<(), AppError> {
     let k: KonfigJalurCalon = sqlx::query_as(
         "SELECT j.kode_jalur, j.alur_seleksi, j.rapor_minimal, j.potongan_tetap, j.potongan_maks,
+                j.potongan_ambang_rapor, j.potongan_di_bawah_ambang,
                 p.status_pendaftaran, p.prodi_pilihan_2 IS NOT NULL AS punya_pilihan_2
          FROM pendaftar p JOIN jalur_masuk j ON j.id = p.jalur_id WHERE p.id = $1",
     )
@@ -485,17 +495,28 @@ pub(crate) async fn luluskan_tahap_pertama(
         ));
     }
 
+    if let Some(h) = req.hubungan_alumni.as_deref()
+        && ![beasiswa::HUBUNGAN_ANAK, beasiswa::HUBUNGAN_SAUDARA].contains(&h)
+    {
+        return Err(AppError::BadRequest(
+            "Hubungan dengan alumni harus ANAK atau SAUDARA".into(),
+        ));
+    }
+
     let potongan = beasiswa::hitung_potongan(
         &AturanJalur {
             kode_jalur: &k.kode_jalur,
             rapor_minimal: k.rapor_minimal,
             potongan_tetap: k.potongan_tetap,
             potongan_maks: k.potongan_maks,
+            potongan_ambang_rapor: k.potongan_ambang_rapor,
+            potongan_di_bawah_ambang: k.potongan_di_bawah_ambang,
         },
         &MasukanPotongan {
             rata_rata_rapor: req.nilai,
             tingkat_prestasi: req.tingkat_prestasi.as_deref(),
             jumlah_follower: req.jumlah_follower,
+            hubungan_alumni: req.hubungan_alumni.as_deref(),
             potongan_admin: req.potongan_persen,
         },
     )
@@ -525,7 +546,7 @@ pub(crate) async fn luluskan_tahap_pertama(
     let res = sqlx::query(
         "UPDATE pendaftar SET status_seleksi_rapor = 'LULUS', nilai_seleksi_rapor = $2,
                 catatan_seleksi_rapor = $3, nilai_rapor_avg = COALESCE($2, nilai_rapor_avg),
-                potongan_persen = $4, tingkat_prestasi = $5, jumlah_follower = $6,
+                potongan_persen = $4, tingkat_prestasi = $5, jumlah_follower = $6, hubungan_alumni = $9,
                 cbt_dilewati = $7,
                 status_seleksi_interview = CASE WHEN $8 THEN 'LULUS' ELSE status_seleksi_interview END,
                 status_pendaftaran = CASE WHEN $7 THEN 'MENUNGGU_PENGUMUMAN' ELSE status_pendaftaran END,
@@ -540,6 +561,7 @@ pub(crate) async fn luluskan_tahap_pertama(
     .bind(req.jumlah_follower)
     .bind(lewati_cbt)
     .bind(langsung)
+    .bind(&req.hubungan_alumni)
     .execute(pool)
     .await?;
     if res.rows_affected() == 0 {
@@ -832,6 +854,161 @@ pub async fn pindah_jalur_handler(
     ))
 }
 
+// ---------------------------------------------------------------------------
+// Pindah jalur saat seleksi (calon tidak memenuhi persyaratan jalur semula)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PindahJalurSeleksiRequest {
+    pub jalur_id: Uuid,
+    /// Alasan pemindahan; dikirim ke calon (mis. "Tidak memenuhi persyaratan rapor minimal 80")
+    pub alasan: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/pendaftaran/admin/seleksi/{pendaftar_id}/pindah-jalur",
+    tag = "Seleksi Admin",
+    params(("pendaftar_id" = Uuid, Path, description = "ID pendaftar")),
+    request_body = PindahJalurSeleksiRequest,
+    responses(
+        (status = 200, description = "Calon dipindahkan ke jalur lain"),
+        (status = 409, description = "Status calon tidak memungkinkan pemindahan")
+    )
+)]
+pub async fn pindah_jalur_seleksi_handler(
+    _admin: RequireAdmin,
+    State(state): State<AppState>,
+    Path(pendaftar_id): Path<Uuid>,
+    Json(req): Json<PindahJalurSeleksiRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let h = pindahkan_jalur_seleksi(&state.db, pendaftar_id, req.jalur_id, &req.alasan).await?;
+    let tambahan = if h.berkas_kurang > 0 {
+        format!(
+            " Jalur baru membutuhkan {} berkas tambahan; mohon lengkapi di menu Unggah Berkas.",
+            h.berkas_kurang
+        )
+    } else {
+        String::new()
+    };
+    alur::kirim_notifikasi(
+        &state.db,
+        pendaftar_id,
+        "Jalur Pendaftaran Anda Dipindahkan",
+        &format!(
+            "Pendaftaran Anda dipindahkan oleh admin dari {} ke {}. Alasan: {}.{tambahan}",
+            h.nama_lama, h.nama_baru, h.alasan
+        ),
+        "PINDAH_JALUR",
+    )
+    .await;
+    Ok(Json(
+        serde_json::json!({ "ok": true, "status": h.status_baru }),
+    ))
+}
+
+pub(crate) struct HasilPindahSeleksi {
+    pub status_baru: String,
+    pub nama_lama: String,
+    pub nama_baru: String,
+    pub alasan: String,
+    pub berkas_kurang: i64,
+}
+
+/// Pindahkan calon yang belum selesai seleksi tahap pertama ke jalur lain (tidak memenuhi
+/// persyaratan jalur semula). Penilaian jalur lama dihapus; bila jalur baru butuh berkas
+/// tambahan, status kembali ke BERKAS_REVISION agar calon melengkapinya.
+pub(crate) async fn pindahkan_jalur_seleksi(
+    pool: &PgPool,
+    pendaftar_id: Uuid,
+    jalur_id: Uuid,
+    alasan: &str,
+) -> Result<HasilPindahSeleksi, AppError> {
+    let alasan = alasan.trim();
+    if alasan.chars().count() < 5 {
+        return Err(AppError::BadRequest(
+            "Alasan pemindahan wajib diisi (minimal 5 karakter)".into(),
+        ));
+    }
+    let mut tx = pool.begin().await?;
+
+    let tujuan: Option<(bool, String)> =
+        sqlx::query_as("SELECT is_active, nama_jalur FROM jalur_masuk WHERE id = $1")
+            .bind(jalur_id)
+            .fetch_optional(&mut *tx)
+            .await?;
+    let Some((aktif, nama_baru)) = tujuan else {
+        return Err(AppError::NotFound("Jalur tujuan tidak ditemukan".into()));
+    };
+    if !aktif {
+        return Err(AppError::BadRequest("Jalur tujuan tidak aktif".into()));
+    }
+
+    let saat_ini: Option<(String, Uuid, String)> = sqlx::query_as(
+        "SELECT p.status_pendaftaran, p.jalur_id, j.nama_jalur
+         FROM pendaftar p JOIN jalur_masuk j ON j.id = p.jalur_id
+         WHERE p.id = $1 FOR UPDATE OF p",
+    )
+    .bind(pendaftar_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+    let Some((status_p, jalur_lama, nama_lama)) = saat_ini else {
+        return Err(AppError::NotFound("Pendaftar tidak ditemukan".into()));
+    };
+    if status_p != status::BERKAS_VERIFIED && status_p != status::MENUNGGU_UJIAN {
+        return Err(AppError::Conflict(
+            "Pemindahan saat seleksi hanya untuk calon yang berkasnya terverifikasi dan belum ujian CBT."
+                .into(),
+        ));
+    }
+    if jalur_id == jalur_lama {
+        return Err(AppError::BadRequest(
+            "Pilih jalur yang berbeda dari jalur semula.".into(),
+        ));
+    }
+
+    let kurang: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM definisi_berkas d
+         WHERE d.is_active AND d.wajib AND (d.jalur_id IS NULL OR d.jalur_id = $2)
+           AND NOT EXISTS (SELECT 1 FROM berkas_pendaftar b
+                           WHERE b.pendaftar_id = $1 AND b.jenis_berkas = d.kode_berkas
+                             AND b.status_verifikasi <> 'INVALID')",
+    )
+    .bind(pendaftar_id)
+    .bind(jalur_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    let status_baru = if kurang > 0 {
+        status::BERKAS_REVISION.to_string()
+    } else {
+        status_p
+    };
+
+    sqlx::query(
+        "UPDATE pendaftar SET jalur_id = $2, status_pendaftaran = $3,
+                status_seleksi_rapor = 'MENUNGGU', nilai_seleksi_rapor = NULL,
+                catatan_seleksi_rapor = $4, potongan_persen = 0, tingkat_prestasi = NULL,
+                jumlah_follower = NULL, hubungan_alumni = NULL, cbt_dilewati = FALSE,
+                updated_at = NOW()
+         WHERE id = $1",
+    )
+    .bind(pendaftar_id)
+    .bind(jalur_id)
+    .bind(&status_baru)
+    .bind(format!("Dipindahkan dari {nama_lama}: {alasan}"))
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+
+    Ok(HasilPindahSeleksi {
+        status_baru,
+        nama_lama,
+        nama_baru,
+        alasan: alasan.to_string(),
+        berkas_kurang: kurang,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -903,6 +1080,7 @@ mod tests {
             pilihan_ke: pilihan,
             tingkat_prestasi: None,
             jumlah_follower: None,
+            hubungan_alumni: None,
             potongan_persen: None,
         }
     }
@@ -950,7 +1128,8 @@ mod tests {
         .unwrap();
         assert_eq!((hasil.as_str(), pilihan), ("LULUS_PILIHAN_2", Some(2)));
 
-        // Daftar ulang: admisi 5 jt dengan potongan 100% dan formulir gratis -> Rp 0
+        // Daftar ulang: Admisi 5 jt dikurangi biaya formulir; formulir Early gratis dianggap sudah
+        // dibayar sebesar biaya formulir normal (READY Admission). Potongan 100% hanya untuk DPP & SKS.
         let (prodi, jalur, gel): (Uuid, Uuid, Uuid) = sqlx::query_as(
             "SELECT prodi_pilihan_2, jalur_id, gelombang_id FROM pendaftar WHERE id = $1",
         )
@@ -968,7 +1147,52 @@ mod tests {
         )
         .await
         .unwrap();
-        assert_eq!(rincian.iter().map(|r| r.nominal).sum::<i64>(), 0);
+        let normal: i64 = sqlx::query_scalar(
+            "SELECT biaya_formulir FROM jalur_masuk WHERE kode_jalur = 'READY-ADMISSION'",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert!(normal > 0);
+        assert_eq!(
+            rincian.iter().map(|r| r.nominal).sum::<i64>(),
+            5_000_000 - normal
+        );
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    #[ignore = "butuh PostgreSQL"]
+    async fn calon_early_dapat_mengunduh_loa_sebelum_daftar_ulang(pool: PgPool) {
+        use crate::modules::{
+            kelulusan::{repository::KelulusanRepository, service::KelulusanService},
+            master::repository::MasterRepository,
+            pendaftaran::repository::PendaftaranRepository,
+        };
+        let calon = siapkan_calon(&pool, "READY-EARLY", 85.0).await;
+        luluskan_tahap_pertama(&pool, calon, &req(Some(85.0), Some(1)), None)
+            .await
+            .unwrap();
+        // belum ada pembayaran/daftar ulang apa pun
+        let tagihan: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM tagihan WHERE pendaftar_id = $1 AND jenis_tagihan = 'DAFTAR_ULANG_UKT' AND status = 'LUNAS'",
+        )
+        .bind(calon)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(tagihan, 0);
+        let user_id: Uuid = sqlx::query_scalar("SELECT user_id FROM pendaftar WHERE id = $1")
+            .bind(calon)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        let service = KelulusanService::new(
+            KelulusanRepository::new(pool.clone()),
+            PendaftaranRepository::new(pool.clone()),
+            MasterRepository::new(pool.clone()),
+        );
+        let pdf = service.generate_loa_pdf_bytes(user_id).await.unwrap();
+        assert!(pdf.starts_with(b"%PDF"));
     }
 
     #[sqlx::test(migrations = "./migrations")]
@@ -1017,5 +1241,91 @@ mod tests {
                 .unwrap();
         assert_eq!(st, "BERKAS_VERIFIED");
         assert!(!dilewati);
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    #[ignore = "butuh PostgreSQL"]
+    async fn seleksi_jalur_legacy_potongan_anak_dan_saudara_alumni(pool: PgPool) {
+        let calon = siapkan_calon(&pool, "READY-LEGACY", 0.0).await;
+        // tanpa hubungan alumni: ditolak
+        assert!(
+            luluskan_tahap_pertama(&pool, calon, &req(None, Some(1)), None)
+                .await
+                .is_err()
+        );
+        let mut r = req(None, Some(1));
+        r.hubungan_alumni = Some("SAUDARA".into());
+        luluskan_tahap_pertama(&pool, calon, &r, None)
+            .await
+            .unwrap();
+        let potongan: i32 =
+            sqlx::query_scalar("SELECT potongan_persen FROM pendaftar WHERE id = $1")
+                .bind(calon)
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!(potongan, 25);
+
+        let anak = siapkan_calon(&pool, "READY-LEGACY", 0.0).await;
+        let mut r = req(None, Some(1));
+        r.hubungan_alumni = Some("ANAK".into());
+        luluskan_tahap_pertama(&pool, anak, &r, None).await.unwrap();
+        let potongan: i32 =
+            sqlx::query_scalar("SELECT potongan_persen FROM pendaftar WHERE id = $1")
+                .bind(anak)
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!(potongan, 50);
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    #[ignore = "butuh PostgreSQL"]
+    async fn seleksi_jalur_early_di_bawah_80_dipindah_ke_jalur_lain(pool: PgPool) {
+        let calon = siapkan_calon(&pool, "READY-EARLY", 76.0).await;
+        // rapor 76 < 80: tidak bisa diluluskan di READY Early
+        let r = req(Some(76.0), Some(1));
+        assert!(
+            luluskan_tahap_pertama(&pool, calon, &r, None)
+                .await
+                .is_err()
+        );
+
+        let admission: Uuid =
+            sqlx::query_scalar("SELECT id FROM jalur_masuk WHERE kode_jalur = 'READY-ADMISSION'")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        // alasan wajib
+        assert!(
+            pindahkan_jalur_seleksi(&pool, calon, admission, "  ")
+                .await
+                .is_err()
+        );
+        let h = pindahkan_jalur_seleksi(
+            &pool,
+            calon,
+            admission,
+            "Tidak memenuhi persyaratan rapor minimal 80",
+        )
+        .await
+        .unwrap();
+        assert_eq!(h.nama_baru, "READY Admission");
+        let (jalur, status, potongan): (Uuid, String, i32) = sqlx::query_as(
+            "SELECT jalur_id, status_pendaftaran, potongan_persen FROM pendaftar WHERE id = $1",
+        )
+        .bind(calon)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(jalur, admission);
+        assert_eq!(potongan, 0);
+        // jalur yang sama / status tidak sesuai ditolak
+        assert!(
+            pindahkan_jalur_seleksi(&pool, calon, admission, "alasan apa saja")
+                .await
+                .is_err()
+        );
+        assert!(status == "BERKAS_VERIFIED" || status == "BERKAS_REVISION");
     }
 }

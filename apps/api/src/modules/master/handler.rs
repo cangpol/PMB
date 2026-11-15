@@ -49,6 +49,18 @@ pub fn master_router() -> Router<AppState> {
             "/rincian-biaya-kuliah",
             get(super::rincian_biaya::list_rincian_biaya_handler),
         )
+        .route(
+            "/rincian-biaya-kuliah/riwayat",
+            get(super::rincian_riwayat::list_riwayat_biaya_handler),
+        )
+        .route(
+            "/rincian-biaya-kuliah/riwayat/{id}/pdf",
+            get(super::rincian_riwayat::unduh_riwayat_pdf_handler),
+        )
+        .route(
+            "/rincian-biaya-kuliah/riwayat/{id}/excel",
+            get(super::rincian_riwayat::unduh_riwayat_excel_handler),
+        )
 }
 
 #[utoipa::path(

@@ -24,3 +24,57 @@ export async function aturPeranMassal(
     body: JSON.stringify({ user_ids: userIds, role }),
   });
 }
+
+export interface DataPengguna {
+  email: string;
+  nama_lengkap: string;
+  no_hp: string;
+}
+
+export interface PenggunaDenganPassword {
+  pengguna: Pengguna;
+  /** Kosong bila password ditentukan admin sendiri */
+  password_sementara: string;
+}
+
+export function buatPengguna(
+  data: DataPengguna & { role: string; password?: string },
+): Promise<PenggunaDenganPassword> {
+  return fetchApi<PenggunaDenganPassword>("/api/admin/users", {
+    method: "POST",
+    body: JSON.stringify({ ...data, password: data.password || undefined }),
+  });
+}
+
+export function ubahPengguna(
+  id: string,
+  data: DataPengguna,
+): Promise<Pengguna> {
+  return fetchApi<Pengguna>(`/api/admin/users/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function aturStatusPengguna(
+  id: string,
+  isActive: boolean,
+): Promise<Pengguna> {
+  return fetchApi<Pengguna>(`/api/admin/users/${id}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ is_active: isActive }),
+  });
+}
+
+export function resetPasswordPengguna(
+  id: string,
+): Promise<PenggunaDenganPassword> {
+  return fetchApi<PenggunaDenganPassword>(
+    `/api/admin/users/${id}/reset-password`,
+    { method: "POST" },
+  );
+}
+
+export function hapusPengguna(id: string): Promise<void> {
+  return fetchApi<void>(`/api/admin/users/${id}`, { method: "DELETE" });
+}

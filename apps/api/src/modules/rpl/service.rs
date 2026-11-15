@@ -267,11 +267,10 @@ impl RplService {
         }
 
         // Berkas wajib berasal dari presign milik pemohon ini (cegah IDOR / path liar)
-        let prefix = prefix_berkas_rpl(pendaftar_id);
         if let Some(b) = req
             .berkas_pendukung
             .iter()
-            .find(|b| !b.file_key.starts_with(&prefix))
+            .find(|b| !crate::security::storage::StorageService::milik(&b.file_key, pendaftar_id))
         {
             return Err(AppError::BadRequest(format!(
                 "Dokumen \"{}\" belum diunggah dengan benar. Unggah ulang filenya.",

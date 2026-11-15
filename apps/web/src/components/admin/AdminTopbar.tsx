@@ -54,6 +54,7 @@ const BREADCRUMB_MAP: Record<string, string> = {
   "mata-kuliah": "Mata Kuliah",
   cms: "Konten Publik (CMS)",
   berita: "Berita & Pengumuman",
+  prospek: "Calon Prospek",
   banner: "Banner Slider",
   faq: "FAQ",
   halaman: "Halaman & Kebijakan",

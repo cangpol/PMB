@@ -1,6 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ShieldCheck, Users, Search, ScanLine } from "lucide-react";
+import {
+  ShieldCheck,
+  Users,
+  Search,
+  ScanLine,
+  UserPlus,
+  Pencil,
+  KeyRound,
+  Trash2,
+  Ban,
+  CheckCircle2,
+} from "lucide-react";
 import {
   Button,
   Checkbox,
@@ -15,8 +26,17 @@ import { useToast } from "@/components/ui/useToast";
 import { useAuth } from "@/context";
 import { KUNCI_FITUR, useAturPengawasCbt, useFitur } from "@/hooks/useFitur";
 import {
+  PenggunaFormDialog,
+  type IsianPengguna,
+} from "@/components/admin/PenggunaFormDialog";
+import {
   aturPeranMassal,
+  aturStatusPengguna,
+  buatPengguna,
   getDaftarPengguna,
+  hapusPengguna,
+  resetPasswordPengguna,
+  ubahPengguna,
   type Pengguna,
 } from "@/services/pengguna";
 
@@ -58,6 +78,11 @@ export const PenggunaAksesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [dipilih, setDipilih] = useState<Set<string>>(new Set());
   const [menyimpan, setMenyimpan] = useState(false);
+  // undefined = dialog tertutup, null = tambah baru, Pengguna = ubah data
+  const [formUntuk, setFormUntuk] = useState<Pengguna | null | undefined>(
+    undefined,
+  );
+  const [galatForm, setGalatForm] = useState<string | null>(null);
 
   // Tunda pencarian agar tidak memanggil API di tiap ketukan
   useEffect(() => {
@@ -177,7 +202,139 @@ export const PenggunaAksesPage: React.FC = () => {
     }
   };
 
+  const simpanForm = async (v: IsianPengguna) => {
+    try {
+      setMenyimpan(true);
+      setGalatForm(null);
+      const data = {
+        email: v.email.trim(),
+        nama_lengkap: v.nama_lengkap.trim(),
+        no_hp: v.no_hp.trim(),
+      };
+      if (formUntuk) {
+        await ubahPengguna(formUntuk.id, data);
+        toast({ variant: "berhasil", title: "Data pengguna diperbarui" });
+      } else {
+        const hasil = await buatPengguna({
+          ...data,
+          role: v.role,
+          password: v.password,
+        });
+        setFormUntuk(undefined);
+        await dialog.hasil({
+          nada: "sukses",
+          judul: "Pengguna ditambahkan",
+          deskripsi: hasil.password_sementara
+            ? "Sampaikan password sementara ini kepada pengguna. Password tidak akan ditampilkan lagi."
+            : undefined,
+          rincian: [
+            `${hasil.pengguna.nama_lengkap} (${hasil.pengguna.email})`,
+            ...(hasil.password_sementara
+              ? [`Password sementara: ${hasil.password_sementara}`]
+              : []),
+          ],
+        });
+      }
+      setFormUntuk(undefined);
+      await muat();
+    } catch (e) {
+      setGalatForm(pesanError(e));
+    } finally {
+      setMenyimpan(false);
+    }
+  };
+
+  const ubahStatus = async (u: Pengguna) => {
+    const aktifkan = !u.is_active;
+    const lanjut = await dialog.konfirmasi({
+      judul: aktifkan
+        ? `Aktifkan kembali ${u.nama_lengkap}?`
+        : `Nonaktifkan ${u.nama_lengkap}?`,
+      deskripsi: aktifkan
+        ? "Pengguna dapat login kembali."
+        : "Pengguna langsung keluar dari semua sesi dan tidak dapat login sampai diaktifkan lagi. Data tetap tersimpan.",
+      nada: aktifkan ? "sukses" : "bahaya",
+      labelYa: aktifkan ? "Aktifkan" : "Nonaktifkan",
+    });
+    if (!lanjut) return;
+    try {
+      await aturStatusPengguna(u.id, aktifkan);
+      toast({
+        variant: "berhasil",
+        title: aktifkan ? "Akun diaktifkan" : "Akun dinonaktifkan",
+      });
+      await muat();
+    } catch (e) {
+      await dialog.hasil({
+        nada: "gagal",
+        judul: "Gagal mengubah status",
+        deskripsi: pesanError(e),
+      });
+    }
+  };
+
+  const resetPassword = async (u: Pengguna) => {
+    const lanjut = await dialog.konfirmasi({
+      judul: `Reset password ${u.nama_lengkap}?`,
+      deskripsi:
+        "Password lama diganti dengan password sementara dan pengguna keluar dari semua sesi.",
+      nada: "bahaya",
+      labelYa: "Reset password",
+    });
+    if (!lanjut) return;
+    try {
+      const hasil = await resetPasswordPengguna(u.id);
+      await dialog.hasil({
+        nada: "sukses",
+        judul: "Password direset",
+        deskripsi:
+          "Sampaikan password sementara ini kepada pengguna. Password tidak akan ditampilkan lagi.",
+        rincian: [
+          `${u.email}`,
+          `Password sementara: ${hasil.password_sementara}`,
+        ],
+      });
+    } catch (e) {
+      await dialog.hasil({
+        nada: "gagal",
+        judul: "Gagal mereset password",
+        deskripsi: pesanError(e),
+      });
+    }
+  };
+
+  const hapus = async (u: Pengguna) => {
+    const lanjut = await dialog.konfirmasi({
+      judul: `Hapus akun ${u.nama_lengkap}?`,
+      deskripsi:
+        "Akun dihapus permanen. Akun yang sudah punya data pendaftaran tidak dapat dihapus; nonaktifkan saja.",
+      nada: "bahaya",
+      labelYa: "Hapus",
+    });
+    if (!lanjut) return;
+    try {
+      await hapusPengguna(u.id);
+      toast({ variant: "berhasil", title: "Akun dihapus" });
+      setDipilih((p) => {
+        const n = new Set(p);
+        n.delete(u.id);
+        return n;
+      });
+      await muat();
+    } catch (e) {
+      await dialog.hasil({
+        nada: "gagal",
+        judul: "Akun tidak dapat dihapus",
+        deskripsi: pesanError(e),
+      });
+    }
+  };
+
   const aktif = fitur.data?.pengawas_cbt_aktif ?? true;
+  const peranTersedia = PERAN_BISA_DIBAGI.map((k) => ({
+    kode: k,
+    nama: NAMA_PERAN[k],
+  }));
 
   return (
     <div className="space-y-6">
@@ -268,6 +425,18 @@ export const PenggunaAksesPage: React.FC = () => {
             </div>
           </div>
 
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              onClick={() => {
+                setGalatForm(null);
+                setFormUntuk(null);
+              }}
+            >
+              <UserPlus className="w-4 h-4 mr-1.5" /> Tambah Pengguna
+            </Button>
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-[1fr_220px]">
             <Input
               aria-label="Cari pengguna"
@@ -355,13 +524,15 @@ export const PenggunaAksesPage: React.FC = () => {
                   <th className="px-4 py-3">Nama</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Peran saat ini</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {pengguna.length === 0 && (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={6}
                       className="px-4 py-8 text-center text-biru-800"
                     >
                       Tidak ada pengguna yang cocok.
@@ -398,6 +569,64 @@ export const PenggunaAksesPage: React.FC = () => {
                           {NAMA_PERAN[u.role] ?? u.role}
                         </span>
                       </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={
+                            u.is_active
+                              ? "text-xs font-semibold text-green-700"
+                              : "text-xs font-semibold text-red-700"
+                          }
+                        >
+                          {u.is_active ? "Aktif" : "Nonaktif"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`Ubah ${u.nama_lengkap}`}
+                            onClick={() => {
+                              setGalatForm(null);
+                              setFormUntuk(u);
+                            }}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          {boleh && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Reset password ${u.nama_lengkap}`}
+                                onClick={() => void resetPassword(u)}
+                              >
+                                <KeyRound className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`${u.is_active ? "Nonaktifkan" : "Aktifkan"} ${u.nama_lengkap}`}
+                                onClick={() => void ubahStatus(u)}
+                              >
+                                {u.is_active ? (
+                                  <Ban className="w-4 h-4" />
+                                ) : (
+                                  <CheckCircle2 className="w-4 h-4" />
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Hapus ${u.nama_lengkap}`}
+                                onClick={() => void hapus(u)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -406,6 +635,18 @@ export const PenggunaAksesPage: React.FC = () => {
           </div>
         )}
       </section>
+
+      {formUntuk !== undefined && (
+        <PenggunaFormDialog
+          key={formUntuk?.id ?? "baru"}
+          pengguna={formUntuk}
+          peranTersedia={peranTersedia}
+          menyimpan={menyimpan}
+          galat={galatForm}
+          onSimpan={(v) => void simpanForm(v)}
+          onClose={() => setFormUntuk(undefined)}
+        />
+      )}
     </div>
   );
 };

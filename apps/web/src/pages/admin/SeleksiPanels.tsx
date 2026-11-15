@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, Repeat, XCircle } from "lucide-react";
+import { PindahJalurSeleksiDialog } from "../../components/admin/PindahJalurSeleksiDialog";
 import { Button, Card, EmptyState } from "../../components/common";
 import { fetchApi, type ApiError } from "@/services/api";
 import { KUNCI_ANTREAN } from "@/hooks/useAntreanVerifikasi";
@@ -9,6 +10,8 @@ import {
   TINGKAT_PRESTASI,
   JALUR_ACHIEVEMENT,
   JALUR_CREATOR,
+  JALUR_LEGACY,
+  HUBUNGAN_ALUMNI,
   hitungPotongan,
   memakaiRapor,
   potonganDitentukanAdmin,
@@ -38,11 +41,14 @@ export interface SeleksiItem {
   rapor_minimal: number | null;
   potongan_tetap: number | null;
   potongan_maks: number | null;
+  potongan_ambang_rapor?: number | null;
+  potongan_di_bawah_ambang?: number | null;
   kriteria_seleksi: string | null;
   benefit_tambahan: string | null;
   potongan_persen: number;
   tingkat_prestasi: string | null;
   jumlah_follower: number | null;
+  hubungan_alumni?: string | null;
   cbt_dilewati: boolean;
   prodi_pilihan_1_nama: string;
   prodi_pilihan_2_nama: string | null;
@@ -173,7 +179,9 @@ const BarisSeleksiAwal: React.FC<{
     r.jumlah_follower != null ? String(r.jumlah_follower) : "",
   );
   const [potonganAdmin, setPotonganAdmin] = useState("");
+  const [hubungan, setHubungan] = useState(r.hubungan_alumni ?? "");
   const [pilihan, setPilihan] = useState(0);
+  const [pindahBuka, setPindahBuka] = useState(false);
 
   const pakaiRapor = memakaiRapor(r);
   const langsung = r.alur_seleksi === "LANGSUNG_LULUS";
@@ -186,6 +194,7 @@ const BarisSeleksiAwal: React.FC<{
     rataRapor: nilaiRapor,
     tingkatPrestasi: tingkat,
     follower: nilaiFollower,
+    hubunganAlumni: hubungan,
     potonganAdmin: nilaiPotonganAdmin,
   });
   const valid =
@@ -204,6 +213,9 @@ const BarisSeleksiAwal: React.FC<{
           : {}),
         ...(r.kode_jalur === JALUR_CREATOR
           ? { jumlah_follower: nilaiFollower }
+          : {}),
+        ...(r.kode_jalur === JALUR_LEGACY && hubungan
+          ? { hubungan_alumni: hubungan }
           : {}),
         ...(nilaiPotonganAdmin !== null
           ? { potongan_persen: nilaiPotonganAdmin }
@@ -258,6 +270,12 @@ const BarisSeleksiAwal: React.FC<{
             <p className="text-[11px] text-biru-600">
               Isian calon: {r.nilai_rapor_avg}
               {r.rapor_minimal !== null && ` · minimal ${r.rapor_minimal}`}
+              {(r.potongan_ambang_rapor ?? null) !== null &&
+                ` · rapor ≥ ${r.potongan_ambang_rapor}: potongan ${r.potongan_tetap ?? 0}%${
+                  (r.potongan_di_bawah_ambang ?? null) !== null
+                    ? `, di bawahnya ${r.potongan_di_bawah_ambang}%`
+                    : ", di bawahnya tidak memenuhi syarat"
+                }`}
             </p>
           </div>
         )}
@@ -276,6 +294,26 @@ const BarisSeleksiAwal: React.FC<{
               {TINGKAT_PRESTASI.map((t) => (
                 <option key={t.kode} value={t.kode}>
                   {t.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {r.kode_jalur === JALUR_LEGACY && (
+          <div>
+            <label className="block text-[11px] text-biru-600">
+              Hubungan dengan alumni
+            </label>
+            <select
+              aria-label={`Hubungan alumni ${r.nama_lengkap}`}
+              value={hubungan}
+              onChange={(e) => setHubungan(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">Pilih hubungan…</option>
+              {HUBUNGAN_ALUMNI.map((h) => (
+                <option key={h.kode} value={h.kode}>
+                  {h.label}
                 </option>
               ))}
             </select>
@@ -367,6 +405,24 @@ const BarisSeleksiAwal: React.FC<{
         >
           Tidak lulus
         </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={simpan.isPending}
+          leftIcon={<Repeat className="w-3.5 h-3.5" />}
+          onClick={() => setPindahBuka(true)}
+        >
+          Pindah jalur
+        </Button>
+        <PindahJalurSeleksiDialog
+          calon={pindahBuka ? r : null}
+          alasanAwal={
+            "galat" in hasil
+              ? `Tidak memenuhi persyaratan ${r.nama_jalur}: ${hasil.galat}.`
+              : ""
+          }
+          onClose={() => setPindahBuka(false)}
+        />
       </td>
     </tr>
   );

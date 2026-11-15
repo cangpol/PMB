@@ -3,6 +3,7 @@ pub mod handler;
 pub mod model;
 pub mod repository;
 pub mod rincian_biaya;
+pub mod rincian_riwayat;
 pub mod service;
 
 pub use handler::master_router;

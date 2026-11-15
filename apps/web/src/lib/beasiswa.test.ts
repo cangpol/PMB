@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   hitungPotongan,
+  memakaiRapor,
+  potonganDitentukanAdmin,
   potonganDariRapor,
   type AturanJalur,
   type MasukanPotongan,
@@ -74,5 +76,34 @@ describe("potongan beasiswa jalur READY", () => {
     expect(
       hitungPotongan(a, m({ rataRapor: 76, potonganAdmin: 80 })),
     ).toHaveProperty("galat");
+  });
+
+  it("potongan bertingkat: rapor >= ambang dan di bawahnya", () => {
+    const a = aturan({
+      kode_jalur: "READY-EARLY",
+      potongan_tetap: 100,
+      potongan_ambang_rapor: 80,
+    });
+    expect(hitungPotongan(a, m({ rataRapor: 80 }))).toEqual({ persen: 100 });
+    expect(hitungPotongan(a, m({ rataRapor: 92 }))).toEqual({ persen: 100 });
+    // di bawah ambang tanpa potongan lain: tidak memenuhi syarat
+    expect(hitungPotongan(a, m({ rataRapor: 79.9 }))).toHaveProperty("galat");
+    expect(hitungPotongan(a, m({ rataRapor: null }))).toHaveProperty("galat");
+    const b = { ...a, potongan_di_bawah_ambang: 50 };
+    expect(hitungPotongan(b, m({ rataRapor: 79.9 }))).toEqual({ persen: 50 });
+    expect(hitungPotongan(b, m({ rataRapor: 60 }))).toEqual({ persen: 50 });
+    expect(memakaiRapor(a)).toBe(true);
+  });
+
+  it("Legacy: anak alumni 50%, saudara alumni 25%, wajib dipilih", () => {
+    const a = aturan({ kode_jalur: "READY-LEGACY" });
+    expect(hitungPotongan(a, m({ hubunganAlumni: "ANAK" }))).toEqual({
+      persen: 50,
+    });
+    expect(hitungPotongan(a, m({ hubunganAlumni: "SAUDARA" }))).toEqual({
+      persen: 25,
+    });
+    expect(hitungPotongan(a, m())).toHaveProperty("galat");
+    expect(potonganDitentukanAdmin(a)).toBe(false);
   });
 });

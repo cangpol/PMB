@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Card, ErrorState } from "../../../components/common";
 import { fetchApi, type ApiError } from "@/services/api";
+import { ArsipBiayaPanel } from "../../../components/admin/ArsipBiayaPanel";
 import { useToast } from "@/components/ui/useToast";
 import { formatRupiah } from "../../../services/prodi";
 import {
@@ -141,6 +142,8 @@ export const RincianBiayaKuliahPage: React.FC = () => {
           dibayar.
         </p>
       </div>
+
+      <ArsipBiayaPanel />
 
       {isLoading && <p className="text-sm text-biru-700">Memuat…</p>}
       {isError && (

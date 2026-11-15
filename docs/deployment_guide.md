@@ -33,7 +33,7 @@ Dokumen ini memuat prosedur resmi pemasangan, konfigurasi keamanan, pemantauan, 
          ├──► Backend API (Rust Axum:8080)
          │       ├──► PostgreSQL 16 (pmb_prod_db:5432)
          │       ├──► Redis 7 Alpine (Auth Cache & Rate Limiting:6379)
-         │       └──► MinIO S3 (Penyimpanan Berkas:9000)
+         │       └──► Volume upload-data (berkas unggahan calon, /app/uploads)
          └──► DB-Backup Daemon (Automated Daily Cron at 02:00 WIB)
 ```
 
@@ -67,10 +67,8 @@ REDIS_PASSWORD=<KATA_SANDI_ACAK_MINIMAL_32_KARAKTER>
 # Enkripsi & Token Sesi
 SESSION_SECRET=<STRING_ACAK_MINIMAL_64_KARAKTER_HEX_ATAU_BASE64>
 
-# MinIO S3 Object Storage
-S3_ACCESS_KEY=<KUNCI_AKSES_S3_PRODUKSI>
-S3_SECRET_KEY=<KUNCI_RAHASIA_S3_PRODUKSI>
-S3_BUCKET=pmb-berkas-prod
+# Berkas unggahan disimpan di disk server (volume upload-data, UPLOAD_DIR=/app/uploads).
+# Tidak ada konfigurasi S3/MinIO lagi.
 
 # Midtrans Payment Gateway
 MIDTRANS_SERVER_KEY=Mid-server-ProdKey...
@@ -79,7 +77,7 @@ MIDTRANS_IS_PRODUCTION=true
 ```
 
 > [!WARNING]
-> Jangan pernah menggunakan kredensial bawaan (*default*) seperti `minioadmin`, `pmb_password`, atau token sesi contoh pada peladen produksi!
+> Jangan pernah menggunakan kredensial bawaan (*default*) seperti `pmb_password`, atau token sesi contoh pada peladen produksi!
 
 ### 2.2 Pemasangan Sertifikat SSL/TLS
 Letakkan berkas sertifikat SSL valid pada direktori `docker/ssl/live/`:

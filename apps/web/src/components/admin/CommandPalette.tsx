@@ -236,6 +236,15 @@ const ADMIN_COMMAND_ITEMS: CommandItem[] = [
     icon: FileText,
   },
   {
+    id: "prospek",
+    label: "Calon Prospek (Formulir Minat & Konsultasi)",
+    group: "Ringkasan",
+    path: "/admin/cms/prospek",
+    keywords: ["prospek", "minat", "lead", "popup", "calon"],
+    roles: ["admin_pmb", "super_admin"],
+    icon: UserPlus,
+  },
+  {
     id: "cms-banner",
     label: "Banner Slider Beranda",
     group: "Konten Publik (CMS)",

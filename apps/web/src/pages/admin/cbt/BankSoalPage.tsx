@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Plus,
+  Pencil,
+  Trash2,
   Upload,
   Search,
   FileSpreadsheet,
@@ -16,6 +18,7 @@ import {
 } from "../../../components/common";
 import { fetchApi, type ApiError } from "@/services/api";
 import { useToast } from "@/components/ui/useToast";
+import { useDialog } from "@/components/ui/useDialog";
 import type { components } from "@/types/api";
 
 type BankSoal = components["schemas"]["BankSoal"];
@@ -23,6 +26,7 @@ type ImportResult = components["schemas"]["ImportSoalResultResponse"];
 
 export const BankSoalPage: React.FC = () => {
   const { toast } = useToast();
+  const dialog = useDialog();
 
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +40,9 @@ export const BankSoalPage: React.FC = () => {
   // Modals
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
+  // Soal yang sedang diubah (null = menambah soal baru) dan peringatan penggunaannya
+  const [editingSoal, setEditingSoal] = useState<BankSoal | null>(null);
+  const [peringatanEdit, setPeringatanEdit] = useState<string | null>(null);
 
   // Form Tambah Soal
   const [formKategori, setFormKategori] = useState<string>("TPA");
@@ -110,26 +117,32 @@ export const BankSoalPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      await fetchApi<BankSoal>("/api/cbt/admin/bank-soal", {
-        method: "POST",
-        body: JSON.stringify({
-          kategori: formKategori,
-          tingkat_kesulitan: formKesulitan,
-          pertanyaan: formPertanyaan,
-          opsi_jawaban: opsiJawaban,
-          kunci_jawaban: formKunci,
-          bobot: formBobot,
-          pembahasan: formPembahasan.trim() || undefined,
-        }),
-      });
+      await fetchApi<BankSoal>(
+        editingSoal
+          ? `/api/cbt/admin/bank-soal/${editingSoal.id}`
+          : "/api/cbt/admin/bank-soal",
+        {
+          method: editingSoal ? "PUT" : "POST",
+          body: JSON.stringify({
+            kategori: formKategori,
+            tingkat_kesulitan: formKesulitan,
+            pertanyaan: formPertanyaan,
+            opsi_jawaban: opsiJawaban,
+            kunci_jawaban: formKunci,
+            bobot: formBobot,
+            pembahasan: formPembahasan.trim() || undefined,
+          }),
+        },
+      );
 
       toast({
-        title: "Soal Tersimpan",
-        description: "Butir soal baru berhasil ditambahkan ke bank soal.",
+        title: editingSoal ? "Soal Diperbarui" : "Soal Tersimpan",
+        description: editingSoal
+          ? "Perubahan butir soal berhasil disimpan."
+          : "Butir soal baru berhasil ditambahkan ke bank soal.",
       });
 
-      setShowAddModal(false);
-      resetForm();
+      tutupModalSoal();
       loadBankSoal();
     } catch (err: unknown) {
       const apiErr = err as ApiError;
@@ -140,6 +153,90 @@ export const BankSoalPage: React.FC = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const tutupModalSoal = () => {
+    setShowAddModal(false);
+    setEditingSoal(null);
+    setPeringatanEdit(null);
+    resetForm();
+  };
+
+  // 2b. Ubah soal: isi formulir dari soal yang dipilih
+  const bukaUbahSoal = async (soal: BankSoal) => {
+    const opsi = Array.isArray(soal.opsi_jawaban)
+      ? (soal.opsi_jawaban as Array<{ label: string; teks: string }>)
+      : [];
+    const teks = (l: string) => opsi.find((o) => o.label === l)?.teks ?? "";
+    setFormKategori(soal.kategori);
+    setFormKesulitan(soal.tingkat_kesulitan);
+    setFormPertanyaan(soal.pertanyaan);
+    setFormOpsiA(teks("A"));
+    setFormOpsiB(teks("B"));
+    setFormOpsiC(teks("C"));
+    setFormOpsiD(teks("D"));
+    setFormOpsiE(teks("E"));
+    setFormKunci(soal.kunci_jawaban);
+    setFormBobot(soal.bobot);
+    setFormPembahasan(soal.pembahasan ?? "");
+    setPeringatanEdit(null);
+    setEditingSoal(soal);
+    setShowAddModal(true);
+    try {
+      const u = await fetchApi<{ paket: string[]; jumlah_jawaban: number }>(
+        `/api/cbt/admin/bank-soal/${soal.id}/penggunaan`,
+      );
+      if (u.jumlah_jawaban > 0)
+        setPeringatanEdit(
+          `Soal ini sudah dijawab ${u.jumlah_jawaban} kali. Mengubah kunci jawaban tidak mengubah nilai yang sudah tersimpan.`,
+        );
+      else if (u.paket.length > 0)
+        setPeringatanEdit(
+          `Soal ini dipakai di paket: ${u.paket.join(", ")}. Perubahan langsung berlaku di paket tersebut.`,
+        );
+    } catch {
+      /* peringatan bersifat tambahan */
+    }
+  };
+
+  // 2c. Hapus soal (diarsipkan: hasil ujian yang sudah ada tidak terhapus)
+  const hapusSoal = async (soal: BankSoal) => {
+    let rincian = "";
+    try {
+      const u = await fetchApi<{ paket: string[]; jumlah_jawaban: number }>(
+        `/api/cbt/admin/bank-soal/${soal.id}/penggunaan`,
+      );
+      if (u.paket.length > 0)
+        rincian += ` Soal ini akan dikeluarkan dari paket: ${u.paket.join(", ")}.`;
+      if (u.jumlah_jawaban > 0)
+        rincian += ` Jawaban peserta yang sudah tersimpan (${u.jumlah_jawaban}) dan hasil ujian tetap utuh.`;
+    } catch {
+      /* lanjut tanpa rincian */
+    }
+    const ya = await dialog.konfirmasi({
+      judul: "Hapus butir soal?",
+      deskripsi: `Soal "${soal.pertanyaan.slice(0, 80)}${soal.pertanyaan.length > 80 ? "…" : ""}" akan dihapus dari bank soal dan tidak muncul lagi di ujian.${rincian}`,
+      nada: "bahaya",
+      labelYa: "Ya, Hapus",
+    });
+    if (!ya) return;
+    try {
+      await fetchApi(`/api/cbt/admin/bank-soal/${soal.id}`, {
+        method: "DELETE",
+      });
+      toast({
+        title: "Soal Dihapus",
+        description: "Butir soal sudah dihapus dari bank soal.",
+      });
+      loadBankSoal();
+    } catch (err: unknown) {
+      const apiErr = err as ApiError;
+      toast({
+        title: "Gagal Menghapus",
+        description: apiErr.pesan || "Terjadi kesalahan saat menghapus soal.",
+        type: "error",
+      });
     }
   };
 
@@ -247,7 +344,12 @@ export const BankSoalPage: React.FC = () => {
 
           <Button
             variant="primary"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setEditingSoal(null);
+              setPeringatanEdit(null);
+              resetForm();
+              setShowAddModal(true);
+            }}
             className="flex items-center gap-2 bg-biru-600 hover:bg-biru-700 text-white"
           >
             <Plus className="w-4 h-4" />
@@ -352,9 +454,29 @@ export const BankSoalPage: React.FC = () => {
                     </span>
                   </div>
 
-                  <span className="text-xs font-semibold px-2 py-1 rounded bg-biru-100 text-biru-900">
-                    Kunci: {soal.kunci_jawaban}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold px-2 py-1 rounded bg-biru-100 text-biru-900">
+                      Kunci: {soal.kunci_jawaban}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void bukaUbahSoal(soal)}
+                      aria-label={`Ubah soal ${idx + 1}`}
+                      title="Ubah soal"
+                      className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-biru-50 hover:text-biru-800 cursor-pointer"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void hapusSoal(soal)}
+                      aria-label={`Hapus soal ${idx + 1}`}
+                      title="Hapus soal"
+                      className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-700 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Teks Pertanyaan */}
@@ -407,17 +529,25 @@ export const BankSoalPage: React.FC = () => {
           <Card className="max-w-2xl w-full p-6 bg-white shadow-xl border border-slate-200 rounded-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
               <h3 className="text-lg font-serif font-bold text-biru-950">
-                Tambah Butir Soal Baru
+                {editingSoal ? "Ubah Butir Soal" : "Tambah Butir Soal Baru"}
               </h3>
               <button
                 type="button"
-                onClick={() => setShowAddModal(false)}
+                onClick={tutupModalSoal}
                 className="text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
+            {peringatanEdit && (
+              <p
+                role="status"
+                className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+              >
+                {peringatanEdit}
+              </p>
+            )}
             <form onSubmit={handleSaveSoal} className="space-y-4 text-sm">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
@@ -429,6 +559,14 @@ export const BankSoalPage: React.FC = () => {
                     onChange={(e) => setFormKategori(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-biru-600 bg-white"
                   >
+                    {![
+                      "TPA",
+                      "BAHASA_INGGRIS",
+                      "MATEMATIKA",
+                      "LOGIKA",
+                    ].includes(formKategori) && (
+                      <option value={formKategori}>{formKategori}</option>
+                    )}
                     <option value="TPA">TPA</option>
                     <option value="BAHASA_INGGRIS">Bahasa Inggris</option>
                     <option value="MATEMATIKA">Matematika Dasar</option>
@@ -596,7 +734,7 @@ export const BankSoalPage: React.FC = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={tutupModalSoal}
                   disabled={isSubmitting}
                 >
                   Batal
@@ -607,7 +745,11 @@ export const BankSoalPage: React.FC = () => {
                   disabled={isSubmitting}
                   className="bg-biru-600 hover:bg-biru-700 text-white"
                 >
-                  {isSubmitting ? "Menyimpan..." : "Simpan ke Bank Soal"}
+                  {isSubmitting
+                    ? "Menyimpan..."
+                    : editingSoal
+                      ? "Simpan Perubahan"
+                      : "Simpan ke Bank Soal"}
                 </Button>
               </div>
             </form>

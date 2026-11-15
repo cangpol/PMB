@@ -91,6 +91,43 @@ pub async fn tahun_masuk_aktif(conn: &mut PgConnection) -> Result<i32, AppError>
     }))
 }
 
+/// Tahun angkatan untuk NIM: tahun berakhirnya tahun akademik gelombang (T.A. 2026/2027 -> 2027).
+/// Bila gelombang belum terhubung ke tahun akademik, tahun masuk biasa ditambah 1.
+pub async fn tahun_nim(conn: &mut PgConnection, gelombang_id: Uuid) -> Result<i32, AppError> {
+    let tahun: Option<i32> = sqlx::query_scalar(
+        "SELECT EXTRACT(YEAR FROM ta.tgl_selesai)::int
+         FROM gelombang g
+         LEFT JOIN tahun_akademik ta ON ta.id = g.tahun_akademik_id
+         WHERE g.id = $1",
+    )
+    .bind(gelombang_id)
+    .fetch_optional(&mut *conn)
+    .await?
+    .flatten();
+    match tahun {
+        Some(t) => Ok(t),
+        None => Ok(tahun_masuk(conn, gelombang_id).await? + 1),
+    }
+}
+
+/// Tahun angkatan NIM untuk pratinjau rumus: gelombang aktif terbaru.
+pub async fn tahun_nim_aktif(conn: &mut PgConnection) -> Result<i32, AppError> {
+    let tahun: Option<i32> = sqlx::query_scalar(
+        "SELECT EXTRACT(YEAR FROM ta.tgl_selesai)::int
+         FROM gelombang g
+         JOIN tahun_akademik ta ON ta.id = g.tahun_akademik_id
+         WHERE g.is_active = TRUE
+         ORDER BY g.tgl_mulai DESC LIMIT 1",
+    )
+    .fetch_optional(&mut *conn)
+    .await?
+    .flatten();
+    match tahun {
+        Some(t) => Ok(t),
+        None => Ok(tahun_masuk_aktif(conn).await? + 1),
+    }
+}
+
 /// Kode 2 digit sebuah prodi (kolom `kode_angka`, atau bawaan menurut `kode_prodi`).
 pub async fn kode_prodi(conn: &mut PgConnection, prodi_id: Uuid) -> Result<String, AppError> {
     let baris: Option<(Option<String>, String)> =
@@ -286,5 +323,30 @@ mod tests {
         assert!(nomor_sementara("W270001-3132"));
         assert!(!nomor_sementara("270031-3132"));
         assert!(!nomor_sementara("PMB-2026-0001"));
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    #[ignore = "butuh PostgreSQL"]
+    async fn tahun_nim_mengikuti_tahun_berakhir_tahun_akademik(pool: sqlx::PgPool) {
+        let ta: Uuid = sqlx::query_scalar(
+            "INSERT INTO tahun_akademik (kode, nama, tgl_mulai, tgl_selesai, is_active)
+             VALUES ('2026/2027', 'TA', '2026-09-01', '2027-08-31', TRUE) RETURNING id",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        let gel: Uuid = sqlx::query_scalar(
+            "INSERT INTO gelombang (nama_gelombang, tahun_akademik_id, nomor_gelombang, status, tgl_mulai, tgl_selesai, kuota, is_active)
+             VALUES ('G1', $1, 1, 'DIBUKA', '2026-11-01', '2026-12-31', 100, TRUE) RETURNING id",
+        )
+        .bind(ta)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        let mut conn = pool.acquire().await.unwrap();
+        // nomor pendaftaran tetap memakai tahun mulai (2026), NIM memakai angkatan 2027
+        assert_eq!(tahun_masuk(&mut conn, gel).await.unwrap(), 2026);
+        assert_eq!(tahun_nim(&mut conn, gel).await.unwrap(), 2027);
+        assert_eq!(tahun_nim_aktif(&mut conn).await.unwrap(), 2027);
     }
 }

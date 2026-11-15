@@ -30,6 +30,10 @@ pub struct PotonganJalurResponse {
     pub potongan_tetap: Option<i32>,
     /// Batas potongan (persen) yang boleh dipilih admin per calon
     pub potongan_maks: Option<i32>,
+    /// Rapor >= ambang mendapat potongan tetap
+    pub potongan_ambang_rapor: Option<f64>,
+    /// Potongan bila rapor di bawah ambang; kosong = tidak memenuhi syarat
+    pub potongan_di_bawah_ambang: Option<i32>,
     pub benefit_tambahan: Option<String>,
     pub kriteria_seleksi: Option<String>,
     pub jumlah_calon_berpotongan: i64,
@@ -44,6 +48,10 @@ pub struct UpdatePotonganJalurRequest {
     pub potongan_tetap: Option<i32>,
     #[validate(range(min = 0, max = 100, message = "Batas potongan 0-100 persen"))]
     pub potongan_maks: Option<i32>,
+    #[validate(range(min = 0.0, max = 100.0, message = "Ambang rapor 0-100"))]
+    pub potongan_ambang_rapor: Option<f64>,
+    #[validate(range(min = 0, max = 100, message = "Potongan di bawah ambang 0-100 persen"))]
+    pub potongan_di_bawah_ambang: Option<i32>,
     #[validate(range(min = 0, message = "Biaya formulir tidak boleh negatif"))]
     pub biaya_formulir: Option<i64>,
     #[validate(length(max = 500, message = "Benefit maksimal 500 karakter"))]
@@ -53,7 +61,8 @@ pub struct UpdatePotonganJalurRequest {
 }
 
 const SELECT_POTONGAN: &str = "SELECT j.id, j.kode_jalur, j.nama_jalur, j.alur_seleksi, j.biaya_formulir,
-        j.rapor_minimal, j.potongan_tetap, j.potongan_maks, j.benefit_tambahan, j.kriteria_seleksi,
+        j.rapor_minimal, j.potongan_tetap, j.potongan_maks, j.potongan_ambang_rapor,
+        j.potongan_di_bawah_ambang, j.benefit_tambahan, j.kriteria_seleksi,
         (SELECT COUNT(*) FROM pendaftar p WHERE p.jalur_id = j.id AND p.potongan_persen > 0) AS jumlah_calon_berpotongan,
         j.is_active
      FROM jalur_masuk j";
@@ -103,6 +112,18 @@ pub async fn update_potongan_jalur_handler(
             "Potongan tetap tidak boleh melebihi batas potongan".to_string(),
         ));
     }
+    if req.potongan_di_bawah_ambang.is_some() && req.potongan_ambang_rapor.is_none() {
+        return Err(AppError::BadRequest(
+            "Isi ambang rapor terlebih dahulu untuk mengatur potongan di bawah ambang".to_string(),
+        ));
+    }
+    if let (Some(tetap), Some(bawah)) = (req.potongan_tetap, req.potongan_di_bawah_ambang)
+        && bawah > tetap
+    {
+        return Err(AppError::BadRequest(
+            "Potongan di bawah ambang tidak boleh melebihi potongan di atas ambang".to_string(),
+        ));
+    }
     let benefit = req
         .benefit_tambahan
         .as_deref()
@@ -117,7 +138,8 @@ pub async fn update_potongan_jalur_handler(
     let diubah = sqlx::query(
         "UPDATE jalur_masuk SET rapor_minimal = $1, potongan_tetap = $2, potongan_maks = $3,
              biaya_formulir = COALESCE($4, biaya_formulir), benefit_tambahan = $5,
-             kriteria_seleksi = $6, updated_at = NOW()
+             kriteria_seleksi = $6, potongan_ambang_rapor = $8, potongan_di_bawah_ambang = $9,
+             updated_at = NOW()
          WHERE id = $7",
     )
     .bind(req.rapor_minimal)
@@ -127,6 +149,8 @@ pub async fn update_potongan_jalur_handler(
     .bind(benefit)
     .bind(kriteria)
     .bind(id)
+    .bind(req.potongan_ambang_rapor)
+    .bind(req.potongan_di_bawah_ambang)
     .execute(&state.db)
     .await?
     .rows_affected();

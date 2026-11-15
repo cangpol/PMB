@@ -77,6 +77,7 @@ pub fn admin_router() -> Router<AppState> {
         .route("/users", get(admin_list_users_handler))
         .route("/users/{id}/role", put(admin_update_role_handler))
         .route("/users/peran-massal", put(admin_atur_peran_massal_handler))
+        .merge(crate::modules::auth::pengguna_admin::router())
 }
 
 /// Cookie sesi TANPA Max-Age: cookie sesi browser, hilang saat browser ditutup

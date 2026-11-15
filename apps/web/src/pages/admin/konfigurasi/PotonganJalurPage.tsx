@@ -20,12 +20,19 @@ const KartuJalur: React.FC<{ j: PotonganJalur }> = ({ j }) => {
   const [tetap, setTetap] = useState(teks(j.potongan_tetap));
   const [maks, setMaks] = useState(teks(j.potongan_maks));
   const [rapor, setRapor] = useState(teks(j.rapor_minimal));
+  const [ambang, setAmbang] = useState(teks(j.potongan_ambang_rapor));
+  const [bawah, setBawah] = useState(teks(j.potongan_di_bawah_ambang));
   const [formulir, setFormulir] = useState(String(j.biaya_formulir));
   const [benefit, setBenefit] = useState(j.benefit_tambahan ?? "");
 
   const vTetap = parsePersen(tetap);
   const vMaks = parsePersen(maks);
   const vRapor = parseRapor(rapor);
+  const vAmbang = parseRapor(ambang);
+  const vBawah = parsePersen(bawah);
+  const bawahTanpaAmbang = typeof vBawah === "number" && vAmbang === null;
+  const bawahLebihBesar =
+    typeof vBawah === "number" && typeof vTetap === "number" && vBawah > vTetap;
   const vFormulir = /^\d{1,12}$/.test(formulir.trim())
     ? Number(formulir)
     : undefined;
@@ -36,11 +43,17 @@ const KartuJalur: React.FC<{ j: PotonganJalur }> = ({ j }) => {
     vMaks !== undefined &&
     vRapor !== undefined &&
     vFormulir !== undefined &&
+    vAmbang !== undefined &&
+    vBawah !== undefined &&
+    !bawahTanpaAmbang &&
+    !bawahLebihBesar &&
     !lewatBatas;
   const berubah =
     vTetap !== j.potongan_tetap ||
     vMaks !== j.potongan_maks ||
     vRapor !== j.rapor_minimal ||
+    vAmbang !== j.potongan_ambang_rapor ||
+    vBawah !== j.potongan_di_bawah_ambang ||
     vFormulir !== j.biaya_formulir ||
     benefit.trim() !== (j.benefit_tambahan ?? "");
 
@@ -52,6 +65,8 @@ const KartuJalur: React.FC<{ j: PotonganJalur }> = ({ j }) => {
           potongan_tetap: vTetap,
           potongan_maks: vMaks,
           rapor_minimal: vRapor,
+          potongan_ambang_rapor: vAmbang,
+          potongan_di_bawah_ambang: vBawah,
           biaya_formulir: vFormulir,
           benefit_tambahan: benefit.trim() || null,
           kriteria_seleksi: j.kriteria_seleksi,
@@ -149,9 +164,39 @@ const KartuJalur: React.FC<{ j: PotonganJalur }> = ({ j }) => {
           vFormulir === 0 ? "Gratis" : formatRupiah(vFormulir ?? 0),
         )}
       </div>
-      {lewatBatas && (
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {field(
+          "Ambang rapor",
+          ambang,
+          setAmbang,
+          vAmbang === undefined,
+          "Rapor ≥ ambang dapat potongan tetap",
+        )}
+        {field(
+          "Potongan di bawah ambang (%)",
+          bawah,
+          setBawah,
+          vBawah === undefined || bawahTanpaAmbang || bawahLebihBesar,
+          "Kosong = di bawah ambang tidak memenuhi syarat",
+        )}
+      </div>
+      {vAmbang !== null && vAmbang !== undefined && (
+        <p className="text-[11px] rounded-lg bg-biru-50 text-biru-800 px-3 py-2">
+          Rapor ≥ {vAmbang}: potongan {typeof vTetap === "number" ? vTetap : 0}
+          %. Rapor &lt; {vAmbang}:{" "}
+          {typeof vBawah === "number"
+            ? `potongan ${vBawah}%`
+            : "tidak memenuhi syarat"}
+          . Atur &quot;Rapor minimal&quot; bila ada batas terendah untuk lulus.
+        </p>
+      )}
+      {(lewatBatas || bawahTanpaAmbang || bawahLebihBesar) && (
         <p role="alert" className="text-[11px] text-red-600">
-          Potongan tetap tidak boleh melebihi batas potongan admin.
+          {bawahTanpaAmbang
+            ? "Isi ambang rapor lebih dulu."
+            : bawahLebihBesar
+              ? "Potongan di bawah ambang tidak boleh melebihi potongan tetap."
+              : "Potongan tetap tidak boleh melebihi batas potongan admin."}
         </p>
       )}
       <label className="block text-xs">

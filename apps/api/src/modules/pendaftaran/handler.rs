@@ -116,12 +116,7 @@ use crate::{
 pub struct PendaftaranApiDoc;
 
 fn make_service(state: &AppState) -> PendaftaranService {
-    let storage = StorageService::new(
-        state.config.s3_endpoint.clone(),
-        state.config.s3_access_key.clone(),
-        state.config.s3_secret_key.clone(),
-        state.config.s3_bucket.clone(),
-    );
+    let storage = StorageService::dari_config(&state.config);
     PendaftaranService::new(PendaftaranRepository::new(state.db.clone()), storage)
 }
 
@@ -176,6 +171,10 @@ pub fn pendaftaran_router() -> Router<AppState> {
         .route(
             "/admin/pindah-jalur",
             get(super::seleksi::list_menunggu_pindah_handler),
+        )
+        .route(
+            "/admin/seleksi/{pendaftar_id}/pindah-jalur",
+            post(super::seleksi::pindah_jalur_seleksi_handler),
         )
         .route(
             "/admin/pindah-jalur/{pendaftar_id}",

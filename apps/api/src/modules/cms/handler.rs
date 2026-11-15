@@ -33,6 +33,10 @@ use crate::{
         get_post_handler,
         list_banners_handler,
         list_faqs_handler,
+        crate::modules::cms::kontak::get_kontak_publik_handler,
+        crate::modules::cms::prospek::kirim_prospek_handler,
+        crate::modules::cms::prospek::list_prospek_handler,
+        crate::modules::cms::prospek::ubah_prospek_handler,
         get_page_handler,
         admin_list_posts_handler,
         admin_get_post_handler,
@@ -63,6 +67,11 @@ use crate::{
         CmsBannerResponse,
         CreateCmsBannerRequest,
         UpdateCmsBannerRequest,
+        crate::modules::cms::kontak::KontakPublikResponse,
+        crate::modules::cms::prospek::KirimProspekRequest,
+        crate::modules::cms::prospek::KirimProspekResponse,
+        crate::modules::cms::prospek::ProspekItem,
+        crate::modules::cms::prospek::UbahProspekRequest,
         CmsFaqResponse,
         CreateCmsFaqRequest,
         UpdateCmsFaqRequest,
@@ -83,6 +92,30 @@ pub fn cms_router() -> Router<AppState> {
         .route("/posts/{slug}", get(get_post_handler))
         .route("/banners", get(list_banners_handler))
         .route("/faqs", get(list_faqs_handler))
+        .route(
+            "/kontak",
+            get(crate::modules::cms::kontak::get_kontak_publik_handler),
+        )
+        .route(
+            "/prospek",
+            post(crate::modules::cms::prospek::kirim_prospek_handler),
+        )
+        .route(
+            "/admin/prospek",
+            get(crate::modules::cms::prospek::list_prospek_handler),
+        )
+        .route(
+            "/admin/prospek/export.xlsx",
+            get(crate::modules::cms::prospek_ekspor::ekspor_xlsx_handler),
+        )
+        .route(
+            "/admin/prospek/export.pdf",
+            get(crate::modules::cms::prospek_ekspor::ekspor_pdf_handler),
+        )
+        .route(
+            "/admin/prospek/{id}",
+            axum::routing::put(crate::modules::cms::prospek::ubah_prospek_handler),
+        )
         .route("/pages/{slug}", get(get_page_handler))
         // Admin CMS
         .route(
@@ -129,12 +162,7 @@ pub fn cms_router() -> Router<AppState> {
 }
 
 fn get_cms_service(state: &AppState) -> CmsService {
-    let storage = StorageService::new(
-        state.config.s3_endpoint.clone(),
-        state.config.s3_access_key.clone(),
-        state.config.s3_secret_key.clone(),
-        state.config.s3_bucket.clone(),
-    );
+    let storage = StorageService::dari_config(&state.config);
     CmsService::new(CmsRepository::new(state.db.clone()), storage)
 }
 

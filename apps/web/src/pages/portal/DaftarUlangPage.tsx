@@ -309,8 +309,8 @@ export const DaftarUlangPage: React.FC = () => {
             </section>
           )}
 
-          {/* LoA yang memuat NIM, tersedia setelah NIM terbit */}
-          {isTerdaftarMaba && data.nim_resmi && (
+          {/* LoA dapat diunduh sejak dinyatakan lulus (sebelum daftar ulang); memuat NIM setelah terbit */}
+          {(data.nomor_loa || (isTerdaftarMaba && data.nim_resmi)) && (
             <section
               className="rounded-2xl border border-biru-200 bg-putih p-5 flex flex-wrap items-center justify-between gap-3"
               aria-label="Surat Penerimaan (LoA)"
@@ -320,7 +320,9 @@ export const DaftarUlangPage: React.FC = () => {
                   Surat Penerimaan (LoA)
                 </h3>
                 <p className="text-xs text-biru-800">
-                  LoA sudah memuat NIM Anda ({data.nim_resmi}).
+                  {data.nim_resmi
+                    ? `LoA sudah memuat NIM Anda (${data.nim_resmi}).`
+                    : "Unduh LoA sebagai bukti penerimaan Anda. Setelah NIM terbit, LoA yang diunduh ulang akan memuat NIM."}
                 </p>
               </div>
               <Button

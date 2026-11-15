@@ -180,7 +180,7 @@ export const EditorBeritaPage: React.FC = () => {
       if (!presignRes.ok) throw new Error("Gagal membuat presigned upload URL");
       const presignData = await presignRes.json();
 
-      // 2. Upload file bytes langsung ke MinIO S3
+      // 2. Upload file bytes ke penyimpanan server lewat URL bertoken
       const uploadRes = await fetch(presignData.upload_url, {
         method: "PUT",
         headers: { "Content-Type": file.type || "application/octet-stream" },

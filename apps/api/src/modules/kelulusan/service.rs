@@ -1401,8 +1401,7 @@ impl KelulusanService {
             &[crate::modules::pendaftaran::alur::status::DAFTAR_ULANG_LUNAS],
             "Berkas registrasi ulang dapat diunggah setelah pembayaran daftar ulang disetujui admin PMB.",
         )?;
-        let prefix = format!("daftar_ulang/{}/", pendaftar.id);
-        if !req.file_key.starts_with(&prefix) || req.file_key.contains("..") {
+        if !crate::security::storage::StorageService::milik(&req.file_key, pendaftar.id) {
             return Err(AppError::BadRequest("Kunci berkas tidak valid".to_string()));
         }
 
@@ -1587,11 +1586,11 @@ impl KelulusanService {
 
         // Rumus NIM diatur admin (templat + lingkup nomor urut). Nomor urut diambil atomik;
         // bila rumus yang diubah menghasilkan NIM yang sudah pernah terbit, ambil nomor berikutnya.
-        // Tahun masuk mengikuti gelombang tempat calon mendaftar (mis. 2027 -> "27")
+        // Tahun angkatan NIM = tahun berakhirnya tahun akademik gelombang calon (2026/2027 -> 2027 -> "27")
         let (tahun, kode_angka) = {
             let mut conn = self.repo.pool().acquire().await?;
             (
-                crate::modules::pendaftaran::nomor::tahun_masuk(&mut conn, pendaftar.gelombang_id)
+                crate::modules::pendaftaran::nomor::tahun_nim(&mut conn, pendaftar.gelombang_id)
                     .await?,
                 crate::modules::pendaftaran::nomor::kode_prodi(&mut conn, prodi_id).await?,
             )
@@ -1714,7 +1713,7 @@ impl KelulusanService {
         }
         let tahun = {
             let mut conn = self.repo.pool().acquire().await?;
-            crate::modules::pendaftaran::nomor::tahun_masuk_aktif(&mut conn).await?
+            crate::modules::pendaftaran::nomor::tahun_nim_aktif(&mut conn).await?
         };
         let mut contoh = Vec::new();
         for p in self.master_repo.get_all_prodi().await?.into_iter().take(10) {
@@ -1996,13 +1995,24 @@ pub fn biaya_daftar_ulang(admisi: i64, biaya_formulir: i64) -> i64 {
     (admisi - biaya_formulir).max(0)
 }
 
-/// Biaya formulir yang sudah dibayar calon (setelah voucher); bila tagihan formulir belum ada,
-/// memakai biaya formulir jalurnya.
+/// Biaya formulir yang diperhitungkan sebagai sudah dibayar calon (setelah voucher); bila
+/// tagihan formulir belum ada, memakai biaya formulir jalurnya. Jalur yang formulirnya gratis
+/// (mis. READY Early) dianggap sudah membayar formulir sebesar biaya formulir normal
+/// (READY Admission), sehingga tetap dikurangkan pada biaya daftar ulang.
 async fn biaya_formulir_calon(
     pool: &sqlx::PgPool,
     pendaftar_id: Uuid,
     jalur_id: Uuid,
 ) -> Result<i64, AppError> {
+    let biaya_jalur: i64 =
+        sqlx::query_scalar("SELECT biaya_formulir FROM jalur_masuk WHERE id = $1")
+            .bind(jalur_id)
+            .fetch_optional(pool)
+            .await?
+            .unwrap_or(0);
+    if biaya_jalur == 0 {
+        return biaya_formulir_normal(pool).await;
+    }
     let tagihan: Option<i64> = sqlx::query_scalar(
         "SELECT nominal_akhir FROM tagihan
          WHERE pendaftar_id = $1 AND jenis_tagihan = 'FORMULIR' AND status <> 'BATAL'
@@ -2011,16 +2021,25 @@ async fn biaya_formulir_calon(
     .bind(pendaftar_id)
     .fetch_optional(pool)
     .await?;
-    if let Some(n) = tagihan {
-        return Ok(n);
-    }
-    Ok(
-        sqlx::query_scalar("SELECT biaya_formulir FROM jalur_masuk WHERE id = $1")
-            .bind(jalur_id)
-            .fetch_optional(pool)
-            .await?
-            .unwrap_or(0),
+    Ok(tagihan.unwrap_or(biaya_jalur))
+}
+
+/// Biaya formulir normal: biaya formulir jalur READY Admission (reguler); bila tidak ada,
+/// biaya formulir tertinggi di antara jalur aktif.
+async fn biaya_formulir_normal(pool: &sqlx::PgPool) -> Result<i64, AppError> {
+    let reguler: Option<i64> = sqlx::query_scalar(
+        "SELECT biaya_formulir FROM jalur_masuk WHERE kode_jalur = 'READY-ADMISSION' AND biaya_formulir > 0",
     )
+    .fetch_optional(pool)
+    .await?;
+    if let Some(b) = reguler {
+        return Ok(b);
+    }
+    Ok(sqlx::query_scalar(
+        "SELECT COALESCE(MAX(biaya_formulir), 0) FROM jalur_masuk WHERE is_active",
+    )
+    .fetch_one(pool)
+    .await?)
 }
 
 /// Rincian biaya daftar ulang: Biaya Admisi program studi (Rincian Biaya Kuliah) dikurangi
@@ -2049,26 +2068,31 @@ pub(crate) async fn rincian_biaya_daftar_ulang(
             .await?
             .unwrap_or(0);
     if admisi > 0 {
+        // Potongan beasiswa berlaku untuk biaya DPP dan SKS (biaya semester), bukan Admisi:
+        // biaya daftar ulang = Admisi dikurangi biaya formulir pendaftaran.
         let formulir = biaya_formulir_calon(pool, pendaftar_id, jalur_id).await?;
-        let potongan_rp = admisi * potongan / 100;
-        let setelah_potongan = admisi - potongan_rp;
-        let dibayar = biaya_daftar_ulang(setelah_potongan, formulir);
-        let mut baris = vec![RincianBiayaDto {
-            komponen: "Biaya Admisi".to_string(),
-            nominal: admisi,
-        }];
-        if potongan_rp > 0 {
-            baris.push(RincianBiayaDto {
-                komponen: format!("Potongan beasiswa {potongan}%"),
-                nominal: -potongan_rp,
-            });
-        }
-        // Jumlah baris selalu sama dengan biaya akhir (tidak negatif)
-        baris.push(RincianBiayaDto {
-            komponen: "Dikurangi biaya formulir pendaftaran".to_string(),
-            nominal: dibayar - setelah_potongan,
-        });
-        return Ok(baris);
+        let dibayar = biaya_daftar_ulang(admisi, formulir);
+        let gratis =
+            sqlx::query_scalar::<_, i64>("SELECT biaya_formulir FROM jalur_masuk WHERE id = $1")
+                .bind(jalur_id)
+                .fetch_optional(pool)
+                .await?
+                == Some(0);
+        let label = if gratis {
+            "Dikurangi biaya formulir pendaftaran (jalur gratis, dianggap sudah dibayar)"
+        } else {
+            "Dikurangi biaya formulir pendaftaran"
+        };
+        return Ok(vec![
+            RincianBiayaDto {
+                komponen: "Biaya Admisi".to_string(),
+                nominal: admisi,
+            },
+            RincianBiayaDto {
+                komponen: label.to_string(),
+                nominal: dibayar - admisi,
+            },
+        ]);
     }
 
     let rows: Vec<(String, i64)> = sqlx::query_as(

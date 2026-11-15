@@ -29,12 +29,7 @@ use crate::{
 };
 
 fn storage(state: &AppState) -> StorageService {
-    StorageService::new(
-        state.config.s3_endpoint.clone(),
-        state.config.s3_access_key.clone(),
-        state.config.s3_secret_key.clone(),
-        state.config.s3_bucket.clone(),
-    )
+    StorageService::dari_config(&state.config)
 }
 
 /// Isi URL unduh sementara untuk tiap dokumen portofolio sebelum dikirim ke klien.
@@ -45,7 +40,10 @@ fn lengkapi_url_unduh(
     let st = storage(state);
     for b in detail.berkas_pendukung.iter_mut() {
         if !b.file_key.is_empty() {
-            b.url_unduh = Some(st.generate_presigned_get_url(&b.file_key, 900).download_url);
+            b.url_unduh = Some(
+                st.generate_presigned_get_url(&StorageService::kunci("rpl", &b.file_key), 900)
+                    .download_url,
+            );
         }
     }
     detail
@@ -93,13 +91,15 @@ pub async fn presign_berkas_rpl_handler(
         .map(|(_, e)| e.to_lowercase())
         .filter(|e| EKSTENSI_BERKAS_RPL.contains(&e.as_str()))
         .ok_or_else(|| AppError::BadRequest("Format file harus PDF, JPG, atau PNG".to_string()))?;
-    let key = format!(
-        "{}{}.{}",
-        crate::modules::rpl::service::prefix_berkas_rpl(pendaftar_id),
-        Uuid::new_v4(),
-        ext
+    let nama_calon = crate::modules::files::nama_pengguna(&state.db, auth_user.user_id).await;
+    let nama_file = StorageService::nama_berkas(&nama_calon, "portofolio-rpl", &ext, pendaftar_id);
+    let mut p = storage(&state).generate_presigned_put_url_maks(
+        &StorageService::kunci("rpl", &nama_file),
+        900,
+        10 * 1024 * 1024,
     );
-    Ok(Json(storage(&state).generate_presigned_put_url(&key, 900)))
+    p.file_key = nama_file;
+    Ok(Json(p))
 }
 
 fn create_service(state: &AppState) -> RplService {

@@ -293,6 +293,112 @@ describe("SeleksiTahapPage", () => {
     );
   });
 
+  it("READY Early di bawah 80: admin memindahkan calon ke jalur lain dengan alasan", async () => {
+    const early = {
+      ...calon,
+      nama_jalur: "READY Early",
+      kode_jalur: "READY-EARLY",
+      alur_seleksi: "LANGSUNG_LULUS",
+      rapor_minimal: 80,
+      potongan_tetap: 100,
+      nilai_rapor_avg: 76,
+    };
+    fetchApi.mockImplementation((url: string, opt?: { method?: string }) => {
+      if (url.includes("tahap=RAPOR")) return Promise.resolve([early]);
+      if (url === "/api/master/jalur")
+        return Promise.resolve([
+          {
+            id: "j-early",
+            kode_jalur: "READY-EARLY",
+            nama_jalur: "READY Early",
+          },
+          {
+            id: "j-adm",
+            kode_jalur: "READY-ADMISSION",
+            nama_jalur: "READY Admission",
+          },
+        ]);
+      return Promise.resolve(opt?.method ? { ok: true } : []);
+    });
+    render_();
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Pindah jalur/ }),
+    );
+    // alasan terisi otomatis dari syarat yang tidak terpenuhi; jalur semula tidak jadi pilihan
+    const alasan = (await screen.findByLabelText(
+      "Alasan pemindahan",
+    )) as HTMLTextAreaElement;
+    expect(alasan.value).toContain("Tidak memenuhi persyaratan READY Early");
+    await screen.findByRole("option", { name: "READY Admission" });
+    expect(screen.queryByRole("option", { name: "READY Early" })).toBeNull();
+    fireEvent.change(screen.getByLabelText("Jalur tujuan"), {
+      target: { value: "j-adm" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Pindahkan" }));
+    await waitFor(() =>
+      expect(fetchApi).toHaveBeenCalledWith(
+        "/api/pendaftaran/admin/seleksi/p1/pindah-jalur",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            jalur_id: "j-adm",
+            alasan: alasan.value.trim(),
+          }),
+        },
+      ),
+    );
+  });
+
+  it("READY Legacy: hubungan alumni menentukan potongan 50% atau 25%", async () => {
+    const legacy = {
+      ...calon,
+      nama_jalur: "READY Legacy Scholarship",
+      kode_jalur: "READY-LEGACY",
+      alur_seleksi: "LANGSUNG_LULUS",
+      rapor_minimal: null,
+    };
+    fetchApi.mockImplementation((url: string, opt?: { method?: string }) =>
+      Promise.resolve(
+        url.includes("tahap=RAPOR")
+          ? [legacy]
+          : opt?.method
+            ? { ok: true }
+            : [],
+      ),
+    );
+    render_();
+    const tombol = await screen.findByRole("button", {
+      name: /Setujui, Lulus/,
+    });
+    expect(screen.getByText(/Pilih hubungan dengan alumni/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Hubungan alumni Sari"), {
+      target: { value: "SAUDARA" },
+    });
+    expect(screen.getByText("Potongan DPP & SKS: 25%")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Hubungan alumni Sari"), {
+      target: { value: "ANAK" },
+    });
+    expect(screen.getByText("Potongan DPP & SKS: 50%")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Penempatan Sari"), {
+      target: { value: "1" },
+    });
+    fireEvent.click(tombol);
+    await waitFor(() =>
+      expect(fetchApi).toHaveBeenCalledWith(
+        "/api/pendaftaran/admin/seleksi/p1/RAPOR",
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            hasil: "LULUS",
+            nilai: null,
+            hubungan_alumni: "ANAK",
+            pilihan_ke: 1,
+          }),
+        },
+      ),
+    );
+  });
+
   it("READY Achievement: potongan mengikuti rapor atau sertifikat yang terbesar", async () => {
     const ach = {
       ...calon,

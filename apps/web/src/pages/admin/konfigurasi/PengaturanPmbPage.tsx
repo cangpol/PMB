@@ -30,6 +30,7 @@ export const PengaturanPmbPage: React.FC = () => {
   const [kontakEmail, setKontakEmail] = useState("");
   const [kontakWa, setKontakWa] = useState("");
   const [jamLayanan, setJamLayanan] = useState("");
+  const [kontakAlamat, setKontakAlamat] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -59,6 +60,7 @@ export const PengaturanPmbPage: React.FC = () => {
       );
       setKontakEmail(map.get("KONTAK_EMAIL") || "pmb@pignatelli.ac.id");
       setKontakWa(map.get("KONTAK_WHATSAPP") || "+62 811-2233-4455");
+      setKontakAlamat(map.get("KONTAK_ALAMAT") || "");
       setJamLayanan(
         map.get("JAM_LAYANAN") ||
           "Senin - Jumat: 08.00 - 16.00 WIB | Sabtu: 08.00 - 12.00 WIB",
@@ -89,6 +91,7 @@ export const PengaturanPmbPage: React.FC = () => {
       { kunci: "KONTAK_EMAIL", nilai: kontakEmail },
       { kunci: "KONTAK_WHATSAPP", nilai: kontakWa },
       { kunci: "JAM_LAYANAN", nilai: jamLayanan },
+      { kunci: "KONTAK_ALAMAT", nilai: kontakAlamat },
     ];
 
     try {
@@ -302,6 +305,21 @@ export const PengaturanPmbPage: React.FC = () => {
                 required
                 value={jamLayanan}
                 onChange={(e) => setJamLayanan(e.target.value)}
+              />
+              <p className="text-[11px] text-biru-600">
+                Pisahkan beberapa baris dengan tanda | (contoh: Senin - Jumat:
+                08.00 - 16.00 WIB | Sabtu: 08.00 - 13.00 WIB).
+              </p>
+            </div>
+
+            <div className="col-span-1 sm:col-span-2 space-y-1">
+              <label className="text-xs font-bold text-biru-900">
+                Alamat Sekretariat PMB
+              </label>
+              <Input
+                required
+                value={kontakAlamat}
+                onChange={(e) => setKontakAlamat(e.target.value)}
               />
             </div>
           </div>

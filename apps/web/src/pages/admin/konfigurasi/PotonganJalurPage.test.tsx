@@ -21,6 +21,8 @@ const jalur = {
   rapor_minimal: 75,
   potongan_tetap: null,
   potongan_maks: 75,
+  potongan_ambang_rapor: null,
+  potongan_di_bawah_ambang: null,
   benefit_tambahan: null,
   kriteria_seleksi: "Kriteria",
   jumlah_calon_berpotongan: 2,
@@ -84,6 +86,49 @@ describe("PotonganJalurPage", () => {
       { target: { value: "90" } },
     );
     expect(screen.getByRole("alert")).toBeTruthy();
+    expect(
+      (screen.getByRole("button", { name: "Simpan" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+  });
+
+  it("menyimpan ambang rapor dan potongan di bawah ambang", async () => {
+    tampil();
+    fireEvent.change(
+      await screen.findByLabelText("Potongan tetap (%) READY Future Leader"),
+      { target: { value: "75" } },
+    );
+    fireEvent.change(
+      screen.getByLabelText("Ambang rapor READY Future Leader"),
+      {
+        target: { value: "80" },
+      },
+    );
+    fireEvent.change(
+      screen.getByLabelText("Potongan di bawah ambang (%) READY Future Leader"),
+      { target: { value: "50" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
+    await waitFor(() =>
+      expect(fetchApi.mock.calls.some((c) => c[1]?.method === "PUT")).toBe(
+        true,
+      ),
+    );
+    const body = JSON.parse(
+      fetchApi.mock.calls.find((c) => c[1]?.method === "PUT")![1].body,
+    );
+    expect(body.potongan_ambang_rapor).toBe(80);
+    expect(body.potongan_di_bawah_ambang).toBe(50);
+  });
+
+  it("menolak potongan di bawah ambang tanpa ambang rapor", async () => {
+    tampil();
+    fireEvent.change(
+      await screen.findByLabelText(
+        "Potongan di bawah ambang (%) READY Future Leader",
+      ),
+      { target: { value: "50" } },
+    );
     expect(
       (screen.getByRole("button", { name: "Simpan" }) as HTMLButtonElement)
         .disabled,

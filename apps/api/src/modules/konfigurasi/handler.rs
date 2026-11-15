@@ -172,6 +172,18 @@ pub fn konfigurasi_router() -> Router<AppState> {
         )
         // 7. Matriks Biaya & Kalkulator
         .route(
+            "/rincian-biaya-kuliah/arsipkan",
+            post(crate::modules::master::rincian_riwayat::arsipkan_biaya_handler),
+        )
+        .route(
+            "/rincian-biaya-kuliah/arsip",
+            get(crate::modules::master::rincian_riwayat::list_arsip_admin_handler),
+        )
+        .route(
+            "/rincian-biaya-kuliah/arsip/{id}",
+            delete(crate::modules::master::rincian_riwayat::hapus_arsip_handler),
+        )
+        .route(
             "/rincian-biaya-kuliah/{prodi_id}",
             put(crate::modules::master::rincian_biaya::simpan_rincian_biaya_handler),
         )

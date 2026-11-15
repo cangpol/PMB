@@ -194,6 +194,19 @@ pub async fn get_cek_kelulusan_publik_handler(
     query
         .validate()
         .map_err(|e| AppError::BadRequest(e.to_string()))?;
+    // Cegah penebakan nomor pendaftaran secara massal
+    state
+        .rate_limiter
+        .check_rate_limit("cek-kelulusan:global", 600, 60)
+        .await?;
+    state
+        .rate_limiter
+        .check_rate_limit(
+            &format!("cek-kelulusan:{}", query.nomor_pendaftaran.to_lowercase()),
+            20,
+            60,
+        )
+        .await?;
     let service = create_service(&state);
     let res = service
         .get_cek_kelulusan_publik(&query.nomor_pendaftaran)
@@ -305,6 +318,19 @@ pub async fn upload_berkas_daftar_ulang_handler(
     payload
         .validate()
         .map_err(|e| AppError::BadRequest(e.to_string()))?;
+    // Berkas harus benar-benar sudah ada di penyimpanan server
+    if crate::security::storage::StorageService::dari_config(&state.config)
+        .ukuran(&crate::security::storage::StorageService::kunci(
+            "daftar_ulang",
+            &payload.file_key,
+        ))
+        .await
+        .is_none()
+    {
+        return Err(AppError::BadRequest(
+            "Berkas belum terunggah ke server. Silakan unggah ulang.".to_string(),
+        ));
+    }
     let service = create_service(&state);
     let res = service
         .upload_berkas_daftar_ulang(auth_user.user_id, payload)
@@ -328,7 +354,7 @@ pub const JENIS_BERKAS_DAFTAR_ULANG: [&str; 6] = [
     "TRANSKRIP_NILAI",
 ];
 
-/// URL unggah berkas registrasi ulang (key berawalan `daftar_ulang/{pendaftar_id}/`).
+/// URL unggah berkas registrasi ulang (berkas disimpan di folder `daftar_ulang`).
 pub async fn presign_berkas_daftar_ulang_handler(
     auth_user: AuthUser,
     State(state): State<AppState>,
@@ -364,16 +390,20 @@ pub async fn presign_berkas_daftar_ulang_handler(
             "Berkas harus berupa PDF, JPG, atau PNG".to_string(),
         ));
     }
-    let key = format!(
-        "daftar_ulang/{}/{}_{}.{}",
+    let nama_calon = crate::modules::files::nama_pengguna(&state.db, pendaftar.user_id).await;
+    let nama_file = crate::security::storage::StorageService::nama_berkas(
+        &nama_calon,
+        &req.jenis_berkas,
+        &ext,
         pendaftar.id,
-        req.jenis_berkas,
-        Uuid::new_v4(),
-        ext
     );
-    Ok(Json(
-        crate::modules::pembayaran::bukti::storage(&state).generate_presigned_put_url(&key, 900),
-    ))
+    let mut p = crate::modules::pembayaran::bukti::storage(&state).generate_presigned_put_url_maks(
+        &crate::security::storage::StorageService::kunci("daftar_ulang", &nama_file),
+        900,
+        10 * 1024 * 1024,
+    );
+    p.file_key = nama_file;
+    Ok(Json(p))
 }
 
 /// URL unduh berkas registrasi ulang untuk verifikasi admin (10 menit).
@@ -391,7 +421,10 @@ pub async fn unduh_berkas_daftar_ulang_admin_handler(
         .await?
         .ok_or_else(|| AppError::NotFound("Berkas tidak ditemukan".to_string()))?;
     Ok(Json(
-        crate::modules::pembayaran::bukti::storage(&state).generate_presigned_get_url(&key, 600),
+        crate::modules::pembayaran::bukti::storage(&state).generate_presigned_get_url(
+            &crate::security::storage::StorageService::kunci("daftar_ulang", &key),
+            600,
+        ),
     ))
 }
 

@@ -7,6 +7,8 @@ export interface PotonganJalur {
   rapor_minimal: number | null;
   potongan_tetap: number | null;
   potongan_maks: number | null;
+  potongan_ambang_rapor: number | null;
+  potongan_di_bawah_ambang: number | null;
   benefit_tambahan: string | null;
   kriteria_seleksi: string | null;
   jumlah_calon_berpotongan: number;
@@ -41,6 +43,10 @@ export const ALUR_LABEL: Record<PotonganJalur["alur_seleksi"], string> = {
 export const ATURAN_KHUSUS: Record<string, string> = {
   "READY-ACHIEVEMENT":
     "Potongan mengikuti tingkat rapor (25–100%) atau sertifikat prestasi (25–100%), diambil yang terbesar.",
+  "READY-LEGACY":
+    "Potongan mengikuti hubungan dengan alumni: anak alumni 50%, saudara alumni 25%; dipilih admin saat seleksi berkas.",
+  "READY-EARLY":
+    "Rapor ≥ ambang mendapat potongan tetap. Calon di bawah ambang tidak diluluskan; admin memindahkannya ke jalur lain dengan alasan.",
   "READY-CREATOR":
     "Potongan tetap hanya berlaku bila follower minimal 10.000; diisi admin saat seleksi.",
 };

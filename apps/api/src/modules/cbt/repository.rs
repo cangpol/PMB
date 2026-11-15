@@ -54,6 +54,83 @@ impl CbtRepository {
         Ok(row)
     }
 
+    pub async fn update_soal(
+        &self,
+        id: Uuid,
+        req: &CreateSoalRequest,
+    ) -> Result<Option<BankSoal>, AppError> {
+        let opsi_json = serde_json::to_value(&req.opsi_jawaban).unwrap_or_default();
+        let row = sqlx::query_as::<_, BankSoal>(
+            r#"
+            UPDATE bank_soal SET kategori = $2, tingkat_kesulitan = $3, pertanyaan = $4,
+                   gambar_url = $5, opsi_jawaban = $6, kunci_jawaban = $7, bobot = $8,
+                   pembahasan = $9, updated_at = NOW()
+            WHERE id = $1 AND is_active = true
+            RETURNING *
+            "#,
+        )
+        .bind(id)
+        .bind(&req.kategori)
+        .bind(&req.tingkat_kesulitan)
+        .bind(&req.pertanyaan)
+        .bind(&req.gambar_url)
+        .bind(opsi_json)
+        .bind(&req.kunci_jawaban)
+        .bind(req.bobot.unwrap_or(1.0))
+        .bind(&req.pembahasan)
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(row)
+    }
+
+    /// Paket ujian yang memuat soal ini dan jumlah jawaban peserta yang sudah tersimpan.
+    pub async fn penggunaan_soal(&self, id: Uuid) -> Result<(Vec<String>, i64), AppError> {
+        let paket: Vec<String> = sqlx::query_scalar(
+            "SELECT p.nama_paket FROM paket_ujian_soal ps
+             JOIN paket_ujian p ON p.id = ps.paket_id
+             WHERE ps.soal_id = $1 ORDER BY p.nama_paket",
+        )
+        .bind(id)
+        .fetch_all(&self.pool)
+        .await?;
+        let jawaban: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM jawaban_peserta WHERE soal_id = $1")
+                .bind(id)
+                .fetch_one(&self.pool)
+                .await?;
+        Ok((paket, jawaban))
+    }
+
+    /// Hapus soal dari bank soal. Soal diarsipkan (`is_active = false`) agar jawaban dan hasil
+    /// ujian yang sudah ada tetap utuh; soal tidak lagi muncul di daftar maupun paket ujian, dan
+    /// jumlah soal paket yang memuatnya dihitung ulang. Mengembalikan false bila tidak ada.
+    pub async fn hapus_soal(&self, id: Uuid) -> Result<bool, AppError> {
+        let mut tx = self.pool.begin().await?;
+        let res = sqlx::query(
+            "UPDATE bank_soal SET is_active = false, updated_at = NOW()
+             WHERE id = $1 AND is_active = true",
+        )
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+        if res.rows_affected() == 0 {
+            return Ok(false);
+        }
+        sqlx::query(
+            "UPDATE paket_ujian p SET total_soal = (
+                 SELECT COUNT(*) FROM paket_ujian_soal ps
+                 JOIN bank_soal s ON s.id = ps.soal_id AND s.is_active
+                 WHERE ps.paket_id = p.id)::int,
+                 updated_at = NOW()
+             WHERE p.id IN (SELECT paket_id FROM paket_ujian_soal WHERE soal_id = $1)",
+        )
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        Ok(true)
+    }
+
     pub async fn create_soal_batch(&self, list: &[CreateSoalRequest]) -> Result<usize, AppError> {
         let mut tx = self.pool.begin().await?;
         let mut count = 0;
@@ -1219,4 +1296,107 @@ struct PesertaQrLookupRow {
     pub updated_at: DateTime<Utc>,
     pub nama_peserta: String,
     pub nama_sesi: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::modules::cbt::dto::SoalOpsiDto;
+
+    fn soal_baru(pertanyaan: &str, kunci: &str) -> CreateSoalRequest {
+        let opsi = |l: &str| SoalOpsiDto {
+            id: l.to_string(),
+            label: l.to_string(),
+            teks: format!("Jawaban {l}"),
+            gambar_url: None,
+        };
+        CreateSoalRequest {
+            kategori: "TPA".into(),
+            tingkat_kesulitan: "SEDANG".into(),
+            pertanyaan: pertanyaan.into(),
+            gambar_url: None,
+            opsi_jawaban: vec![opsi("A"), opsi("B"), opsi("C")],
+            kunci_jawaban: kunci.into(),
+            bobot: Some(1.0),
+            pembahasan: None,
+        }
+    }
+
+    #[sqlx::test(migrations = "./migrations")]
+    #[ignore = "butuh PostgreSQL"]
+    async fn ubah_dan_hapus_soal_bank_soal(pool: PgPool) {
+        let repo = CbtRepository::new(pool.clone());
+        let s1 = repo
+            .create_soal(&soal_baru("Soal pertama", "A"))
+            .await
+            .unwrap();
+        let s2 = repo
+            .create_soal(&soal_baru("Soal kedua", "B"))
+            .await
+            .unwrap();
+
+        // ubah: isi dan kunci berganti, id tetap
+        let ubah = repo
+            .update_soal(s1.id, &soal_baru("Soal pertama (revisi)", "C"))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(ubah.id, s1.id);
+        assert_eq!(ubah.pertanyaan, "Soal pertama (revisi)");
+        assert_eq!(ubah.kunci_jawaban, "C");
+        // soal yang tidak ada
+        assert!(
+            repo.update_soal(Uuid::new_v4(), &soal_baru("x", "A"))
+                .await
+                .unwrap()
+                .is_none()
+        );
+
+        // paket memuat kedua soal
+        let paket: Uuid = sqlx::query_scalar(
+            "INSERT INTO paket_ujian (nama_paket, total_soal) VALUES ('Paket Uji', 2) RETURNING id",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        for (i, id) in [s1.id, s2.id].iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO paket_ujian_soal (paket_id, soal_id, urutan) VALUES ($1, $2, $3)",
+            )
+            .bind(paket)
+            .bind(id)
+            .bind(i as i32 + 1)
+            .execute(&pool)
+            .await
+            .unwrap();
+        }
+        let (nama_paket, jawaban) = repo.penggunaan_soal(s1.id).await.unwrap();
+        assert_eq!(nama_paket, vec!["Paket Uji".to_string()]);
+        assert_eq!(jawaban, 0);
+
+        // hapus: soal diarsipkan, hilang dari daftar dan paket, total_soal paket dihitung ulang
+        let (_, total_sebelum) = repo.list_soal(None, None, None, 50, 0).await.unwrap();
+        assert!(repo.hapus_soal(s1.id).await.unwrap());
+        assert!(!repo.hapus_soal(s1.id).await.unwrap());
+        let (daftar, total) = repo.list_soal(None, None, None, 50, 0).await.unwrap();
+        assert_eq!(total, total_sebelum - 1);
+        assert!(daftar.iter().all(|d| d.id != s1.id));
+        assert!(daftar.iter().any(|d| d.id == s2.id));
+        let isi = repo.get_soal_by_paket(paket).await.unwrap();
+        assert_eq!(isi.len(), 1);
+        let total_paket: i32 =
+            sqlx::query_scalar("SELECT total_soal FROM paket_ujian WHERE id = $1")
+                .bind(paket)
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!(total_paket, 1);
+        // soal terarsip tidak bisa diubah lagi
+        assert!(
+            repo.update_soal(s1.id, &soal_baru("x", "A"))
+                .await
+                .unwrap()
+                .is_none()
+        );
+    }
 }

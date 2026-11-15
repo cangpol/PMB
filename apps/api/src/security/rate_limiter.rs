@@ -31,6 +31,13 @@ impl RateLimiter {
         let window = Duration::from_secs(window_seconds);
         let mut map = self.records.write().await;
 
+        // Cegah pertumbuhan memori tanpa batas: bila kunci sudah banyak, buang kunci
+        // yang seluruh catatannya lebih tua dari 1 jam (jendela terpanjang yang dipakai).
+        if map.len() > 5_000 {
+            let sejam = Duration::from_secs(3600);
+            map.retain(|_, v| v.iter().any(|&t| now.duration_since(t) < sejam));
+        }
+
         let timestamps = map.entry(key.to_string()).or_default();
 
         // Buang riwayat di luar jendela waktu

@@ -58,6 +58,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config.app_env
     );
 
+    let (fatal, peringatan) = config.masalah_produksi();
+    for w in &peringatan {
+        tracing::warn!("KONFIGURASI PRODUKSI: {w}");
+    }
+    if !fatal.is_empty() {
+        for f in &fatal {
+            tracing::error!("KONFIGURASI PRODUKSI TIDAK AMAN: {f}");
+        }
+        std::process::exit(1);
+    }
+
     // 4. Inisialisasi Database Pool & Migrasi Skema Otomatis
     let db_pool = match PgPoolOptions::new()
         .max_connections(10)
@@ -125,16 +136,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 6. Siapkan Shared AppState
     // Pastikan bucket penyimpanan berkas tersedia agar unggah berkas tidak gagal
-    let storage = api::security::storage::StorageService::new(
-        config.s3_endpoint.clone(),
-        config.s3_access_key.clone(),
-        config.s3_secret_key.clone(),
-        config.s3_bucket.clone(),
-    );
-    match storage.pastikan_bucket().await {
-        Ok(ket) => tracing::info!("Penyimpanan berkas {} siap: {ket}", config.s3_endpoint),
+    let storage = api::security::storage::StorageService::dari_config(&config);
+    match storage.siapkan().await {
+        Ok(()) => tracing::info!("Penyimpanan berkas siap di {}", storage.root().display()),
         Err(e) => tracing::error!(
-            "Penyimpanan berkas (S3/MinIO) bermasalah: {e}. Unggah berkas calon akan gagal sampai ini diperbaiki."
+            "Penyimpanan berkas bermasalah: {e}. Unggah berkas calon akan gagal sampai ini diperbaiki."
         ),
     }
 
@@ -216,6 +222,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             kelulusan_router().route_layer(wajib_verif.clone()),
         )
         .nest("/rpl", rpl_router().route_layer(wajib_verif))
+        .nest("/files", api::modules::files::router())
         .nest("/cms", cms_router())
         .nest("/dashboard", dashboard_router())
         .nest("/fitur", api::modules::fitur::fitur_router())
@@ -260,7 +267,8 @@ async fn security_headers_middleware(
 ) -> axum::response::Response {
     // Data API bersifat pribadi: jangan pernah disimpan di cache browser/proxy
     // (mencegah halaman pengguna sebelumnya muncul lagi lewat tombol Back).
-    let api = req.uri().path().starts_with("/api/");
+    let path = req.uri().path().to_string();
+    let api = path.starts_with("/api/");
     let mut response = next.run(req).await;
     let headers = response.headers_mut();
     if api {
@@ -277,9 +285,11 @@ async fn security_headers_middleware(
         header::X_CONTENT_TYPE_OPTIONS,
         header::HeaderValue::from_static("nosniff"),
     );
+    // Pratinjau berkas (PDF/gambar) ditampilkan dalam iframe halaman sendiri
+    let boleh_iframe = path.starts_with("/api/files/");
     headers.insert(
         header::X_FRAME_OPTIONS,
-        header::HeaderValue::from_static("DENY"),
+        header::HeaderValue::from_static(if boleh_iframe { "SAMEORIGIN" } else { "DENY" }),
     );
     headers.insert(
         header::HeaderName::from_static("x-xss-protection"),
@@ -293,11 +303,14 @@ async fn security_headers_middleware(
         header::HeaderName::from_static("permissions-policy"),
         header::HeaderValue::from_static("geolocation=(), camera=(), microphone=()"),
     );
-    headers.insert(
-        header::CONTENT_SECURITY_POLICY,
-        header::HeaderValue::from_static(
-            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https: http:;",
-        ),
-    );
+    // Berkas unggahan membawa CSP sandbox sendiri; jangan ditimpa
+    if !headers.contains_key(header::CONTENT_SECURITY_POLICY) {
+        headers.insert(
+            header::CONTENT_SECURITY_POLICY,
+            header::HeaderValue::from_static(
+                "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https: http:;",
+            ),
+        );
+    }
     response
 }

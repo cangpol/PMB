@@ -9,7 +9,6 @@ import {
   Megaphone,
   HelpCircle,
   Phone,
-  FileText,
 } from "lucide-react";
 import { Logo } from "../ui/Logo";
 
@@ -19,10 +18,9 @@ interface NavLinkItem {
 }
 
 const PRIMARY_NAV_LINKS: NavLinkItem[] = [
-  { label: "Beranda", href: "/" },
   { label: "Jalur Masuk", href: "/jalur-masuk" },
   { label: "Program Studi", href: "/program-studi" },
-  { label: "Biaya & UKT", href: "/biaya" },
+  { label: "Biaya Kuliah", href: "/biaya" },
   { label: "Jadwal", href: "/jadwal" },
 ];
 
@@ -44,12 +42,6 @@ const INFO_DROPDOWN_LINKS = [
     description: "Hubungi panitia PMB dan lokasi kampus",
     href: "/kontak",
     icon: Phone,
-  },
-  {
-    label: "Panduan Pendaftaran",
-    description: "Syarat, tata tertib, dan alur seleksi",
-    href: "/syarat-ketentuan",
-    icon: FileText,
   },
 ];
 
@@ -136,8 +128,7 @@ export const PublicNavbar: React.FC = () => {
   const isInfoActive =
     location.pathname.startsWith("/pengumuman") ||
     location.pathname.startsWith("/faq") ||
-    location.pathname.startsWith("/kontak") ||
-    location.pathname.startsWith("/syarat-ketentuan");
+    location.pathname.startsWith("/kontak");
 
   return (
     <header

@@ -192,7 +192,7 @@ export const UploadBerkasPage: React.FC = () => {
         </div>
       )}
 
-      {/* Komponen Unggah Berkas Presigned MinIO */}
+      {/* Komponen unggah berkas (URL bertoken dari API) */}
       <BerkasUploader
         berkasList={berkasList}
         onUploadSuccess={() => {

@@ -1,3 +1,9 @@
+import { Logo } from "../ui/Logo";
+import {
+  barisJam,
+  nomorTautan,
+  useKontakPublik,
+} from "../../hooks/useKontakPublik";
 import * as React from "react";
 import { Link, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -59,6 +65,7 @@ const BannerAtas: React.FC = () => {
 export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
   children,
 }) => {
+  const kontak = useKontakPublik();
   return (
     <div className="flex min-h-screen flex-col bg-putih text-biru-950 font-sans selection:bg-biru-100 selection:text-biru-950">
       {/* Skip to main content for accessibility */}
@@ -78,18 +85,18 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
           </div>
           <div className="hidden md:flex items-center gap-6 text-biru-200 shrink-0">
             <a
-              href="tel:+6281234567890"
+              href={`tel:+${nomorTautan(kontak.whatsapp)}`}
               className="flex items-center gap-1.5 hover:text-putih transition-colors"
             >
               <Phone className="h-3.5 w-3.5 text-biru-400" />
-              <span>+62 812-3456-7890</span>
+              <span>{kontak.whatsapp}</span>
             </a>
             <a
-              href="mailto:pmb@upitra.ac.id"
+              href={`mailto:${kontak.email}`}
               className="flex items-center gap-1.5 hover:text-putih transition-colors"
             >
               <Mail className="h-3.5 w-3.5 text-biru-400" />
-              <span>pmb@upitra.ac.id</span>
+              <span>{kontak.email}</span>
             </a>
             <Link
               to="/cek-kelulusan"
@@ -137,19 +144,10 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
           <div className="grid grid-cols-1 gap-10 md:grid-cols-4 lg:gap-12">
             {/* Col 1: Campus Identity */}
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-biru-800 flex items-center justify-center text-putih font-serif font-bold text-xl shadow-soft-sm">
-                  U
-                </div>
-                <div>
-                  <h3 className="font-serif text-lg font-bold text-putih tracking-wide">
-                    UNIVERSITAS PIGNATELLI TRIPUTRA
-                  </h3>
-                  <p className="text-xs text-biru-400 font-sans">
-                    Unggul, Berintegritas, Inovatif
-                  </p>
-                </div>
-              </div>
+              <Logo theme="dark" height={48} />
+              <p className="text-xs text-biru-400 font-sans">
+                Unggul, Berintegritas, Inovatif
+              </p>
               <p className="text-xs leading-relaxed text-biru-300">
                 Pendidikan tinggi berbasis karakter, teknologi terapan, dan
                 kemitraan strategis dengan industri Triputra Group untuk
@@ -267,24 +265,23 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
               <div className="space-y-2.5 text-xs text-biru-300">
                 <div className="flex items-start gap-2.5">
                   <MapPin className="h-4 w-4 shrink-0 text-biru-400 mt-0.5" />
-                  <span>
-                    Jl. K.S. Tubun No. 2, Manahan, Banjarsari, Kota Surakarta,
-                    Jawa Tengah 57139
-                  </span>
+                  <span>{kontak.alamat}</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Phone className="h-4 w-4 shrink-0 text-biru-400" />
-                  <span>+62 812-3456-7890 (WhatsApp Hotline)</span>
+                  <span>{kontak.whatsapp} (WhatsApp Hotline)</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Mail className="h-4 w-4 shrink-0 text-biru-400" />
-                  <span>pmb@upitra.ac.id</span>
+                  <span>{kontak.email}</span>
                 </div>
                 <div className="pt-2">
                   <p className="text-[11px] text-biru-400">Jam Operasional:</p>
-                  <p className="text-xs">
-                    Senin &ndash; Jumat: 08.00 &ndash; 16.00 WIB
-                  </p>
+                  {barisJam(kontak.jam_layanan).map((b) => (
+                    <p key={b} className="text-xs">
+                      {b}
+                    </p>
+                  ))}
                 </div>
               </div>
             </div>
@@ -302,12 +299,6 @@ export const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({
                 className="hover:text-putih hover:underline transition-colors"
               >
                 Kebijakan Privasi
-              </Link>
-              <Link
-                to="/syarat-ketentuan"
-                className="hover:text-putih hover:underline transition-colors"
-              >
-                Syarat & Ketentuan
               </Link>
               {import.meta.env.DEV && (
                 <Link

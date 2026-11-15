@@ -17,6 +17,11 @@ import { PenggunaAksesPage } from "./PenggunaAksesPage";
 const svc = vi.hoisted(() => ({
   getDaftarPengguna: vi.fn(),
   aturPeranMassal: vi.fn(),
+  aturStatusPengguna: vi.fn(),
+  buatPengguna: vi.fn(),
+  hapusPengguna: vi.fn(),
+  resetPasswordPengguna: vi.fn(),
+  ubahPengguna: vi.fn(),
 }));
 vi.mock("@/services/pengguna", () => svc);
 
@@ -170,5 +175,68 @@ describe("PenggunaAksesPage", () => {
     for (const nama of ["Admin PMB", "Keuangan", "Mahasiswa"]) {
       expect(within(bar).getByRole("button", { name: nama })).toBeVisible();
     }
+  });
+  it("menambah pengguna dan menampilkan password sementara", async () => {
+    svc.buatPengguna.mockResolvedValue({
+      pengguna: u("n1", "Staf Baru", "keuangan"),
+      password_sementara: "PmSementara7",
+    });
+    tampil();
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Tambah Pengguna/ }),
+    );
+    const simpan = await screen.findByRole("button", { name: "Tambah" });
+    expect((simpan as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText("Nama lengkap"), {
+      target: { value: "Staf Baru" },
+    });
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "staf@contoh.id" },
+    });
+    fireEvent.change(screen.getByLabelText("Nomor HP"), {
+      target: { value: "081234567890" },
+    });
+    fireEvent.change(screen.getByLabelText("Peran"), {
+      target: { value: "keuangan" },
+    });
+    expect((simpan as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(simpan);
+    await waitFor(() =>
+      expect(svc.buatPengguna).toHaveBeenCalledWith({
+        email: "staf@contoh.id",
+        nama_lengkap: "Staf Baru",
+        no_hp: "081234567890",
+        role: "keuangan",
+        password: "",
+      }),
+    );
+    expect(await screen.findByText(/PmSementara7/)).toBeTruthy();
+  });
+
+  it("menonaktifkan pengguna setelah konfirmasi; akun sendiri tanpa aksi destruktif", async () => {
+    svc.aturStatusPengguna.mockResolvedValue({
+      ...u("c1", "Calon Satu", "calon_mahasiswa"),
+      is_active: false,
+    });
+    tampil();
+    await screen.findByText("Calon Satu");
+    expect(screen.queryByLabelText("Hapus Saya Sendiri")).toBeNull();
+    expect(screen.queryByLabelText("Nonaktifkan Super Satu")).toBeNull();
+    fireEvent.click(screen.getByLabelText("Nonaktifkan Calon Satu"));
+    const dlg = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dlg).getByRole("button", { name: "Nonaktifkan" }));
+    await waitFor(() =>
+      expect(svc.aturStatusPengguna).toHaveBeenCalledWith("c1", false),
+    );
+  });
+
+  it("menghapus pengguna setelah konfirmasi", async () => {
+    svc.hapusPengguna.mockResolvedValue(undefined);
+    tampil();
+    await screen.findByText("Calon Dua");
+    fireEvent.click(screen.getByLabelText("Hapus Calon Dua"));
+    const dlg = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dlg).getByRole("button", { name: "Hapus" }));
+    await waitFor(() => expect(svc.hapusPengguna).toHaveBeenCalledWith("c2"));
   });
 });

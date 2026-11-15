@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { DialogProvider } from "../../../components/ui/DialogProvider";
 import { RincianBiayaKuliahPage } from "./RincianBiayaKuliahPage";
 
 const fetchApi = vi.fn();
@@ -26,16 +27,19 @@ const prodi = {
 
 beforeEach(() => {
   fetchApi.mockReset();
-  fetchApi.mockImplementation((_u: string, opt?: { method?: string }) =>
-    Promise.resolve(opt?.method === "PUT" ? prodi : [prodi]),
-  );
+  fetchApi.mockImplementation((u: string, opt?: { method?: string }) => {
+    if (u.endsWith("/rincian-biaya-kuliah/arsip")) return Promise.resolve([]);
+    return Promise.resolve(opt?.method ? prodi : [prodi]);
+  });
 });
 
 function tampil() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={qc}>
-      <RincianBiayaKuliahPage />
+      <DialogProvider>
+        <RincianBiayaKuliahPage />
+      </DialogProvider>
     </QueryClientProvider>,
   );
 }
@@ -75,5 +79,42 @@ describe("RincianBiayaKuliahPage", () => {
       (screen.getByRole("button", { name: "Simpan" }) as HTMLButtonElement)
         .disabled,
     ).toBe(true);
+  });
+
+  it("biaya yang disimpan tidak otomatis diarsipkan; arsip hanya lewat tombol Arsipkan", async () => {
+    tampil();
+    fireEvent.change(await screen.findByLabelText("Semester 3 Informatika"), {
+      target: { value: "7000000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
+    await waitFor(() =>
+      expect(fetchApi.mock.calls.some((c) => c[1]?.method === "PUT")).toBe(
+        true,
+      ),
+    );
+    expect(
+      fetchApi.mock.calls.some((c) => String(c[0]).endsWith("/arsipkan")),
+    ).toBe(false);
+
+    fireEvent.change(screen.getByLabelText("Keterangan arsip"), {
+      target: { value: "Biaya T.A. 2025/2026" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Arsipkan" }));
+    // konfirmasi dulu; belum memanggil server
+    expect(
+      fetchApi.mock.calls.some((c) => String(c[0]).endsWith("/arsipkan")),
+    ).toBe(false);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Ya, Arsipkan" }),
+    );
+    await waitFor(() =>
+      expect(fetchApi).toHaveBeenCalledWith(
+        "/api/admin/konfigurasi/rincian-biaya-kuliah/arsipkan",
+        {
+          method: "POST",
+          body: JSON.stringify({ keterangan: "Biaya T.A. 2025/2026" }),
+        },
+      ),
+    );
   });
 });

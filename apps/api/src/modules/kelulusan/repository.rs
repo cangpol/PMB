@@ -823,7 +823,9 @@ impl KelulusanRepository {
                 prd.nama_prodi as nama_prodi,
                 prd.jenjang,
                 j.nama_jalur as jalur_masuk,
-                '2026' as tahun_masuk,
+                COALESCE((SELECT EXTRACT(YEAR FROM ta.tgl_selesai)::int::text
+                            FROM gelombang g JOIN tahun_akademik ta ON ta.id = g.tahun_akademik_id
+                           WHERE g.id = p.gelombang_id), '2027') as tahun_masuk,
                 h.skor_akhir,
                 h.updated_at::text as tanggal_daftar_ulang
              FROM hasil_kelulusan h

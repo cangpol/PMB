@@ -2,6 +2,7 @@ pub mod dto;
 pub mod handler;
 pub mod kode_verifikasi;
 pub mod model;
+pub mod pengguna_admin;
 pub mod repository;
 pub mod service;
 

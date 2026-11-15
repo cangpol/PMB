@@ -415,6 +415,19 @@ export const DashboardCalon: React.FC = () => {
             {summary.prodi_diterima_nama && (
               <Baris label="Diterima di">{summary.prodi_diterima_nama}</Baris>
             )}
+            {summary.pengumuman_status === "LULUS" && (
+              <Baris label="Surat Penerimaan">
+                <a
+                  href="/api/kelulusan/loa/pdf"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 font-semibold text-biru-700 underline"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Unduh LoA (PDF)
+                </a>
+              </Baris>
+            )}
           </KartuRingkasan>
 
           <KartuRingkasan

@@ -31,3 +31,22 @@ export function parseNominal(teks: string): number | null {
   const n = Number(bersih);
   return Number.isSafeInteger(n) ? n : null;
 }
+
+/** Kelompokkan prodi per fakultas (urut nama fakultas), lalu jenjang dan nama prodi. */
+export function kelompokkanPerFakultas(
+  daftar: readonly RincianBiayaKuliah[],
+): { fakultas: string; prodi: RincianBiayaKuliah[] }[] {
+  const urut = [...daftar].sort(
+    (a, b) =>
+      a.fakultas.localeCompare(b.fakultas, "id") ||
+      a.jenjang.localeCompare(b.jenjang, "id") ||
+      a.nama_prodi.localeCompare(b.nama_prodi, "id"),
+  );
+  const hasil: { fakultas: string; prodi: RincianBiayaKuliah[] }[] = [];
+  for (const p of urut) {
+    const akhir = hasil[hasil.length - 1];
+    if (akhir && akhir.fakultas === p.fakultas) akhir.prodi.push(p);
+    else hasil.push({ fakultas: p.fakultas, prodi: [p] });
+  }
+  return hasil;
+}

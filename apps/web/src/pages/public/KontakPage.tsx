@@ -1,4 +1,11 @@
 import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getProdiList } from "../../services/prodi";
+import {
+  barisJam,
+  nomorTautan,
+  useKontakPublik,
+} from "../../hooks/useKontakPublik";
 import {
   MapPin,
   Phone,
@@ -13,19 +20,65 @@ import { Button, Card } from "../../components/common";
 import { SeoHead } from "../../components/common/SeoHead";
 
 export const KontakPage: React.FC = () => {
+  const kontak = useKontakPublik();
   const [formData, setFormData] = useState({
     nama: "",
     email: "",
     noHp: "",
-    prodiMinat: "S1 Sains Data",
+    prodiId: "",
     pesan: "",
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [mengirim, setMengirim] = useState(false);
+  const [galat, setGalat] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Pilihan program studi mengikuti data program studi yang ada
+  const { data: prodi = [] } = useQuery({
+    queryKey: ["prodi-kontak"],
+    queryFn: getProdiList,
+    staleTime: 10 * 60_000,
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nama || !formData.email || !formData.pesan) return;
-    setIsSubmitted(true);
+    const p = prodi.find((x) => x.id === formData.prodiId);
+    if (!p) {
+      setGalat("Pilih program studi yang diminati.");
+      return;
+    }
+    setMengirim(true);
+    setGalat(null);
+    try {
+      const res = await fetch("/api/cms/prospek", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nama: formData.nama.trim(),
+          email: formData.email.trim(),
+          no_hp: formData.noHp.trim(),
+          prodi_id: p.id,
+          prodi_minat: `${p.jenjang} - ${p.nama_prodi}`,
+          pesan: formData.pesan.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as {
+          pesan?: string;
+          detail?: string[];
+        };
+        throw new Error(
+          body.detail?.join(", ") || body.pesan || "Pesan belum dapat dikirim.",
+        );
+      }
+      setIsSubmitted(true);
+    } catch (err) {
+      setGalat(
+        err instanceof Error ? err.message : "Pesan belum dapat dikirim.",
+      );
+    } finally {
+      setMengirim(false);
+    }
   };
 
   return (
@@ -70,8 +123,7 @@ export const KontakPage: React.FC = () => {
                     Alamat Kampus:
                   </span>
                   <p className="text-biru-700 leading-relaxed">
-                    Jl. K.S. Tubun No. 2, Manahan, Banjarsari, Kota Surakarta,
-                    Jawa Tengah 57139
+                    {kontak.alamat}
                   </p>
                 </div>
 
@@ -81,9 +133,12 @@ export const KontakPage: React.FC = () => {
                     Jam Pelayanan:
                   </span>
                   <p className="text-biru-700 leading-relaxed">
-                    Senin &ndash; Jumat: 08.00 &ndash; 16.00 WIB
-                    <br />
-                    Sabtu: 08.00 &ndash; 13.00 WIB
+                    {barisJam(kontak.jam_layanan).map((b, i) => (
+                      <React.Fragment key={b}>
+                        {i > 0 && <br />}
+                        {b}
+                      </React.Fragment>
+                    ))}
                   </p>
                 </div>
 
@@ -94,12 +149,12 @@ export const KontakPage: React.FC = () => {
                   </span>
                   <p className="text-biru-700 leading-relaxed">
                     <a
-                      href="https://wa.me/6281234567890"
+                      href={`https://wa.me/${nomorTautan(kontak.whatsapp)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-bold text-biru-800 hover:text-biru-950 underline"
                     >
-                      +62 812-3456-7890 (Chat Aktif)
+                      {kontak.whatsapp} (Chat Aktif)
                     </a>
                   </p>
                 </div>
@@ -111,10 +166,10 @@ export const KontakPage: React.FC = () => {
                   </span>
                   <p className="text-biru-700 leading-relaxed">
                     <a
-                      href="mailto:pmb@upitra.ac.id"
+                      href={`mailto:${kontak.email}`}
                       className="font-bold text-biru-800 hover:text-biru-950 underline"
                     >
-                      pmb@upitra.ac.id
+                      {kontak.email}
                     </a>
                   </p>
                 </div>
@@ -183,7 +238,7 @@ export const KontakPage: React.FC = () => {
                         nama: "",
                         email: "",
                         noHp: "",
-                        prodiMinat: "S1 Sains Data",
+                        prodiId: "",
                         pesan: "",
                       });
                     }}
@@ -251,24 +306,19 @@ export const KontakPage: React.FC = () => {
                       Program Studi yang Diminati:
                     </label>
                     <select
-                      value={formData.prodiMinat}
+                      required
+                      value={formData.prodiId}
                       onChange={(e) =>
-                        setFormData({ ...formData, prodiMinat: e.target.value })
+                        setFormData({ ...formData, prodiId: e.target.value })
                       }
                       className="w-full rounded-xl border border-biru-200 bg-putih px-3.5 py-2.5 text-xs text-biru-950 focus:border-biru-600 focus:outline-none"
                     >
-                      <option value="S1 Sains Data">S1 Sains Data</option>
-                      <option value="S1 Teknologi Informasi">
-                        S1 Teknologi Informasi
-                      </option>
-                      <option value="S1 Sistem Informasi">
-                        S1 Sistem Informasi
-                      </option>
-                      <option value="S1 Manajemen">S1 Manajemen</option>
-                      <option value="S1 Akuntansi">S1 Akuntansi</option>
-                      <option value="D3 Keuangan & Perbankan">
-                        D3 Keuangan & Perbankan
-                      </option>
+                      <option value="">Pilih program studi</option>
+                      {prodi.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.jenjang} - {p.nama_prodi}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -288,13 +338,21 @@ export const KontakPage: React.FC = () => {
                     />
                   </div>
 
+                  {galat && (
+                    <p role="alert" className="font-semibold text-red-600">
+                      {galat}
+                    </p>
+                  )}
                   <Button
                     type="submit"
                     variant="primary"
+                    disabled={mengirim}
                     className="w-full text-xs font-bold py-2.5 gap-2"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>Kirim Pertanyaan Sekarang</span>
+                    <span>
+                      {mengirim ? "Mengirim…" : "Kirim Pertanyaan Sekarang"}
+                    </span>
                   </Button>
                 </form>
               )}

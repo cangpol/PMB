@@ -35,9 +35,17 @@ PGPASSWORD="${POSTGRES_PASSWORD}" pg_dump \
 BACKUP_SIZE=$(du -h "${BACKUP_FILEPATH}" | cut -f1)
 echo "[SUCCESS] [$(date)] Backup database berhasil dibuat: ${BACKUP_FILEPATH} (${BACKUP_SIZE})"
 
+# Cadangkan juga berkas unggahan calon (bila folder tersedia)
+UPLOAD_DIR="${UPLOAD_DIR:-}"
+if [ -n "${UPLOAD_DIR}" ] && [ -d "${UPLOAD_DIR}" ]; then
+  UPLOAD_ARSIP="${BACKUP_DIR}/pmb_uploads_${TIMESTAMP}.tar.gz"
+  tar -czf "${UPLOAD_ARSIP}" -C "${UPLOAD_DIR}" .
+  echo "[SUCCESS] [$(date)] Backup berkas unggahan: ${UPLOAD_ARSIP} ($(du -h "${UPLOAD_ARSIP}" | cut -f1))"
+fi
+
 # Rotasi backup lama (hapus backup yang lebih tua dari RETENTION_DAYS)
 echo "[INFO] [$(date)] Menghapus arsip backup yang berumur lebih dari ${RETENTION_DAYS} hari..."
-find "${BACKUP_DIR}" -type f -name "pmb_backup_*.sql.gz" -mtime +"${RETENTION_DAYS}" -exec rm -f {} +
+find "${BACKUP_DIR}" -type f \( -name "pmb_backup_*.sql.gz" -o -name "pmb_uploads_*.tar.gz" \) -mtime +"${RETENTION_DAYS}" -exec rm -f {} +
 
 echo "[SUCCESS] [$(date)] Pembersihan retensi selesai. Status direktori backup:"
 ls -lh "${BACKUP_DIR}"

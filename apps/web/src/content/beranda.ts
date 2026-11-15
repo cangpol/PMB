@@ -84,7 +84,7 @@ export const JALUR_PENERIMAAN = [
     nama: "READY Early",
     keterangan: "Dibuka sesuai gelombang",
     ketentuan: [
-      "Seleksi rapor kelas 11 semester 4, rata-rata keseluruhan minimal 80",
+      "Seleksi rapor kelas 11 semester 4, rata-rata keseluruhan minimal 80 (di bawah 80 dipindahkan admin ke jalur lain)",
       "Formulir gratis",
       "Potongan 100% biaya DPP dan SKS",
       "Kuota 70 calon yang sudah daftar ulang",
@@ -121,7 +121,11 @@ export const JALUR_PENERIMAAN = [
     kode: "legacy",
     nama: "READY Legacy Scholarship",
     keterangan: "Jalur Alumni UPITRA",
-    ketentuan: ["Seleksi berkas Kartu Keluarga (KK) dan ijazah alumni"],
+    ketentuan: [
+      "Seleksi berkas Kartu Keluarga (KK) dan ijazah alumni",
+      "Anak alumni: potongan 50% biaya DPP dan SKS",
+      "Saudara alumni: potongan 25% biaya DPP dan SKS",
+    ],
   },
   {
     kode: "future-leader",

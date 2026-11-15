@@ -221,18 +221,20 @@ impl PendaftaranService {
         // Validasi tipe & ekstensi file
         validasi_format_berkas(&def_berkas.tipe_file, &req.file_name, &req.mime_type)?;
 
-        let clean_filename = req
-            .file_name
-            .replace(|c: char| !c.is_alphanumeric() && c != '.' && c != '_', "_");
-        let file_key = format!(
-            "berkas/{}/{}_{}_{}",
+        // Nama berkas: nama calon + jenis + tanggal/jam unggah. Hanya nama ini yang disimpan di database.
+        let nama_calon = crate::modules::files::nama_pengguna(self.repo.pool(), user_id).await;
+        let nama_file = StorageService::nama_berkas(
+            &nama_calon,
+            &def_berkas.kode_berkas,
+            &crate::modules::files::ekstensi_nama(&req.file_name),
             pendaftar.id,
-            def_berkas.kode_berkas,
-            Uuid::new_v4(),
-            clean_filename
         );
-
-        let presigned = self.storage.generate_presigned_put_url(&file_key, 900);
+        let mut presigned = self.storage.generate_presigned_put_url_maks(
+            &StorageService::kunci("berkas", &nama_file),
+            900,
+            max_bytes.max(0) as u64,
+        );
+        presigned.file_key = nama_file;
         Ok(presigned)
     }
 
@@ -252,11 +254,25 @@ impl PendaftaranService {
             .await?;
 
         // 1. Validasi kepemilikan file_key (IDOR Protection)
-        let expected_prefix = format!("berkas/{}/", pendaftar.id);
-        if !req.file_key.starts_with(&expected_prefix) {
+        if !StorageService::milik(&req.file_key, pendaftar.id) {
             return Err(AppError::Forbidden(
                 "Kunci berkas tidak valid untuk akun pendaftar ini".to_string(),
             ));
+        }
+        let ukuran_disk = self
+            .storage
+            .ukuran(&StorageService::kunci("berkas", &req.file_key))
+            .await
+            .ok_or_else(|| {
+                AppError::BadRequest(
+                    "Berkas belum terunggah ke server. Silakan unggah ulang.".to_string(),
+                )
+            })?;
+        if ukuran_disk > (def_berkas.ukuran_maks_kb as u64) * 1024 {
+            return Err(AppError::BadRequest(format!(
+                "Ukuran berkas melebihi batas maksimal {} KB",
+                def_berkas.ukuran_maks_kb
+            )));
         }
 
         // 2. Validasi batas ukuran berkas
@@ -365,7 +381,7 @@ impl PendaftaranService {
 
         let presigned = self
             .storage
-            .generate_presigned_get_url(&berkas.file_key, 900);
+            .generate_presigned_get_url(&StorageService::kunci("berkas", &berkas.file_key), 900);
         Ok(presigned)
     }
 

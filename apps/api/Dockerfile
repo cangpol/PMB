@@ -42,6 +42,9 @@ COPY --from=builder /usr/src/app/target/release/api /app/api
 COPY --from=builder /usr/src/app/target/release/seed /app/seed
 COPY --from=builder /usr/src/app/migrations /app/migrations
 
+# Folder berkas unggahan calon (dipasang sebagai volume agar tidak hilang saat deploy)
+RUN mkdir -p /app/uploads
+
 # Berikan hak akses
 RUN chown -R pmb:pmb /app
 USER pmb
@@ -50,6 +53,8 @@ USER pmb
 ENV PORT=8080
 ENV API_HOST=0.0.0.0
 ENV RUST_LOG=info
+ENV UPLOAD_DIR=/app/uploads
+VOLUME ["/app/uploads"]
 
 EXPOSE 8080
 

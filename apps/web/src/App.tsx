@@ -75,11 +75,6 @@ const FaqPage = lazy(() =>
 const KontakPage = lazy(() =>
   import("./pages/public/KontakPage").then((m) => ({ default: m.KontakPage })),
 );
-const SyaratKetentuanPage = lazy(() =>
-  import("./pages/public/SyaratKetentuanPage").then((m) => ({
-    default: m.SyaratKetentuanPage,
-  })),
-);
 const KebijakanPrivasiPage = lazy(() =>
   import("./pages/public/KebijakanPrivasiPage").then((m) => ({
     default: m.KebijakanPrivasiPage,
@@ -241,6 +236,11 @@ const EditorBeritaPage = lazy(() =>
 const KelolaBannerPage = lazy(() =>
   import("./pages/admin/cms/KelolaBannerPage").then((m) => ({
     default: m.KelolaBannerPage,
+  })),
+);
+const ProspekCalonPage = lazy(() =>
+  import("./pages/admin/ProspekCalonPage").then((m) => ({
+    default: m.ProspekCalonPage,
   })),
 );
 const KelolaFaqPage = lazy(() =>
@@ -413,10 +413,6 @@ export const App: React.FC = () => {
                     />
                     <Route path="/faq" element={<FaqPage />} />
                     <Route path="/kontak" element={<KontakPage />} />
-                    <Route
-                      path="/syarat-ketentuan"
-                      element={<SyaratKetentuanPage />}
-                    />
                     <Route
                       path="/kebijakan-privasi"
                       element={<KebijakanPrivasiPage />}
@@ -637,6 +633,7 @@ export const App: React.FC = () => {
                       <Route path="berita/:id" element={<EditorBeritaPage />} />
                       <Route path="banner" element={<KelolaBannerPage />} />
                       <Route path="faq" element={<KelolaFaqPage />} />
+                      <Route path="prospek" element={<ProspekCalonPage />} />
                       <Route path="halaman" element={<KelolaHalamanPage />} />
                     </Route>
 

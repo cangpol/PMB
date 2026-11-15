@@ -1,6 +1,6 @@
 /**
- * Pemeriksaan format berkas dan unggah langsung ke penyimpanan (MinIO/S3)
- * lewat URL presign. Dipakai semua halaman unggah calon agar aturan dan
+ * Pemeriksaan format berkas dan unggah ke penyimpanan server aplikasi
+ * lewat URL bertoken dari API. Dipakai semua halaman unggah calon agar aturan dan
  * pesan kesalahannya seragam.
  */
 

@@ -9,8 +9,6 @@ import {
   Calendar,
   CheckCircle2,
   Award,
-  ChevronDown,
-  ChevronRight,
   BadgePercent,
   Globe,
   UserPlus,
@@ -22,7 +20,8 @@ import {
   CreditCard,
   IdCard,
 } from "lucide-react";
-import { Button, Card, EmptyState } from "../../components/common";
+import { Button, Card } from "../../components/common";
+import { PopupMinatCalon } from "../../components/pendaftaran/PopupMinatCalon";
 import { SeoHead } from "../../components/common/SeoHead";
 import {
   STATISTIK_BERANDA,
@@ -31,18 +30,13 @@ import {
   JALUR_PENERIMAAN,
 } from "../../content/beranda";
 import { getProdiList } from "../../services/prodi";
-import type { components } from "../../types/api";
 import { DaftarTahapRingkas } from "../../components/pendaftaran/DaftarTahapRingkas";
 import {
   batasPenutupan,
   judulGelombang,
-  periodeGelombang,
   statusGelombang,
   type GelombangPublik,
 } from "../../lib/gelombangTahap";
-
-type CmsPost = components["schemas"]["CmsPostResponse"];
-type CmsFaq = components["schemas"]["CmsFaqResponse"];
 
 type MasterGelombangItem = GelombangPublik & { kuota: number };
 
@@ -225,29 +219,6 @@ export const HomePage: React.FC = () => {
     gelombangList,
   ]);
 
-  // 2. Fetch Berita / Pengumuman CMS
-  const { data: postsData } = useQuery<CmsPost[]>({
-    queryKey: ["cms-posts-home"],
-    queryFn: async () => {
-      const res = await fetch("/api/cms/posts");
-      if (!res.ok) return [];
-      return res.json();
-    },
-  });
-
-  // 3. Fetch FAQ CMS
-  const { data: faqsData } = useQuery<CmsFaq[]>({
-    queryKey: ["cms-faqs-home"],
-    queryFn: async () => {
-      const res = await fetch("/api/cms/faqs");
-      if (!res.ok) return [];
-      return res.json();
-    },
-  });
-
-  // 4. State FAQ Akordion
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
-
   // 5. Query Daftar Program Studi untuk Statistik & Kalkulator Otomatis
   const { data: prodiApiList = [] } = useQuery({
     queryKey: ["public-prodi-list"],
@@ -269,7 +240,6 @@ export const HomePage: React.FC = () => {
   }, [prodiCount]);
 
   // 6. State Filter Program Studi
-  const [jenjangFilter, setJenjangFilter] = useState<string>("semua");
 
   // 7. State Simulasi Kalkulator UKT
   const [selectedProdi, setSelectedProdi] = useState<string>("S1-IF");
@@ -384,11 +354,6 @@ export const HomePage: React.FC = () => {
     },
   };
 
-  const filteredProdiList = Object.entries(PRODI_DATA).filter(([, prodi]) => {
-    if (jenjangFilter === "semua") return true;
-    return prodi.jenjang === jenjangFilter;
-  });
-
   const currentProdi = PRODI_DATA[selectedProdi] || PRODI_DATA["S1-IF"];
 
   // Perhitungan diskon & simulasi biaya formulir
@@ -399,33 +364,9 @@ export const HomePage: React.FC = () => {
       : 0;
   const totalFormulir = biayaFormulir - diskonFormulir;
 
-  // Jadwal Timeline Gelombang (dari gelombang & tahap yang diatur admin)
-  const GELOMBANG_SCHEDULE = (gelombangList ?? []).map((g) => {
-    const status = statusGelombang(g);
-    return {
-      id: g.id,
-      nama: g.nama_gelombang.replace(/\[CONTOH\]\s*/i, ""),
-      periode: periodeGelombang(g),
-      status:
-        status === "AKTIF"
-          ? "Dibuka Sekarang"
-          : status === "MENDATANG"
-            ? "Segera Dibuka"
-            : "Ditutup",
-      statusBadge:
-        status === "AKTIF"
-          ? "bg-biru-100 text-biru-950 border-biru-300 font-bold"
-          : status === "MENDATANG"
-            ? "bg-biru-50 text-biru-800 border-biru-200 font-semibold"
-            : "bg-putih text-biru-700 border-biru-200 font-medium",
-      deskripsi: g.deskripsi ?? "",
-      tahap: g.tahap ?? [],
-      bisaDaftar: status === "AKTIF",
-    };
-  });
-
   return (
     <div className="space-y-20 lg:space-y-28">
+      <PopupMinatCalon />
       <SeoHead
         title="PMB UPITRA 2026/2027 | Universitas Pignatelli Triputra"
         description="Penerimaan Mahasiswa Baru Universitas Pignatelli Triputra Surakarta. Tersedia Jalur Reguler, Prestasi Rapor, Beasiswa Triputra Group, dan Jalur RPL."
@@ -799,138 +740,6 @@ export const HomePage: React.FC = () => {
       </motion.section>
 
       {/* ========================================================================= */}
-      {/* 3. PROGRAM STUDI DENGAN FILTER JENJANG (RITME: BG-BIRU-50/60) */}
-      {/* ========================================================================= */}
-      <motion.section
-        {...motionSectionProps}
-        className="bg-biru-50/60 py-16 border-y border-biru-100"
-      >
-        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-            <div>
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-200 text-biru-900 mb-2">
-                Fakultas & Jurusan
-              </span>
-              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-biru-950">
-                Program Studi Unggulan
-              </h2>
-              <p className="text-sm text-biru-700 font-sans mt-1">
-                Kurikulum terapan berstandar industri dengan fokus teknologi
-                masa depan.
-              </p>
-            </div>
-
-            {/* Filter Buttons Jenjang */}
-            <div className="flex items-center gap-2 self-start md:self-auto bg-putih p-1.5 rounded-xl border border-biru-200 shadow-soft-xs">
-              <button
-                type="button"
-                onClick={() => setJenjangFilter("semua")}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  jenjangFilter === "semua"
-                    ? "bg-biru-900 text-putih shadow-soft-xs"
-                    : "text-biru-800 hover:bg-biru-50"
-                }`}
-              >
-                Semua Jenjang ({Object.keys(PRODI_DATA).length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setJenjangFilter("S1")}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  jenjangFilter === "S1"
-                    ? "bg-biru-900 text-putih shadow-soft-xs"
-                    : "text-biru-800 hover:bg-biru-50"
-                }`}
-              >
-                Sarjana (S1)
-              </button>
-              <button
-                type="button"
-                onClick={() => setJenjangFilter("D3")}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  jenjangFilter === "D3"
-                    ? "bg-biru-900 text-putih shadow-soft-xs"
-                    : "text-biru-800 hover:bg-biru-50"
-                }`}
-              >
-                Diploma Tiga (D3)
-              </button>
-            </div>
-          </div>
-
-          {filteredProdiList.length === 0 ? (
-            <div className="p-8 rounded-2xl bg-putih border border-biru-200">
-              <EmptyState
-                title="Program Studi Tidak Ditemukan"
-                description="Tidak ada program studi yang cocok dengan filter jenjang yang Anda pilih."
-                actionLabel="Tampilkan Semua Jenjang"
-                onAction={() => setJenjangFilter("semua")}
-              />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProdiList.map(([key, prodi]) => (
-                <Card
-                  key={key}
-                  className="p-6 bg-putih border-biru-200 hover:border-biru-400 hover:shadow-soft-md transition-all flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-biru-100 text-biru-900">
-                        {prodi.jenjang}
-                      </span>
-                      <span className="text-[11px] font-semibold text-biru-800 bg-biru-50 px-2 py-0.5 rounded border border-biru-200">
-                        Akreditasi: {prodi.akreditasi}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="font-serif text-xl font-bold text-biru-950">
-                        {prodi.nama}
-                      </h3>
-                      <p className="text-xs text-biru-600 mt-0.5 font-medium">
-                        Fakultas {prodi.fakultas}
-                      </p>
-                    </div>
-                    <p className="text-xs text-biru-700 leading-relaxed">
-                      Mempersiapkan lulusan berdaya saing dengan kompetensi
-                      praktis, sertifikasi profesional, dan bimbingan praktisi
-                      Triputra.
-                    </p>
-                    <div className="pt-2 text-xs border-t border-biru-100 flex items-center justify-between text-biru-800">
-                      <span>Estimasi UKT:</span>
-                      <span className="font-semibold text-biru-950 tabular-nums">
-                        Rp {(prodi.uktMin / 1000000).toFixed(1)} &ndash;{" "}
-                        {(prodi.uktMax / 1000000).toFixed(1)} Jt / smt
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pt-5 mt-4 border-t border-biru-100 flex items-center justify-between">
-                    <Link
-                      to={`/program-studi/${key.toLowerCase()}`}
-                      className="text-xs font-bold text-biru-800 hover:text-biru-950 hover:underline inline-flex items-center gap-1"
-                    >
-                      Profil Lengkap
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
-                    <Link to={`/register?prodi=${key}`}>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        className="text-xs py-1.5 px-3"
-                      >
-                        Pilih Prodi
-                      </Button>
-                    </Link>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      </motion.section>
-
-      {/* ========================================================================= */}
       {/* 4. ALUR PENDAFTARAN TIMELINE BERNOMOR (RITME: BG-PUTIH) */}
       {/* ========================================================================= */}
       <motion.section
@@ -951,7 +760,7 @@ export const HomePage: React.FC = () => {
         </div>
 
         <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {ALUR_PMB.map((item, idx) => (
+          {ALUR_PMB.map((item) => (
             <li
               key={item.title}
               className="relative p-5 rounded-2xl border border-biru-200 bg-putih shadow-soft-sm hover:shadow-soft-md transition-all flex gap-4"
@@ -960,9 +769,6 @@ export const HomePage: React.FC = () => {
                 <item.icon className="w-6 h-6" aria-hidden />
               </span>
               <div className="space-y-1.5">
-                <span className="font-sans text-xs font-extrabold text-biru-400 tabular-nums">
-                  {String(idx + 1).padStart(2, "0")}
-                </span>
                 <h3 className="font-serif text-lg font-bold text-biru-950 leading-tight">
                   {item.title}
                 </h3>
@@ -1031,11 +837,7 @@ export const HomePage: React.FC = () => {
 
               <div className="pt-2">
                 <Link to="/biaya">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-biru-400 text-putih hover:bg-biru-900"
-                  >
+                  <Button variant="outline-white" size="sm">
                     Lihat Matriks Biaya Selengkapnya &rarr;
                   </Button>
                 </Link>
@@ -1158,10 +960,7 @@ export const HomePage: React.FC = () => {
                   <Link
                     to={`/register?prodi=${selectedProdi}&jalur=${selectedJalur}`}
                   >
-                    <Button
-                      variant="primary"
-                      className="w-full bg-putih text-biru-950 hover:bg-biru-50 font-bold text-sm py-2.5"
-                    >
+                    <Button variant="white" className="w-full text-sm py-2.5">
                       Lanjutkan Pendaftaran dengan Pilihan Ini &rarr;
                     </Button>
                   </Link>
@@ -1169,301 +968,6 @@ export const HomePage: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
-      </motion.section>
-
-      {/* ========================================================================= */}
-      {/* 6. JADWAL GELOMBANG SELEKSI TIMELINE (RITME: BG-PUTIH) */}
-      {/* ========================================================================= */}
-      <motion.section
-        {...motionSectionProps}
-        className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8"
-      >
-        <div className="text-center max-w-2xl mx-auto space-y-3 mb-12">
-          <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-100 text-biru-800">
-            Agenda Seleksi
-          </span>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-biru-950">
-            Jadwal Gelombang Pendaftaran
-          </h2>
-          <p className="text-sm text-biru-700 leading-relaxed font-sans">
-            Catat tanggal-tanggal penting setiap gelombang untuk memastikan Anda
-            tidak tertinggal kesempatan beasiswa.
-          </p>
-        </div>
-
-        <div className="space-y-4 max-w-4xl mx-auto">
-          {GELOMBANG_SCHEDULE.length === 0 && (
-            <p className="text-center text-sm text-biru-700">
-              Jadwal gelombang pendaftaran akan segera diumumkan.
-            </p>
-          )}
-          {GELOMBANG_SCHEDULE.map((g) => (
-            <div
-              key={g.id}
-              className="p-6 rounded-2xl border border-biru-200 bg-putih shadow-soft-sm hover:shadow-soft-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-6"
-            >
-              <div className="space-y-3 sm:max-w-xl w-full">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-xs border ${g.statusBadge}`}
-                  >
-                    {g.status}
-                  </span>
-                  <span className="text-xs text-biru-600 font-medium">
-                    {g.periode}
-                  </span>
-                </div>
-                <h3 className="font-serif text-xl font-bold text-biru-950">
-                  {g.nama}
-                </h3>
-                {g.deskripsi && (
-                  <p className="text-xs text-biru-700 leading-relaxed font-sans">
-                    {g.deskripsi}
-                  </p>
-                )}
-                {g.tahap.length > 0 && <DaftarTahapRingkas tahap={g.tahap} />}
-              </div>
-
-              <div className="sm:self-center shrink-0">
-                {g.bisaDaftar ? (
-                  <Link to="/register">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full sm:w-auto text-xs font-semibold"
-                    >
-                      Daftar Sekarang &rarr;
-                    </Button>
-                  </Link>
-                ) : null}
-              </div>
-            </div>
-          ))}
-        </div>
-      </motion.section>
-
-      {/* ========================================================================= */}
-      {/* 7. BERITA & PENGUMUMAN PMB TERKINI (RITME: BG-BIRU-50/60) */}
-      {/* ========================================================================= */}
-      <motion.section
-        {...motionSectionProps}
-        className="bg-biru-50/60 py-16 border-y border-biru-100"
-      >
-        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
-            <div>
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-200 text-biru-900 mb-2">
-                Kabar Kampus
-              </span>
-              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-biru-950">
-                Berita &amp; Pengumuman Terbaru
-              </h2>
-              <p className="text-sm text-biru-700 font-sans mt-1">
-                Informasi terkini mengenai jadwal seleksi, beasiswa, dan panduan
-                akademik.
-              </p>
-            </div>
-            <Link to="/pengumuman">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs font-semibold"
-              >
-                Lihat Semua Berita &rarr;
-              </Button>
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {(postsData && postsData.length > 0
-              ? postsData.slice(0, 3)
-              : [
-                  {
-                    id: "1",
-                    slug: "penerimaan-mahasiswa-baru-2026-resmi-dibuka",
-                    judul:
-                      "Pendaftaran Mahasiswa Baru T.A. 2026/2027 Resmi Dibuka",
-                    kategori: "PENGUMUMAN",
-                    ringkasan:
-                      "Universitas Pignatelli Triputra membuka kesempatan emas bagi calon mahasiswa baru berprestasi untuk bergabung.",
-                    published_at: "2026-11-01T08:00:00Z",
-                    author_nama: "Humas PMB",
-                  },
-                  {
-                    id: "2",
-                    slug: "panduan-beasiswa-kemitraan-triputra-group",
-                    judul: "Panduan Beasiswa Penuh Kemitraan Triputra Group",
-                    kategori: "BEASISWA",
-                    ringkasan:
-                      "Dapatkan pembebasan biaya kuliah 100% dan program kepemimpinan intensif bersama jajaran pimpinan Triputra.",
-                    published_at: "2026-10-28T09:00:00Z",
-                    author_nama: "Humas PMB",
-                  },
-                  {
-                    id: "3",
-                    slug: "jalur-rpl-kesempatan-sarjana-praktisi",
-                    judul:
-                      "Jalur Rekognisi Pembelajaran Lampau (RPL) untuk Praktisi Kerja",
-                    kategori: "BERITA",
-                    ringkasan:
-                      "Konversikan pengalaman kerja nyata Anda menjadi SKS perkuliahan resmi di UPITRA.",
-                    published_at: "2026-10-25T10:00:00Z",
-                    author_nama: "Tim Akademik",
-                  },
-                ]
-            ).map((post) => (
-              <Card
-                key={post.id}
-                className="p-6 bg-putih border-biru-200 hover:border-biru-400 hover:shadow-soft-md transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs text-biru-600">
-                    <span className="font-semibold px-2 py-0.5 rounded bg-biru-100 text-biru-800">
-                      {post.kategori}
-                    </span>
-                    <span className="tabular-nums">
-                      {new Date(post.published_at).toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </span>
-                  </div>
-                  <h3 className="font-serif text-lg font-bold text-biru-950 leading-snug hover:text-biru-800">
-                    <Link to={`/pengumuman/${post.slug}`}>{post.judul}</Link>
-                  </h3>
-                  <p className="text-xs text-biru-700 leading-relaxed line-clamp-3">
-                    {post.ringkasan}
-                  </p>
-                </div>
-
-                <div className="pt-4 mt-3 border-t border-biru-100 flex items-center justify-between text-xs">
-                  <span className="text-biru-600 font-medium">
-                    {post.author_nama}
-                  </span>
-                  <Link
-                    to={`/pengumuman/${post.slug}`}
-                    className="font-bold text-biru-800 hover:text-biru-950 inline-flex items-center gap-1"
-                  >
-                    Baca Selengkapnya
-                    <ChevronRight className="w-3 h-3" />
-                  </Link>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </motion.section>
-
-      {/* ========================================================================= */}
-      {/* 8. FAQ AKORDION INTERAKTIF (RITME: BG-PUTIH) */}
-      {/* ========================================================================= */}
-      <motion.section
-        {...motionSectionProps}
-        className="max-w-[900px] mx-auto px-4 sm:px-6"
-      >
-        <div className="text-center space-y-3 mb-12">
-          <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-biru-100 text-biru-800">
-            Pertanyaan Umum
-          </span>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-biru-950">
-            Kerap Ditanyakan Calon Mahasiswa (FAQ)
-          </h2>
-          <p className="text-sm text-biru-700 font-sans">
-            Jawaban ringkas seputar pendaftaran, biaya, ujian CBT online, dan
-            beasiswa.
-          </p>
-        </div>
-
-        <div className="space-y-3.5">
-          {(faqsData && faqsData.length > 0
-            ? faqsData.slice(0, 6)
-            : [
-                {
-                  id: "1",
-                  pertanyaan:
-                    "Apakah pendaftaran PMB UPITRA bisa dilakukan secara online penuh?",
-                  jawaban:
-                    "Ya! Seluruh proses pendaftaran, pembayaran formulir, pengunggahan berkas, pelaksanaan ujian CBT potensi akademik, hingga pengumuman kelulusan dapat diselesaikan 100% online dari mana saja.",
-                },
-                {
-                  id: "2",
-                  pertanyaan:
-                    "Bagaimana cara mendapatkan Beasiswa Penuh Kemitraan Triputra?",
-                  jawaban:
-                    "Pilih Jalur Beasiswa Kemitraan saat mendaftar, unggah bukti prestasi akademik (rata-rata rapor minimal 85.0), dan ikuti wawancara motivasi bersama panelis rektorat & Triputra Group.",
-                },
-                {
-                  id: "3",
-                  pertanyaan:
-                    "Apakah ada biaya praktikum atau biaya SKS terpisah selain UKT?",
-                  jawaban:
-                    "Tidak ada. Sistem Uang Kuliah Tunggal (UKT) di UPITRA sudah mencakup seluruh biaya perkuliahan, praktikum laboratorium, ujian semester, serta akses perpustakaan digital tanpa biaya tersembunyi.",
-                },
-                {
-                  id: "4",
-                  pertanyaan:
-                    "Berapa lama masa tunggu pengumuman kelulusan setelah ujian CBT?",
-                  jawaban:
-                    "Nilai ujian CBT dihitung secara instan. Hasil sidang penetapan kelulusan resmi dapat dicek di portal dalam waktu 1x24 jam setelah sesi ujian selesai.",
-                },
-                {
-                  id: "5",
-                  pertanyaan:
-                    "Apa syarat utama untuk mendaftar melalui Jalur Rekognisi Pembelajaran Lampau (RPL)?",
-                  jawaban:
-                    "Memiliki pengalaman kerja relevan minimal 2 tahun atau sertifikat kompetensi profesional. Calon dapat mengajukan mata kuliah untuk dikonversi menjadi SKS resmi guna mempercepat kelulusan.",
-                },
-              ]
-          ).map((faq, idx) => {
-            const isOpen = openFaqIndex === idx;
-            return (
-              <div
-                key={faq.id}
-                className="rounded-xl border border-biru-200 bg-putih overflow-hidden shadow-soft-xs transition-all"
-              >
-                <button
-                  type="button"
-                  onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                  aria-expanded={isOpen}
-                  className="w-full flex items-center justify-between p-4 sm:p-5 text-left font-serif text-base font-bold text-biru-950 hover:bg-biru-50/50 transition-colors"
-                >
-                  <span className="pr-4">{faq.pertanyaan}</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-biru-600 shrink-0 transition-transform duration-200 ${
-                      isOpen ? "rotate-180 text-biru-900" : ""
-                    }`}
-                  />
-                </button>
-                {isOpen && (
-                  <div className="px-4 pb-5 sm:px-5 pt-0 text-sm text-biru-800 leading-relaxed font-sans border-t border-biru-100/60 mt-1">
-                    <p>{faq.jawaban}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-8 text-center">
-          <p className="text-xs text-biru-700">
-            Masih memiliki pertanyaan lain yang belum terjawab?{" "}
-            <Link
-              to="/faq"
-              className="font-bold text-biru-900 underline hover:text-biru-700"
-            >
-              Kunjungi Halaman FAQ Lengkap
-            </Link>{" "}
-            atau{" "}
-            <Link
-              to="/kontak"
-              className="font-bold text-biru-900 underline hover:text-biru-700"
-            >
-              Hubungi Panitia PMB
-            </Link>
-            .
-          </p>
         </div>
       </motion.section>
 
@@ -1488,20 +992,16 @@ export const HomePage: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <Link to="/register">
               <Button
-                variant="primary"
+                variant="white"
                 size="lg"
-                className="bg-putih text-biru-950 hover:bg-biru-50 font-bold px-8 shadow-soft-md"
+                className="px-8"
                 rightIcon={<ArrowRight className="w-4 h-4 text-biru-900" />}
               >
                 Daftar Sekarang
               </Button>
             </Link>
             <Link to="/kontak">
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-biru-400 text-putih hover:bg-biru-900 font-semibold"
-              >
+              <Button variant="outline-white" size="lg">
                 Konsultasi Pendaftaran
               </Button>
             </Link>

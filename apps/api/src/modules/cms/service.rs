@@ -486,12 +486,7 @@ impl CmsService {
     }
 
     pub fn get_public_media_url(&self, file_key: &str) -> String {
-        format!(
-            "{}/{}/{}",
-            self.storage.endpoint,
-            self.storage.bucket,
-            file_key.trim_start_matches('/')
-        )
+        StorageService::url_media_publik(file_key)
     }
 
     // -------------------------------------------------------------------------

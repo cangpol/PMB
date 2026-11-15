@@ -199,12 +199,7 @@ pub fn bukti_router() -> Router<AppState> {
 // ---------------------------------------------------------------------------
 
 pub fn storage(state: &AppState) -> StorageService {
-    StorageService::new(
-        state.config.s3_endpoint.clone(),
-        state.config.s3_access_key.clone(),
-        state.config.s3_secret_key.clone(),
-        state.config.s3_bucket.clone(),
-    )
+    StorageService::dari_config(&state.config)
 }
 
 fn ensure_reviewer(a: &AuthUser) -> Result<(), AppError> {
@@ -346,8 +341,20 @@ pub async fn presign_bukti_handler(
         "Bukti bayar tidak dapat diunggah pada tahap pendaftaran Anda saat ini.",
     )?;
     let ext = ekstensi(&req.file_name)?;
-    let key = format!("{}{}.{}", prefix_bukti(pendaftar.id), Uuid::new_v4(), ext);
-    Ok(Json(storage(&state).generate_presigned_put_url(&key, 900)))
+    let nama_calon = crate::modules::files::nama_pengguna(&state.db, pendaftar.user_id).await;
+    let nama_file = StorageService::nama_berkas(
+        &nama_calon,
+        &format!("bukti-{}", tagihan.jenis_tagihan),
+        &ext,
+        pendaftar.id,
+    );
+    let mut p = storage(&state).generate_presigned_put_url_maks(
+        &StorageService::kunci("bukti", &nama_file),
+        900,
+        MAKS_BYTES as u64,
+    );
+    p.file_key = nama_file;
+    Ok(Json(p))
 }
 
 #[utoipa::path(
@@ -392,8 +399,21 @@ pub async fn submit_bukti_handler(
         ));
     }
     // Kunci file wajib berasal dari presign milik calon ini (cegah IDOR / path liar)
-    if !req.file_key.starts_with(&prefix_bukti(pendaftar.id)) || req.file_key.contains("..") {
+    if !StorageService::milik(&req.file_key, pendaftar.id) {
         return Err(AppError::BadRequest("Kunci berkas tidak valid".to_string()));
+    }
+    let ukuran_disk = storage(&state)
+        .ukuran(&StorageService::kunci("bukti", &req.file_key))
+        .await
+        .ok_or_else(|| {
+            AppError::BadRequest(
+                "Bukti bayar belum terunggah ke server. Silakan unggah ulang.".to_string(),
+            )
+        })?;
+    if ukuran_disk as i64 > MAKS_BYTES {
+        return Err(AppError::BadRequest(
+            "Ukuran bukti bayar maksimal 5 MB".to_string(),
+        ));
     }
     if req.tgl_bayar > hari_ini_wib(Utc::now()) {
         return Err(AppError::Validation(vec![
@@ -536,7 +556,10 @@ pub async fn list_bukti_admin_handler(
     let st = storage(&state);
     for it in items.iter_mut() {
         if let Some((_, k)) = keys.iter().find(|(id, _)| *id == it.id) {
-            it.download_url = Some(st.generate_presigned_get_url(k, 600).download_url);
+            it.download_url = Some(
+                st.generate_presigned_get_url(&StorageService::kunci("bukti", k), 600)
+                    .download_url,
+            );
         }
     }
     Ok(Json(items))

@@ -5,7 +5,7 @@ use axum::{
         IntoResponse,
         sse::{Event, KeepAlive, Sse},
     },
-    routing::{get, post},
+    routing::{get, post, put},
 };
 use std::convert::Infallible;
 use tokio_stream::StreamExt;
@@ -50,6 +50,9 @@ use crate::{
         submit_ujian_handler,
         check_in_presensi_handler,
         list_bank_soal_handler,
+        update_bank_soal_handler,
+        hapus_bank_soal_handler,
+        penggunaan_bank_soal_handler,
         create_bank_soal_handler,
         list_paket_handler,
         create_paket_handler,
@@ -118,6 +121,14 @@ pub fn cbt_router() -> Router<AppState> {
             get(list_bank_soal_handler).post(create_bank_soal_handler),
         )
         .route("/admin/bank-soal/import", post(import_bank_soal_handler))
+        .route(
+            "/admin/bank-soal/{id}",
+            put(update_bank_soal_handler).delete(hapus_bank_soal_handler),
+        )
+        .route(
+            "/admin/bank-soal/{id}/penggunaan",
+            get(penggunaan_bank_soal_handler),
+        )
         .route(
             "/admin/paket",
             get(list_paket_handler).post(create_paket_handler),
@@ -501,6 +512,119 @@ pub async fn create_bank_soal_handler(
     let repo = CbtRepository::new(state.db.clone());
     let created = repo.create_soal(&req).await?;
     Ok(Json(created))
+}
+
+/// Validasi tambahan untuk ubah soal: minimal dua opsi dan kunci harus salah satu opsi.
+fn normalkan_soal(req: &mut CreateSoalRequest) -> Result<(), AppError> {
+    if req.opsi_jawaban.len() < 2 {
+        return Err(AppError::BadRequest(
+            "Soal minimal memiliki dua pilihan jawaban".to_string(),
+        ));
+    }
+    for o in req.opsi_jawaban.iter_mut() {
+        if o.id.trim().is_empty() {
+            o.id = o.label.clone();
+        }
+        if o.teks.trim().is_empty() && o.gambar_url.is_none() {
+            return Err(AppError::BadRequest(
+                "Setiap pilihan jawaban harus berisi teks atau gambar".to_string(),
+            ));
+        }
+    }
+    if !req.opsi_jawaban.iter().any(|o| o.id == req.kunci_jawaban) {
+        return Err(AppError::BadRequest(
+            "Kunci jawaban harus salah satu pilihan jawaban".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/cbt/admin/bank-soal/{id}",
+    tag = "CBT Admin",
+    params(("id" = Uuid, Path, description = "ID butir soal")),
+    request_body = CreateSoalRequest,
+    responses(
+        (status = 200, description = "Soal diperbarui", body = BankSoal),
+        (status = 404, description = "Soal tidak ditemukan", body = ApiErrorResponse)
+    )
+)]
+pub async fn update_bank_soal_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    ValidatedJson(mut req): ValidatedJson<CreateSoalRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    if !auth_user.has_any_role(&["admin_pmb", "super_admin"]) {
+        return Err(AppError::Forbidden(
+            "Hanya admin PMB yang dapat mengubah butir soal".to_string(),
+        ));
+    }
+    normalkan_soal(&mut req)?;
+    let repo = CbtRepository::new(state.db.clone());
+    let soal = repo
+        .update_soal(id, &req)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Soal tidak ditemukan".to_string()))?;
+    Ok(Json(soal))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/cbt/admin/bank-soal/{id}",
+    tag = "CBT Admin",
+    params(("id" = Uuid, Path, description = "ID butir soal")),
+    responses(
+        (status = 200, description = "Soal dihapus dari bank soal"),
+        (status = 404, description = "Soal tidak ditemukan", body = ApiErrorResponse)
+    )
+)]
+pub async fn hapus_bank_soal_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    if !auth_user.has_any_role(&["admin_pmb", "super_admin"]) {
+        return Err(AppError::Forbidden(
+            "Hanya admin PMB yang dapat menghapus butir soal".to_string(),
+        ));
+    }
+    let repo = CbtRepository::new(state.db.clone());
+    let (paket, jawaban) = repo.penggunaan_soal(id).await?;
+    if !repo.hapus_soal(id).await? {
+        return Err(AppError::NotFound("Soal tidak ditemukan".to_string()));
+    }
+    Ok(Json(serde_json::json!({
+        "ok": true,
+        "paket_terdampak": paket,
+        "jumlah_jawaban": jawaban
+    })))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/cbt/admin/bank-soal/{id}/penggunaan",
+    tag = "CBT Admin",
+    params(("id" = Uuid, Path, description = "ID butir soal")),
+    responses((status = 200, description = "Paket yang memuat soal dan jumlah jawaban peserta"))
+)]
+pub async fn penggunaan_bank_soal_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    if !auth_user.has_any_role(&["admin_pmb", "super_admin"]) {
+        return Err(AppError::Forbidden(
+            "Hanya admin PMB yang dapat melihat penggunaan soal".to_string(),
+        ));
+    }
+    let repo = CbtRepository::new(state.db.clone());
+    let (paket, jawaban) = repo.penggunaan_soal(id).await?;
+    Ok(Json(serde_json::json!({
+        "paket": paket,
+        "jumlah_jawaban": jawaban
+    })))
 }
 
 pub async fn import_bank_soal_handler(

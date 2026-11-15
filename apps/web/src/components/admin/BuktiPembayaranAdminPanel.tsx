@@ -8,6 +8,10 @@ import {
 } from "lucide-react";
 import { Card, Button } from "../common";
 import { fetchApi } from "../../services/api";
+import {
+  PratinjauBuktiDialog,
+  type BuktiPratinjau,
+} from "./PratinjauBuktiDialog";
 import { useDialog } from "@/components/ui/useDialog";
 import type { components } from "@/types/api";
 
@@ -47,6 +51,7 @@ export const BuktiPembayaranAdminPanel: React.FC<Props> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pratinjau, setPratinjau] = useState<BuktiPratinjau | null>(null);
   const dialog = useDialog();
 
   const load = useCallback(async () => {
@@ -287,14 +292,20 @@ export const BuktiPembayaranAdminPanel: React.FC<Props> = ({
                     </td>
                     <td className="py-2 pr-3">
                       {it.download_url ? (
-                        <a
-                          href={it.download_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-biru-700 underline"
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPratinjau({
+                              url: it.download_url!,
+                              namaFile: it.file_name,
+                              mimeType: it.mime_type,
+                              keterangan: `${it.nama_lengkap} · ${it.nomor_tagihan ?? ""}`,
+                            })
+                          }
+                          className="inline-flex items-center gap-1 text-biru-700 underline cursor-pointer"
                         >
                           Lihat <ExternalLink className="w-3 h-3" />
-                        </a>
+                        </button>
                       ) : (
                         it.file_name
                       )}
@@ -338,6 +349,10 @@ export const BuktiPembayaranAdminPanel: React.FC<Props> = ({
           </table>
         </div>
       )}
+      <PratinjauBuktiDialog
+        bukti={pratinjau}
+        onClose={() => setPratinjau(null)}
+      />
     </Card>
   );
 };
