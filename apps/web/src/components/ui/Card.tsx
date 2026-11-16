@@ -60,7 +60,7 @@ export const CardDescription = React.forwardRef<
 >(({ className = "", ...props }, ref) => (
   <p
     ref={ref}
-    className={`text-xs sm:text-sm text-biru-800/90 leading-relaxed font-light ${className}`}
+    className={`text-xs sm:text-sm text-biru-800 leading-relaxed font-normal ${className}`}
     {...props}
   />
 ));

@@ -425,16 +425,28 @@ export const WizardPendaftaran: React.FC = () => {
             Formulir terkunci setelah dikirim. Hubungi panitia PMB bila ada data
             yang perlu diperbaiki.
           </p>
-          <a
-            href={`/api/pendaftaran/${saya.id}/cetak/bukti-pendaftaran`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-block"
-          >
-            <Button variant="outline" size="sm" className="gap-2">
-              <Download className="w-4 h-4" /> Unduh Bukti Pendaftaran (PDF)
-            </Button>
-          </a>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href={`/api/pendaftaran/${saya.id}/cetak/bukti-pendaftaran`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block"
+            >
+              <Button variant="outline" size="sm" className="gap-2">
+                <Download className="w-4 h-4" /> Unduh Bukti Pendaftaran (PDF)
+              </Button>
+            </a>
+            <a
+              href={`/api/pendaftaran/${saya.id}/cetak/formulir`}
+              download="Formulir-Pendaftaran-PMB.pdf"
+              className="inline-block"
+            >
+              <Button variant="primary" size="sm" className="gap-2">
+                <Download className="w-4 h-4" /> Unduh Formulir Pendaftaran
+                (PDF)
+              </Button>
+            </a>
+          </div>
         </Card>
       </div>
     );

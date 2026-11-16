@@ -375,7 +375,7 @@ export const HomePage: React.FC = () => {
       {/* ========================================================================= */}
       {/* 1. HERO SECTION DENGAN ROYAL BLUE GRADIENT, POLA SVG, & COUNTDOWN */}
       {/* ========================================================================= */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-biru-950 via-biru-900 to-biru-800 text-putih min-h-[calc(100dvh-var(--navbar-h,72px))] pt-8 sm:pt-12 pb-24 sm:pb-28 lg:pb-32 border-b border-biru-800 shadow-soft-lg flex items-center">
+      <section className="hero-premium relative overflow-hidden bg-gradient-to-br from-biru-950 via-biru-900 to-biru-800 text-putih min-h-[calc(100dvh-var(--navbar-h,72px))] pt-8 sm:pt-12 pb-24 sm:pb-28 lg:pb-32 border-b border-biru-800 shadow-soft-lg flex items-center">
         {/* Subtle Geometric SVG Pattern (Pure CSS/SVG, 4-5% Opacity) */}
         <div className="absolute inset-0 opacity-[0.05] pointer-events-none">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -514,7 +514,7 @@ export const HomePage: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="lg"
-                    className="w-full sm:w-auto h-[52px] text-biru-200 hover:text-putih hover:bg-biru-800/40 text-sm sm:text-base font-medium"
+                    className="w-full sm:w-auto h-[52px] !text-biru-100 hover:!text-putih hover:bg-biru-800/40 text-sm sm:text-base font-medium"
                     leftIcon={
                       <GraduationCap className="w-4 h-4 text-biru-300" />
                     }

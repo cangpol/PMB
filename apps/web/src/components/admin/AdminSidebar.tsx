@@ -110,6 +110,13 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
         icon: FileCheck2,
       },
       {
+        id: "formulir-calon",
+        label: "Formulir Calon (PDF)",
+        path: "/admin/formulir-calon",
+        icon: FileText,
+        roles: ["admin_pmb", "super_admin"],
+      },
+      {
         id: "seleksi-tahap",
         label: "Seleksi & Kuota Jalur",
         path: "/admin/seleksi-tahap",

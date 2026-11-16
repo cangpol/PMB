@@ -136,7 +136,7 @@ export const ResetPasswordPage: React.FC = () => {
             Token Reset Password
           </label>
           <div className="relative">
-            <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-biru-500" />
+            <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 h-4 w-4 text-biru-500" />
             <Input
               {...register("token")}
               type="text"
@@ -157,7 +157,7 @@ export const ResetPasswordPage: React.FC = () => {
             Kata Sandi Baru (Min. 8 Karakter)
           </label>
           <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-biru-500" />
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 h-4 w-4 text-biru-500" />
             <Input
               {...register("new_password")}
               type="password"
@@ -178,7 +178,7 @@ export const ResetPasswordPage: React.FC = () => {
             Konfirmasi Kata Sandi Baru
           </label>
           <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-biru-500" />
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 h-4 w-4 text-biru-500" />
             <Input
               {...register("confirm_password")}
               type="password"

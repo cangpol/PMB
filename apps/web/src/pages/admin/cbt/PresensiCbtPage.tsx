@@ -114,7 +114,6 @@ export const PresensiCbtPage: React.FC = () => {
           method: "POST",
           body: JSON.stringify({
             nomor_peserta_atau_qr: identifier,
-            identifier,
             sesi_id: selectedSesiId || undefined,
           }),
         },

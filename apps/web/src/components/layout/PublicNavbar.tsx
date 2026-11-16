@@ -132,7 +132,7 @@ export const PublicNavbar: React.FC = () => {
 
   return (
     <header
-      className={`sticky top-0 z-40 bg-putih border-b border-biru-100 transition-all duration-200 motion-reduce:transition-none ${
+      className={`sticky top-0 z-40 bg-putih/90 backdrop-blur-md supports-[backdrop-filter]:bg-putih/80 border-b border-biru-100 transition-all duration-200 motion-reduce:transition-none ${
         isScrolled
           ? "h-16 sm:h-[64px] shadow-[0_4px_20px_rgba(11,37,89,0.07)]"
           : "h-[72px]"

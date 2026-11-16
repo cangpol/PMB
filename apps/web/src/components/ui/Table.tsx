@@ -66,6 +66,6 @@ export const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement>
 >(({ className = "", ...props }, ref) => (
-  <td ref={ref} className={`py-3.5 px-4 text-sm ${className}`} {...props} />
+  <td ref={ref} className={`py-3.5 px-4 text-sm tabular-nums ${className}`} {...props} />
 ));
 TableCell.displayName = "TableCell";

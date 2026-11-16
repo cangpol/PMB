@@ -476,3 +476,25 @@ pub struct SahkanSemuaBerkasResponse {
     pub berkas_disahkan: i64,
     pub hasil: Vec<HasilSahkanCalon>,
 }
+
+// ==========================================
+// DTO MENU ADMIN "FORMULIR CALON" (UNDUH PDF)
+// ==========================================
+
+#[derive(Debug, Serialize, FromRow, ToSchema)]
+pub struct FormulirCalonItem {
+    pub id: Uuid,
+    pub nomor_pendaftaran: String,
+    pub nama_lengkap: String,
+    pub email: String,
+    pub nama_jalur: String,
+    pub nama_gelombang: String,
+    pub status_pendaftaran: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct FormulirCalonListResponse {
+    pub total: i64,
+    pub items: Vec<FormulirCalonItem>,
+}

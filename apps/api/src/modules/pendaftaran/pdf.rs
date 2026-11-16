@@ -543,3 +543,522 @@ pub fn generate_kartu_peserta_pdf(
 
     crate::pdfkit::bangun_pdf(&s)
 }
+
+// ==========================================================================
+// 3. Formulir Pendaftaran Lengkap (seluruh isian calon + daftar berkas)
+// ==========================================================================
+
+/// Seluruh data yang diisi calon pada formulir pendaftaran, siap dicetak.
+#[derive(Clone, Debug)]
+pub struct FormulirPdfData {
+    pub dasar: PendaftarPdfData,
+    pub alamat_lengkap: String,
+    pub nama_ortu: String,
+    pub no_hp_ortu: String,
+    pub nilai_rapor_avg: f64,
+    /// Isian dinamis formulir: (kelompok, label, nilai).
+    pub isian: Vec<(String, String, String)>,
+    /// Berkas yang diunggah: (jenis, nama file, status verifikasi).
+    pub berkas: Vec<(String, String, String)>,
+}
+
+/// Kolom tetap yang sudah tampil di blok biodata; tidak diulang pada isian dinamis.
+const KUNCI_SUDAH_TAMPIL: [&str; 11] = [
+    "nik",
+    "agama",
+    "no_hp",
+    "tgl_lahir",
+    "tempat_lahir",
+    "jenis_kelamin",
+    "asal_sekolah",
+    "jurusan_sekolah",
+    "nama_ortu",
+    "no_hp_ortu",
+    "alamat_lengkap",
+];
+
+/// Ubah nilai JSON isian menjadi teks yang dapat dibaca; `None` bila kosong.
+fn nilai_json_ke_teks(v: &serde_json::Value) -> Option<String> {
+    use serde_json::Value;
+    let teks = match v {
+        Value::Null => return None,
+        Value::String(s) => s.trim().to_string(),
+        Value::Bool(true) => "Ya".to_string(),
+        Value::Bool(false) => "Tidak".to_string(),
+        Value::Number(n) => n.to_string(),
+        Value::Array(a) => a
+            .iter()
+            .filter_map(nilai_json_ke_teks)
+            .collect::<Vec<_>>()
+            .join(", "),
+        Value::Object(_) => v.to_string(),
+    };
+    if teks.is_empty() { None } else { Some(teks) }
+}
+
+/// Label ramah dari kunci mentah, mis. `nama_ibu` -> `Nama Ibu`.
+fn label_dari_kunci(kunci: &str) -> String {
+    kunci
+        .split('_')
+        .filter(|k| !k.is_empty())
+        .map(|k| {
+            let mut c = k.chars();
+            match c.next() {
+                Some(h) => h.to_uppercase().collect::<String>() + c.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Susun isian dinamis: urut sesuai definisi field (kode, label, kelompok), lalu kunci lain
+/// yang tersimpan tetapi tidak punya definisi. Isian kosong dan kolom tetap dilewati.
+pub fn susun_isian(
+    data: &serde_json::Value,
+    definisi: &[(String, String, String)],
+) -> Vec<(String, String, String)> {
+    let Some(peta) = data.as_object() else {
+        return Vec::new();
+    };
+    let mut hasil = Vec::new();
+    let mut terpakai: Vec<&str> = Vec::new();
+
+    for (kode, label, kelompok) in definisi {
+        terpakai.push(kode.as_str());
+        if KUNCI_SUDAH_TAMPIL.contains(&kode.as_str()) {
+            continue;
+        }
+        if let Some(teks) = peta.get(kode).and_then(nilai_json_ke_teks) {
+            hasil.push((kelompok.clone(), label.clone(), teks));
+        }
+    }
+    for (kunci, nilai) in peta {
+        if terpakai.contains(&kunci.as_str()) || KUNCI_SUDAH_TAMPIL.contains(&kunci.as_str()) {
+            continue;
+        }
+        if let Some(teks) = nilai_json_ke_teks(nilai) {
+            hasil.push(("Data Tambahan".to_string(), label_dari_kunci(kunci), teks));
+        }
+    }
+    hasil
+}
+
+const MARGIN_KIRI: f64 = 46.0;
+const MARGIN_KANAN: f64 = 549.0;
+const BATAS_BAWAH: f64 = 64.0;
+const X_LABEL: f64 = 54.0;
+const X_NILAI: f64 = 218.0;
+
+/// Penulis halaman berurutan: otomatis pindah halaman saat ruang habis.
+struct Penulis {
+    selesai: Vec<String>,
+    h: crate::pdfkit::Halaman,
+    y: f64,
+    baris_ke: usize,
+}
+
+impl Penulis {
+    fn baru(subjudul: &str) -> Self {
+        let mut h = crate::pdfkit::Halaman::baru();
+        h.logo_watermark(148.0, 270.0, 300.0);
+        let y = crate::pdfkit::kop_surat(&mut h, subjudul);
+        Self {
+            selesai: Vec::new(),
+            h,
+            y: y - 24.0,
+            baris_ke: 0,
+        }
+    }
+
+    fn halaman_baru(&mut self) {
+        let mut h = crate::pdfkit::Halaman::baru();
+        h.logo_watermark(148.0, 270.0, 300.0);
+        h.kotak(0.0, 835.0, 595.28, 7.0, crate::pdfkit::NAVY);
+        h.kotak(0.0, 832.0, 595.28, 2.5, crate::pdfkit::EMAS);
+        h.teks(
+            MARGIN_KIRI,
+            812.0,
+            true,
+            9.0,
+            crate::pdfkit::NAVY,
+            "FORMULIR PENDAFTARAN PMB - Universitas Pignatelli Triputra",
+        );
+        h.garis(
+            MARGIN_KIRI,
+            803.0,
+            MARGIN_KANAN,
+            803.0,
+            crate::pdfkit::EMAS,
+            0.7,
+        );
+        let lama = std::mem::replace(&mut self.h, h);
+        self.selesai.push(lama.s);
+        self.y = 780.0;
+        self.baris_ke = 0;
+    }
+
+    fn butuh(&mut self, tinggi: f64) {
+        if self.y - tinggi < BATAS_BAWAH {
+            self.halaman_baru();
+        }
+    }
+
+    fn bagian(&mut self, judul: &str) {
+        self.butuh(48.0);
+        self.y -= 6.0;
+        self.h.kotak(
+            MARGIN_KIRI,
+            self.y - 6.0,
+            MARGIN_KANAN - MARGIN_KIRI,
+            20.0,
+            crate::pdfkit::NAVY,
+        );
+        self.h.teks(
+            MARGIN_KIRI + 8.0,
+            self.y,
+            true,
+            9.5,
+            crate::pdfkit::PUTIH,
+            judul,
+        );
+        self.y -= 24.0;
+        self.baris_ke = 0;
+    }
+
+    fn baris(&mut self, label: &str, nilai: &str) {
+        let nilai = if nilai.trim().is_empty() { "-" } else { nilai };
+        let lebar = MARGIN_KANAN - X_NILAI - 6.0;
+        let potong = crate::pdfkit::bungkus(nilai, true, 8.5, lebar);
+        let label_potong = crate::pdfkit::bungkus(label, false, 8.5, X_NILAI - X_LABEL - 10.0);
+        let n = potong.len().max(label_potong.len()).max(1);
+        let tinggi = n as f64 * 12.0 + 6.0;
+        self.butuh(tinggi);
+
+        if self.baris_ke % 2 == 0 {
+            self.h.kotak(
+                MARGIN_KIRI,
+                self.y - tinggi + 10.0,
+                MARGIN_KANAN - MARGIN_KIRI,
+                tinggi,
+                crate::pdfkit::LATAR,
+            );
+        }
+        let mut yy = self.y;
+        for l in &label_potong {
+            self.h.teks(X_LABEL, yy, false, 8.5, crate::pdfkit::ABU, l);
+            yy -= 12.0;
+        }
+        let mut yy = self.y;
+        for (i, l) in potong.iter().enumerate() {
+            let t = if i == 0 {
+                format!(": {l}")
+            } else {
+                format!("  {l}")
+            };
+            self.h
+                .teks(X_NILAI - 6.0, yy, true, 8.5, crate::pdfkit::TEKS, &t);
+            yy -= 12.0;
+        }
+        self.y -= tinggi;
+        self.baris_ke += 1;
+    }
+
+    fn selesai(mut self) -> Vec<String> {
+        let akhir = std::mem::take(&mut self.h.s);
+        self.selesai.push(akhir);
+        self.selesai
+    }
+}
+
+fn status_ramah(s: &str) -> String {
+    s.replace('_', " ")
+}
+
+/// 3. Cetak Formulir Pendaftaran Lengkap (A4, banyak halaman bila isian panjang).
+pub fn generate_formulir_pendaftaran_pdf(data: &FormulirPdfData) -> Vec<u8> {
+    use crate::pdfkit as k;
+    let d = &data.dasar;
+    let mut p = Penulis::baru("Formulir Pendaftaran Calon Mahasiswa Baru - Tahun Akademik 2026/2027");
+
+    // Judul + nomor pendaftaran
+    let y = p.y;
+    p.h.teks(
+        MARGIN_KIRI,
+        y,
+        true,
+        14.0,
+        k::NAVY,
+        "FORMULIR PENDAFTARAN CALON MAHASISWA BARU",
+    );
+    p.y -= 14.0;
+    let y = p.y;
+    p.h.teks(
+        MARGIN_KIRI,
+        y,
+        false,
+        8.5,
+        k::ABU,
+        "Salinan seluruh data yang diisi calon mahasiswa pada saat pendaftaran PMB.",
+    );
+    p.y -= 20.0;
+    let y = p.y;
+    p.h.kotak(MARGIN_KIRI, y - 30.0, 503.0, 42.0, k::LATAR);
+    p.h.bingkai(MARGIN_KIRI, y - 30.0, 503.0, 42.0, k::NAVY, 1.2);
+    p.h.teks(MARGIN_KIRI + 10.0, y - 2.0, false, 7.5, k::ABU, "NOMOR PENDAFTARAN");
+    p.h.teks(
+        MARGIN_KIRI + 10.0,
+        y - 20.0,
+        true,
+        15.0,
+        k::NAVY,
+        &d.nomor_pendaftaran,
+    );
+    p.h.teks_kanan(
+        MARGIN_KANAN - 10.0,
+        y - 2.0,
+        true,
+        8.5,
+        k::TEKS,
+        &format!("Status: {}", status_ramah(&d.status_pendaftaran)),
+    );
+    p.h.teks_kanan(
+        MARGIN_KANAN - 10.0,
+        y - 18.0,
+        false,
+        8.0,
+        k::ABU,
+        &format!("Saluran: {}", d.channel.to_uppercase()),
+    );
+    p.y -= 52.0;
+
+    p.bagian("I. IDENTITAS DIRI");
+    p.baris("Nama Lengkap", &d.nama_lengkap);
+    p.baris("NIK", &d.nik);
+    p.baris(
+        "Tempat, Tanggal Lahir",
+        &format!("{}, {}", d.tempat_lahir, d.tgl_lahir),
+    );
+    p.baris(
+        "Jenis Kelamin",
+        if d.jenis_kelamin == "L" {
+            "Laki-laki"
+        } else {
+            "Perempuan"
+        },
+    );
+    p.baris("Agama", &d.agama);
+    p.baris("Alamat Lengkap", &data.alamat_lengkap);
+    p.baris("Nomor HP / WhatsApp", &d.no_hp);
+    p.baris("Email Akun", &d.email);
+
+    p.bagian("II. DATA ORANG TUA / WALI");
+    p.baris("Nama Orang Tua / Wali", &data.nama_ortu);
+    p.baris("Nomor HP Orang Tua / Wali", &data.no_hp_ortu);
+
+    p.bagian("III. DATA AKADEMIK");
+    p.baris("Asal Sekolah", &d.asal_sekolah);
+    p.baris("Jurusan Sekolah", &d.jurusan_sekolah);
+    p.baris(
+        "Rata-rata Nilai Rapor",
+        &format!("{:.2}", data.nilai_rapor_avg),
+    );
+
+    p.bagian("IV. JALUR & PROGRAM STUDI");
+    p.baris("Jalur Masuk", &d.jalur_nama);
+    p.baris("Gelombang", &d.gelombang_nama);
+    p.baris("Pilihan Program Studi 1", &d.prodi_1_nama);
+    p.baris(
+        "Pilihan Program Studi 2",
+        d.prodi_2_nama.as_deref().unwrap_or("Tidak memilih"),
+    );
+    p.baris("Status Biaya Formulir", &d.status_pembayaran);
+
+    // Isian dinamis dikelompokkan sesuai kelompok pada Form Builder.
+    let romawi = ["V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+    let mut kelompok_sebelumnya: Option<&str> = None;
+    let mut urutan_bagian = 0usize;
+    for (kelompok, label, nilai) in &data.isian {
+        if kelompok_sebelumnya != Some(kelompok.as_str()) {
+            let r = romawi.get(urutan_bagian).copied().unwrap_or("+");
+            p.bagian(&format!("{r}. {}", status_ramah(kelompok).to_uppercase()));
+            kelompok_sebelumnya = Some(kelompok.as_str());
+            urutan_bagian += 1;
+        }
+        p.baris(label, nilai);
+    }
+
+    // Berkas
+    p.bagian("BERKAS YANG DIUNGGAH");
+    if data.berkas.is_empty() {
+        p.baris("Berkas", "Belum ada berkas yang diunggah");
+    }
+    for (jenis, nama_file, status) in &data.berkas {
+        p.baris(
+            &label_dari_kunci(&jenis.to_lowercase()),
+            &format!("{nama_file}  [{}]", status_ramah(status)),
+        );
+    }
+
+    // Pernyataan & tanda tangan
+    p.butuh(130.0);
+    p.y -= 14.0;
+    let y = p.y;
+    p.y = p.h.paragraf(
+        MARGIN_KIRI,
+        y,
+        503.0,
+        false,
+        8.5,
+        11.0,
+        k::TEKS,
+        "Saya menyatakan bahwa seluruh data yang tercantum pada formulir ini adalah benar dan dapat dipertanggungjawabkan. Apabila di kemudian hari ditemukan ketidaksesuaian, saya bersedia menerima keputusan panitia PMB.",
+    );
+    p.y -= 18.0;
+    let y = p.y;
+    p.h.teks(70.0, y, false, 8.5, k::TEKS, "Calon Mahasiswa Baru,");
+    p.h.teks(380.0, y, false, 8.5, k::TEKS, "Panitia Penerimaan Mahasiswa Baru,");
+    p.y -= 56.0;
+    let y = p.y;
+    p.h.garis(60.0, y - 4.0, 220.0, y - 4.0, k::GARIS, 0.6);
+    p.h.garis(370.0, y - 4.0, 530.0, y - 4.0, k::GARIS, 0.6);
+    p.h.teks_tengah(140.0, y - 16.0, true, 8.5, k::NAVY, &d.nama_lengkap);
+    p.h.teks_tengah(450.0, y - 16.0, true, 8.5, k::NAVY, "Panitia Admisi PMB UPT");
+
+    let mut halaman = p.selesai();
+    let total = halaman.len();
+    for (i, h) in halaman.iter_mut().enumerate() {
+        let mut f = k::Halaman::baru();
+        f.garis(MARGIN_KIRI, 48.0, MARGIN_KANAN, 48.0, k::GARIS, 0.6);
+        f.teks(
+            MARGIN_KIRI,
+            36.0,
+            false,
+            7.5,
+            k::ABU,
+            &format!("Dicetak: {}", d.tanggal_cetak),
+        );
+        f.teks_kanan(
+            MARGIN_KANAN,
+            36.0,
+            false,
+            7.5,
+            k::ABU,
+            &format!("Halaman {} dari {}", i + 1, total),
+        );
+        h.push_str(&f.s);
+    }
+    k::bangun_pdf_banyak(&halaman, 595.28, 841.89)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn dasar() -> PendaftarPdfData {
+        PendaftarPdfData {
+            nomor_pendaftaran: "PMB-2026-0001".into(),
+            nama_lengkap: "Budi Santoso".into(),
+            email: "budi@contoh.id".into(),
+            no_hp: "0812".into(),
+            nik: "3372010101010001".into(),
+            tempat_lahir: "Surakarta".into(),
+            tgl_lahir: "01-01-2008".into(),
+            jenis_kelamin: "L".into(),
+            agama: "Islam".into(),
+            asal_sekolah: "SMA N 1".into(),
+            jurusan_sekolah: "IPA".into(),
+            jalur_nama: "READY Admission".into(),
+            gelombang_nama: "Gelombang 1".into(),
+            prodi_1_nama: "Teknologi Informasi".into(),
+            prodi_2_nama: None,
+            status_pendaftaran: "BERKAS_VERIFIED".into(),
+            channel: "online".into(),
+            status_pembayaran: "LUNAS".into(),
+            tanggal_cetak: "16 November 2026 10:00 WIB".into(),
+        }
+    }
+
+    #[test]
+    fn susun_isian_urut_definisi_dan_lewati_kolom_tetap() {
+        let data = json!({
+            "nik": "1", "nama_ibu": "Ani", "minat_ekskul": ["Robotik", "Debat"],
+            "tahun_lulus": 2026, "kosong": "  ", "punya_laptop": true
+        });
+        let definisi = vec![
+            (
+                "nama_ibu".to_string(),
+                "Nama Ibu Kandung".to_string(),
+                "Keluarga".to_string(),
+            ),
+            (
+                "nik".to_string(),
+                "NIK".to_string(),
+                "Identitas".to_string(),
+            ),
+        ];
+        let hasil = susun_isian(&data, &definisi);
+        assert_eq!(
+            hasil[0],
+            (
+                "Keluarga".to_string(),
+                "Nama Ibu Kandung".to_string(),
+                "Ani".to_string()
+            )
+        );
+        assert!(hasil.iter().all(|(_, l, _)| l != "NIK"));
+        assert!(
+            hasil
+                .iter()
+                .any(|(k, l, v)| k == "Data Tambahan" && l == "Minat Ekskul" && v == "Robotik, Debat")
+        );
+        assert!(
+            hasil
+                .iter()
+                .any(|(_, l, v)| l == "Punya Laptop" && v == "Ya")
+        );
+        assert!(hasil.iter().all(|(_, l, _)| l != "Kosong"));
+    }
+
+    #[test]
+    fn susun_isian_bukan_objek_kembali_kosong() {
+        assert!(susun_isian(&json!(null), &[]).is_empty());
+    }
+
+    #[test]
+    fn formulir_pdf_valid_dan_banyak_halaman_bila_isian_panjang() {
+        let isian: Vec<_> = (0..120)
+            .map(|i| {
+                (
+                    "Data Tambahan".to_string(),
+                    format!("Isian {i}"),
+                    "Nilai contoh yang cukup panjang untuk membungkus beberapa baris pada kolom nilai formulir pendaftaran"
+                        .to_string(),
+                )
+            })
+            .collect();
+        let data = FormulirPdfData {
+            dasar: dasar(),
+            alamat_lengkap: "Jl. Contoh No. 1".into(),
+            nama_ortu: "Ayah".into(),
+            no_hp_ortu: "0813".into(),
+            nilai_rapor_avg: 85.5,
+            isian,
+            berkas: vec![(
+                "KARTU_KELUARGA".into(),
+                "kk.pdf".into(),
+                "TERVERIFIKASI".into(),
+            )],
+        };
+        let pdf = generate_formulir_pendaftaran_pdf(&data);
+        let teks = String::from_utf8_lossy(&pdf);
+        assert!(teks.starts_with("%PDF-1.4"));
+        assert!(teks.trim_end().ends_with("%%EOF"));
+        assert!(
+            !teks.contains("/Count 1 "),
+            "isian panjang harus lebih dari satu halaman"
+        );
+        assert!(teks.contains("Halaman 1 dari"));
+    }
+}

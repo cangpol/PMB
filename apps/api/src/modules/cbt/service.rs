@@ -41,8 +41,9 @@ impl CbtService {
     pub async fn get_my_sesi_info(
         &self,
         pendaftar_id: Uuid,
-        boleh_ujian: bool,
+        alasan_blokir: Option<String>,
     ) -> Result<SesiCalonInfoResponse, AppError> {
+        let boleh_ujian = alasan_blokir.is_none();
         let peserta_opt = self
             .repo
             .find_active_session_for_pendaftar(pendaftar_id)
@@ -115,10 +116,7 @@ impl CbtService {
             (boleh_ujian && is_hadir && peserta.status_ujian == "MENUNGGU") || is_in_progress;
 
         let pesan = if !boleh_ujian && !selesai && !is_in_progress {
-            Some(
-                "Akses ujian dibuka setelah seluruh berkas pendaftaran Anda diverifikasi admin PMB."
-                    .to_string(),
-            )
+            alasan_blokir.clone()
         } else if !is_hadir {
             Some(
                 "Presensi Diperlukan: Tunjukkan kartu peserta PMB Anda kepada pengawas ruang untuk scan QR check-in sebelum memulai ujian."

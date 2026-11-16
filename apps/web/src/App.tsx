@@ -216,6 +216,11 @@ const MasterDataPage = lazy(() =>
     default: m.MasterDataPage,
   })),
 );
+const FormulirCalonPage = lazy(() =>
+  import("./pages/admin/FormulirCalonPage").then((m) => ({
+    default: m.FormulirCalonPage,
+  })),
+);
 const PendaftaranOfflinePage = lazy(() =>
   import("./pages/admin/PendaftaranOfflinePage").then((m) => ({
     default: m.PendaftaranOfflinePage,
@@ -542,6 +547,16 @@ export const App: React.FC = () => {
                           allowedRoles={["admin_pmb", "super_admin"]}
                         >
                           <PendaftaranOfflinePage />
+                        </RequireRole>
+                      }
+                    />
+                    <Route
+                      path="formulir-calon"
+                      element={
+                        <RequireRole
+                          allowedRoles={["admin_pmb", "super_admin"]}
+                        >
+                          <FormulirCalonPage />
                         </RequireRole>
                       }
                     />

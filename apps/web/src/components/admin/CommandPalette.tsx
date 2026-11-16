@@ -60,6 +60,15 @@ const ADMIN_COMMAND_ITEMS: CommandItem[] = [
 
   // Pendaftaran
   {
+    id: "formulir-calon",
+    label: "Formulir Calon (Unduh PDF)",
+    group: "Pendaftaran",
+    path: "/admin/formulir-calon",
+    keywords: ["formulir", "pdf", "unduh", "download", "data calon", "ekspor"],
+    roles: ["admin_pmb", "super_admin"],
+    icon: FileText,
+  },
+  {
     id: "berkas",
     label: "Verifikasi Berkas PMB",
     group: "Pendaftaran",

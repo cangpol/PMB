@@ -62,7 +62,7 @@ export const JalurMasukPage: React.FC = () => {
     nama_jalur: "",
     deskripsi: "",
     biaya_formulir: 250000,
-    tipe_seleksi: "cbt",
+    tipe_seleksi: "CBT",
     syarat: "",
     kuota_maksimal: null,
     is_active: true,
@@ -99,7 +99,7 @@ export const JalurMasukPage: React.FC = () => {
       nama_jalur: "",
       deskripsi: "",
       biaya_formulir: 250000,
-      tipe_seleksi: "cbt",
+      tipe_seleksi: "CBT",
       syarat: "",
       kuota_maksimal: null,
       is_active: true,
@@ -115,7 +115,7 @@ export const JalurMasukPage: React.FC = () => {
       nama_jalur: j.nama_jalur,
       deskripsi: j.deskripsi,
       biaya_formulir: j.biaya_formulir,
-      tipe_seleksi: j.tipe_seleksi,
+      tipe_seleksi: (j.tipe_seleksi || "CBT").toUpperCase(),
       syarat: j.syarat || "",
       kuota_maksimal: j.kuota_maksimal || null,
       is_active: j.is_active,
@@ -240,10 +240,10 @@ export const JalurMasukPage: React.FC = () => {
             className="rounded-xl border border-biru-200 bg-putih px-3 py-2 text-xs font-medium text-biru-950 focus:border-biru-600 focus:outline-none"
           >
             <option value="SEMUA">Semua Tipe Seleksi</option>
-            <option value="cbt">CBT (Ujian Online)</option>
-            <option value="berkas">Berkas / Rapor</option>
-            <option value="campuran">Campuran</option>
-            <option value="rpl">RPL (Rekognisi)</option>
+            <option value="CBT">CBT (Ujian Online)</option>
+            <option value="BERKAS">Berkas / Rapor</option>
+            <option value="CAMPURAN">Campuran</option>
+            <option value="RPL">RPL (Rekognisi)</option>
           </select>
           <select
             value={filterStatus}
@@ -316,11 +316,11 @@ export const JalurMasukPage: React.FC = () => {
                   <TableCell className="text-center">
                     <Badge
                       variant={
-                        j.tipe_seleksi === "cbt"
+                        j.tipe_seleksi.toUpperCase() === "CBT"
                           ? "menunggu"
-                          : j.tipe_seleksi === "berkas"
+                          : j.tipe_seleksi.toUpperCase() === "BERKAS"
                             ? "berhasil"
-                            : j.tipe_seleksi === "rpl"
+                            : j.tipe_seleksi.toUpperCase() === "RPL"
                               ? "peringatan"
                               : "netral"
                       }
@@ -447,14 +447,14 @@ export const JalurMasukPage: React.FC = () => {
                     setForm({ ...form, tipe_seleksi: e.target.value })
                   }
                 >
-                  <option value="cbt">
+                  <option value="CBT">
                     CBT (Computer-Based Testing Online)
                   </option>
-                  <option value="berkas">
+                  <option value="BERKAS">
                     Berkas (Nilai Rapor / Prestasi)
                   </option>
-                  <option value="campuran">Campuran (Tes & Portofolio)</option>
-                  <option value="rpl">
+                  <option value="CAMPURAN">Campuran (Tes & Portofolio)</option>
+                  <option value="RPL">
                     RPL (Rekognisi Pembelajaran Lampau)
                   </option>
                 </select>

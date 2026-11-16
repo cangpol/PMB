@@ -16,7 +16,8 @@ use crate::{
         dto::{
             BerkasCalonItem, BerkasCalonRingkasan, BerkasDetailItem, BerkasResponse,
             CreateDefinisiBerkasRequest, CreateDefinisiFieldRequest, CreateDefinisiLangkahRequest,
-            DashboardSummaryResponse, HasilSahkanCalon, KonfirmasiUploadRequest,
+            DashboardSummaryResponse, FormulirCalonListResponse, HasilSahkanCalon,
+            KonfirmasiUploadRequest,
             LangkahProgressItem, PendaftarDetailResponse, PendaftaranOfflineRequest,
             PendaftaranOfflineResponse, PilihProdiRequest, PresignUploadRequest,
             PresignedUrlResponse, ReorderFieldsRequest, SahkanSemuaBerkasRequest,
@@ -48,6 +49,8 @@ use crate::{
         admin_pendaftaran_offline_handler,
         cetak_bukti_pendaftaran_handler,
         cetak_kartu_peserta_handler,
+        cetak_formulir_pendaftaran_handler,
+        admin_list_formulir_calon_handler,
         admin_list_fields_handler,
         admin_create_field_handler,
         admin_update_field_handler,
@@ -246,6 +249,11 @@ pub fn pendaftaran_router() -> Router<AppState> {
             "/{id}/cetak/kartu-peserta",
             get(cetak_kartu_peserta_handler),
         )
+        .route(
+            "/{id}/cetak/formulir",
+            get(cetak_formulir_pendaftaran_handler),
+        )
+        .route("/admin/formulir", get(admin_list_formulir_calon_handler))
 }
 
 // ==========================================
@@ -1106,6 +1114,76 @@ pub async fn cetak_bukti_pendaftaran_handler(
     );
 
     Ok((StatusCode::OK, headers, pdf_bytes))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/pendaftaran/{id}/cetak/formulir",
+    tag = "Pendaftaran Cetak",
+    params(
+        ("id" = Uuid, Path, description = "ID Pendaftar")
+    ),
+    responses(
+        (status = 200, description = "Dokumen PDF Formulir Pendaftaran lengkap yang diisi calon", content_type = "application/pdf"),
+        (status = 403, description = "Tidak berhak mengakses dokumen ini", body = ApiErrorResponse),
+        (status = 404, description = "Pendaftar tidak ditemukan", body = ApiErrorResponse)
+    )
+)]
+pub async fn cetak_formulir_pendaftaran_handler(
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let service = make_service(&state);
+    let can_access_all = auth_user.is_admin() || auth_user.is_asesor();
+    let pdf_bytes = service
+        .generate_formulir_pdf(auth_user.user_id, can_access_all, id)
+        .await?;
+
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/pdf"),
+    );
+    headers.insert(
+        header::CONTENT_DISPOSITION,
+        HeaderValue::from_static("inline; filename=\"Formulir-Pendaftaran-PMB.pdf\""),
+    );
+
+    Ok((StatusCode::OK, headers, pdf_bytes))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct FormulirCalonQuery {
+    pub q: Option<String>,
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/pendaftaran/admin/formulir",
+    tag = "Pendaftaran Admin",
+    params(
+        ("q" = Option<String>, Query, description = "Cari nama, nomor pendaftaran, atau email"),
+        ("limit" = Option<i64>, Query, description = "Jumlah baris per halaman (maks. 100)"),
+        ("offset" = Option<i64>, Query, description = "Posisi awal")
+    ),
+    responses(
+        (status = 200, description = "Daftar calon beserta tautan unduh formulir", body = FormulirCalonListResponse),
+        (status = 403, description = "Hanya admin PMB yang berhak mengakses", body = ApiErrorResponse)
+    )
+)]
+pub async fn admin_list_formulir_calon_handler(
+    _admin: RequireAdmin,
+    State(state): State<AppState>,
+    Query(query): Query<FormulirCalonQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let service = make_service(&state);
+    let res = service
+        .list_formulir_calon(query.q.as_deref(), query.limit, query.offset)
+        .await?;
+    Ok(Json(res))
 }
 
 #[utoipa::path(

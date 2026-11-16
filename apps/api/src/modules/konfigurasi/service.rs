@@ -546,8 +546,10 @@ impl KonfigurasiService {
     pub async fn create_jalur(
         &self,
         operator: &AuthUser,
-        req: CreateJalurKonfigurasiRequest,
+        mut req: CreateJalurKonfigurasiRequest,
     ) -> Result<JalurDetailResponse, AppError> {
+        // Toleran huruf besar/kecil: constraint basis data memakai huruf besar.
+        req.tipe_seleksi = req.tipe_seleksi.trim().to_uppercase();
         pastikan_tipe_seleksi(&req.tipe_seleksi)?;
         let item = self.repo.create_jalur(&req).await?;
         self.repo
@@ -578,8 +580,9 @@ impl KonfigurasiService {
         &self,
         operator: &AuthUser,
         id: Uuid,
-        req: UpdateJalurKonfigurasiRequest,
+        mut req: UpdateJalurKonfigurasiRequest,
     ) -> Result<JalurDetailResponse, AppError> {
+        req.tipe_seleksi = req.tipe_seleksi.trim().to_uppercase();
         pastikan_tipe_seleksi(&req.tipe_seleksi)?;
         let item = self.repo.update_jalur(id, &req).await?;
         self.repo

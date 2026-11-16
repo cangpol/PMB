@@ -165,13 +165,27 @@ pub async fn get_my_sesi_handler(
             AppError::NotFound("Belum ada formulir pendaftaran untuk akun ini".to_string())
         })?;
 
-    let boleh_ujian = crate::modules::pendaftaran::alur::status::BOLEH_UJIAN
+    // Alasan spesifik bila CBT belum boleh diakses (berkas belum terverifikasi vs seleksi rapor).
+    let alasan_blokir = if !crate::modules::pendaftaran::alur::status::BOLEH_UJIAN
         .contains(&pendaftar.status_pendaftaran.as_str())
-        && crate::modules::pendaftaran::seleksi::pastikan_lulus_rapor(&state.db, pendaftar.id)
+    {
+        Some(
+            "Akses ujian dibuka setelah seluruh berkas pendaftaran Anda diverifikasi admin PMB."
+                .to_string(),
+        )
+    } else {
+        match crate::modules::pendaftaran::seleksi::pastikan_lulus_rapor(&state.db, pendaftar.id)
             .await
-            .is_ok();
+        {
+            Ok(()) => None,
+            Err(AppError::Conflict(pesan)) => Some(pesan),
+            Err(e) => return Err(e),
+        }
+    };
     let service = CbtService::new(CbtRepository::new(state.db.clone()));
-    let res = service.get_my_sesi_info(pendaftar.id, boleh_ujian).await?;
+    let res = service
+        .get_my_sesi_info(pendaftar.id, alasan_blokir)
+        .await?;
     Ok(Json(res))
 }
 

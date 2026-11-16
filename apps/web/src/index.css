@@ -14,10 +14,13 @@
 @theme {
   --color-biru-950: #061633;
   --color-biru-900: #0b2559;
+  --color-biru-850: #0f2f70;
   --color-biru-800: #12378a;
   --color-biru-700: #1a4bb5;
   --color-biru-600: #2563eb;
   --color-biru-500: #3b82f6;
+  --color-biru-400: #6a9df6;
+  --color-biru-300: #93b8f5;
   --color-biru-200: #bfd4f8;
   --color-biru-100: #dce8fc;
   --color-biru-50: #f1f6fe;
@@ -48,13 +51,13 @@
   --radius-3xl: 2rem;
 
   --shadow-soft-sm:
-    0 1px 3px 0 rgba(6, 22, 51, 0.06), 0 1px 2px -1px rgba(6, 22, 51, 0.06);
+    0 1px 2px 0 rgba(6, 22, 51, 0.05), 0 1px 3px 0 rgba(26, 75, 181, 0.07);
   --shadow-soft-md:
-    0 4px 6px -1px rgba(6, 22, 51, 0.07), 0 2px 4px -2px rgba(6, 22, 51, 0.05);
+    0 2px 4px -1px rgba(6, 22, 51, 0.05), 0 6px 12px -2px rgba(26, 75, 181, 0.1);
   --shadow-soft-lg:
-    0 10px 15px -3px rgba(6, 22, 51, 0.08), 0 4px 6px -4px rgba(6, 22, 51, 0.04);
+    0 4px 8px -2px rgba(6, 22, 51, 0.05), 0 14px 28px -6px rgba(26, 75, 181, 0.16);
   --shadow-soft-xl:
-    0 20px 25px -5px rgba(6, 22, 51, 0.1), 0 8px 10px -6px rgba(6, 22, 51, 0.04);
+    0 8px 16px -4px rgba(6, 22, 51, 0.06), 0 28px 48px -12px rgba(26, 75, 181, 0.22);
 }
 
 :root {
@@ -64,6 +67,8 @@
   --biru-700: #1a4bb5;
   --biru-600: #2563eb;
   --biru-500: #3b82f6;
+  --biru-400: #6a9df6;
+  --biru-300: #93b8f5;
   --biru-200: #bfd4f8;
   --biru-100: #dce8fc;
   --biru-50: #f1f6fe;
@@ -106,6 +111,46 @@ h6,
   font-family: var(--font-display);
 }
 
+/* Judul seimbang (tanpa baris yatim), isi nyaman dibaca */
+h1,
+h2,
+h3,
+h4 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Interaksi: kursor & respons sentuh cepat pada elemen yang dapat diklik */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary,
+select {
+  cursor: pointer;
+}
+
+a,
+button,
+[role="button"],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Placeholder dengan kontras cukup (>= 4.5:1 di atas putih) */
+::placeholder {
+  color: #5b6b8c;
+  opacity: 1;
+}
+
+::selection {
+  background: var(--biru-200);
+  color: var(--biru-950);
+}
+
 /* Aksesibilitas: Hormati prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -138,6 +183,36 @@ h6,
       var(--biru-900) 60%,
       var(--biru-800) 100%
     );
+}
+
+/* Hero premium: cahaya biru lembut + pola titik akademis di balik konten */
+.hero-premium {
+  isolation: isolate;
+}
+
+.hero-premium::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(
+      60% 55% at 85% 10%,
+      rgba(96, 165, 250, 0.28) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      45% 50% at 5% 95%,
+      rgba(37, 99, 235, 0.3) 0%,
+      transparent 70%
+    ),
+    radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px);
+  background-size:
+    auto,
+    auto,
+    26px 26px;
+  mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
 }
 
 /* Fokus Keyboard Aksesibel WCAG */

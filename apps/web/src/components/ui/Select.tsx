@@ -16,10 +16,10 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           disabled={disabled}
           aria-invalid={error ? "true" : undefined}
-          className={`w-full appearance-none rounded-xl border bg-putih py-2.5 pl-3.5 pr-10 text-sm text-biru-950 transition-all duration-200 outline-none
+          className={`w-full appearance-none rounded-xl border bg-putih py-2.5 pl-3.5 pr-10 text-sm text-biru-950 transition-[border-color,box-shadow,background-color] duration-200 outline-none min-h-10
             ${
               error
-                ? "border-biru-600 ring-1 ring-biru-600 bg-biru-50/20"
+                ? "border-rose-600 ring-1 ring-rose-600/40 bg-rose-50/40 focus:ring-2 focus:ring-rose-600/30"
                 : "border-biru-200 hover:border-biru-500 focus:border-biru-600 focus:ring-2 focus:ring-biru-600/20"
             }
             disabled:bg-biru-50 disabled:text-biru-700/60 disabled:cursor-not-allowed

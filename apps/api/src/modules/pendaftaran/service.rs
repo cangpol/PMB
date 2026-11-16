@@ -1868,6 +1868,40 @@ impl PendaftaranService {
         Ok(pdf::generate_bukti_pendaftaran_pdf(&data, &qr_payload))
     }
 
+    /// Formulir pendaftaran lengkap: calon hanya miliknya sendiri; admin/asesor semua calon.
+    pub async fn generate_formulir_pdf(
+        &self,
+        user_id: Uuid,
+        can_access_all: bool,
+        pendaftar_id: Uuid,
+    ) -> Result<Vec<u8>, AppError> {
+        let pendaftar =
+            self.repo.find_by_id(pendaftar_id).await?.ok_or_else(|| {
+                AppError::NotFound("Data pendaftaran tidak ditemukan".to_string())
+            })?;
+
+        if !can_access_all && pendaftar.user_id != user_id {
+            return Err(AppError::Forbidden(
+                "Anda tidak berhak mengakses formulir pendaftaran ini".to_string(),
+            ));
+        }
+
+        let data = self.repo.get_formulir_pdf_data(pendaftar_id).await?;
+        Ok(pdf::generate_formulir_pendaftaran_pdf(&data))
+    }
+
+    pub async fn list_formulir_calon(
+        &self,
+        q: Option<&str>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+    ) -> Result<super::dto::FormulirCalonListResponse, AppError> {
+        let limit = limit.unwrap_or(20).clamp(1, 100);
+        let offset = offset.unwrap_or(0).max(0);
+        let (total, items) = self.repo.list_formulir_calon(q, limit, offset).await?;
+        Ok(super::dto::FormulirCalonListResponse { total, items })
+    }
+
     pub async fn generate_kartu_pdf(
         &self,
         user_id: Uuid,

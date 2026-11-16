@@ -278,7 +278,7 @@ export const RegisterPage: React.FC = () => {
             Nama Lengkap (Sesuai Ijazah/KTP)
           </label>
           <div className="relative">
-            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-biru-500" />
+            <User className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 h-4 w-4 text-biru-500" />
             <Input
               {...register("nama_lengkap")}
               type="text"
@@ -299,7 +299,7 @@ export const RegisterPage: React.FC = () => {
             Alamat Email Aktif
           </label>
           <div className="relative">
-            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-biru-500" />
+            <Mail className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 h-4 w-4 text-biru-500" />
             <Input
               {...register("email")}
               type="email"
@@ -320,7 +320,7 @@ export const RegisterPage: React.FC = () => {
             Nomor WhatsApp / HP
           </label>
           <div className="relative">
-            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-biru-500" />
+            <Phone className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 h-4 w-4 text-biru-500" />
             <Input
               {...register("no_hp")}
               type="tel"
@@ -431,7 +431,7 @@ export const RegisterPage: React.FC = () => {
             Kata Sandi (Minimal 8 Karakter)
           </label>
           <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-biru-500" />
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 h-4 w-4 text-biru-500" />
             <Input
               {...register("password")}
               type="password"
@@ -452,7 +452,7 @@ export const RegisterPage: React.FC = () => {
             Konfirmasi Kata Sandi
           </label>
           <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-biru-500" />
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 h-4 w-4 text-biru-500" />
             <Input
               {...register("confirm_password")}
               type="password"

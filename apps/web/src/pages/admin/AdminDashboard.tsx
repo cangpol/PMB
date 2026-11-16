@@ -243,9 +243,9 @@ export const AdminDashboard: React.FC = () => {
           {/* ========================================================================= */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* Total Pendaftar */}
-            <Card className="p-5 border-biru-200 bg-putih hover:shadow-soft-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+            <Card className="p-5 border-biru-200 bg-putih hover:shadow-soft-lg hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 transition-[box-shadow,transform] duration-200 relative overflow-hidden flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-xs font-bold text-biru-700 uppercase tracking-wider">
                     Total Pendaftar
                   </span>
@@ -275,9 +275,9 @@ export const AdminDashboard: React.FC = () => {
             </Card>
 
             {/* Berkas Terverifikasi */}
-            <Card className="p-5 border-biru-200 bg-putih hover:shadow-soft-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+            <Card className="p-5 border-biru-200 bg-putih hover:shadow-soft-lg hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 transition-[box-shadow,transform] duration-200 relative overflow-hidden flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-xs font-bold text-biru-700 uppercase tracking-wider">
                     Berkas Terverifikasi
                   </span>
@@ -310,9 +310,9 @@ export const AdminDashboard: React.FC = () => {
             </Card>
 
             {/* Lulus Seleksi */}
-            <Card className="p-5 border-biru-200 bg-putih hover:shadow-soft-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+            <Card className="p-5 border-biru-200 bg-putih hover:shadow-soft-lg hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 transition-[box-shadow,transform] duration-200 relative overflow-hidden flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-xs font-bold text-biru-700 uppercase tracking-wider">
                     Lulus Seleksi
                   </span>
@@ -343,9 +343,9 @@ export const AdminDashboard: React.FC = () => {
             </Card>
 
             {/* Mahasiswa Baru (NIM Terbit) */}
-            <Card className="p-5 border-biru-300 bg-gradient-to-br from-biru-50/80 to-putih hover:shadow-soft-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+            <Card className="p-5 border-biru-300 bg-gradient-to-br from-biru-50/80 to-putih hover:shadow-soft-lg hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 transition-[box-shadow,transform] duration-200 relative overflow-hidden flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-xs font-bold text-biru-900 uppercase tracking-wider">
                     Mahasiswa Baru (NIM)
                   </span>

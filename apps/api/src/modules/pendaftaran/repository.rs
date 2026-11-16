@@ -6,13 +6,14 @@ use crate::{
     modules::pendaftaran::{
         dto::{
             BerkasCalonItem, BerkasCalonRingkasan, BerkasDetailItem, DashboardSummaryResponse,
+            FormulirCalonItem,
             PendaftaranOfflineRequest,
         },
         model::{
             BerkasPendaftar, DefinisiBerkas, DefinisiField, DefinisiLangkah, Pendaftar,
             StateLangkahPendaftar,
         },
-        pdf::{JadwalUjianPdfData, PendaftarPdfData},
+        pdf::{FormulirPdfData, JadwalUjianPdfData, PendaftarPdfData, susun_isian},
     },
 };
 
@@ -1459,8 +1460,92 @@ impl PendaftaranRepository {
             status_pendaftaran: p.status_pendaftaran,
             channel: p.channel,
             status_pembayaran,
-            tanggal_cetak: chrono::Utc::now().format("%d %B %Y %H:%M WIB").to_string(),
+            // Label WIB harus berisi waktu WIB (UTC+7), bukan UTC.
+            tanggal_cetak: chrono::Utc::now()
+                .with_timezone(&chrono::FixedOffset::east_opt(7 * 3600).expect("offset WIB valid"))
+                .format("%d %B %Y %H:%M WIB")
+                .to_string(),
         })
+    }
+
+    /// Seluruh isian formulir calon (kolom tetap + isian dinamis berlabel + daftar berkas).
+    pub async fn get_formulir_pdf_data(&self, id: Uuid) -> Result<FormulirPdfData, AppError> {
+        let dasar = self.get_pendaftar_pdf_data(id).await?;
+        let p = self
+            .find_by_id(id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Pendaftar tidak ditemukan".to_string()))?;
+
+        let definisi: Vec<(String, String, String)> = sqlx::query_as(
+            "SELECT kode_field, label, kelompok FROM definisi_field
+             WHERE is_active = TRUE AND (jalur_id = $1 OR jalur_id IS NULL)
+             ORDER BY kelompok, urutan",
+        )
+        .bind(p.jalur_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let berkas: Vec<(String, String, String)> = sqlx::query_as(
+            "SELECT jenis_berkas, COALESCE(file_name, '-'), COALESCE(status_verifikasi, '-')
+             FROM berkas_pendaftar WHERE pendaftar_id = $1 ORDER BY uploaded_at",
+        )
+        .bind(id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(FormulirPdfData {
+            isian: susun_isian(&p.data_formulir, &definisi),
+            alamat_lengkap: p.alamat_lengkap,
+            nama_ortu: p.nama_ortu,
+            no_hp_ortu: p.no_hp_ortu,
+            nilai_rapor_avg: p.nilai_rapor_avg,
+            dasar,
+            berkas,
+        })
+    }
+
+    /// Daftar calon untuk menu admin "Formulir Calon" (cari nama/nomor/email, berhalaman).
+    pub async fn list_formulir_calon(
+        &self,
+        q: Option<&str>,
+        limit: i64,
+        offset: i64,
+    ) -> Result<(i64, Vec<FormulirCalonItem>), AppError> {
+        let pola = q
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(|s| format!("%{}%", s.replace('%', "\\%").replace('_', "\\_")));
+
+        let total: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pendaftar p JOIN users u ON u.id = p.user_id
+             WHERE ($1::text IS NULL OR u.nama_lengkap ILIKE $1 OR p.nomor_pendaftaran ILIKE $1
+                    OR u.email ILIKE $1)",
+        )
+        .bind(&pola)
+        .fetch_one(&self.pool)
+        .await?;
+
+        let items: Vec<FormulirCalonItem> = sqlx::query_as(
+            "SELECT p.id, p.nomor_pendaftaran, u.nama_lengkap, u.email,
+                    COALESCE(j.nama_jalur, '-') AS nama_jalur,
+                    COALESCE(g.nama_gelombang, '-') AS nama_gelombang,
+                    p.status_pendaftaran, p.created_at
+             FROM pendaftar p
+             JOIN users u ON u.id = p.user_id
+             LEFT JOIN jalur_masuk j ON j.id = p.jalur_id
+             LEFT JOIN gelombang g ON g.id = p.gelombang_id
+             WHERE ($1::text IS NULL OR u.nama_lengkap ILIKE $1 OR p.nomor_pendaftaran ILIKE $1
+                    OR u.email ILIKE $1)
+             ORDER BY p.created_at DESC
+             LIMIT $2 OFFSET $3",
+        )
+        .bind(&pola)
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok((total, items))
     }
 
     pub async fn get_jadwal_ujian_pdf(

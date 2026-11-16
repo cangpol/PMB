@@ -40,6 +40,7 @@ const BREADCRUMB_MAP: Record<string, string> = {
   dashboard: "Dashboard Eksekutif",
   "pendaftaran-offline": "Pendaftaran Loket",
   berkas: "Verifikasi Berkas",
+  "formulir-calon": "Formulir Calon",
   master: "Master Data",
   keuangan: "Verifikasi Keuangan",
   "laporan-registrasi": "Laporan Registrasi & Sumber",

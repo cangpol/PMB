@@ -188,13 +188,13 @@ export const DashboardCalon: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Kartu Utama & Status */}
-      <Card className="border-2 border-biru-200 bg-putih shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-biru-100">
+      <Card className="border border-biru-200 bg-linear-to-br from-putih via-putih to-biru-50/70 shadow-soft-md p-5 sm:p-7 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-biru-100">
           <div>
-            <span className="text-xs font-bold text-biru-800 uppercase tracking-wider block">
+            <span className="inline-block rounded-full bg-biru-100 px-3 py-1 text-[11px] font-bold text-biru-800 uppercase tracking-wider">
               Portal Calon Mahasiswa Baru
             </span>
-            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-biru-950 mt-0.5">
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-biru-950 mt-2 capitalize">
               {user?.nama_lengkap || "Calon Mahasiswa"}
             </h1>
           </div>
@@ -217,7 +217,7 @@ export const DashboardCalon: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs pt-1">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs">
           {[
             {
               label: labelNomorPendaftaran(summary.nomor_pendaftaran),
@@ -242,14 +242,14 @@ export const DashboardCalon: React.FC = () => {
           ].map((k) => (
             <div
               key={k.label}
-              className="p-3.5 rounded-2xl bg-biru-50/60 border border-biru-100 min-w-0"
+              className="p-4 rounded-2xl bg-putih/80 border border-biru-100 shadow-soft-sm min-w-0"
             >
-              <span className="text-biru-800 block text-[11px] uppercase tracking-wider font-semibold">
+              <span className="text-biru-700 block text-[11px] uppercase tracking-wider font-semibold">
                 {k.label}
               </span>
               <span
-                className={`font-bold text-biru-950 mt-0.5 block truncate ${
-                  k.mono ? "font-mono text-sm" : ""
+                className={`font-bold text-biru-950 mt-1 block truncate text-sm sm:text-base ${
+                  k.mono ? "font-mono tabular-nums" : ""
                 }`}
                 title={k.nilai}
               >
@@ -273,6 +273,15 @@ export const DashboardCalon: React.FC = () => {
                 </Button>
               </a>
             )}
+            <a
+              href={`/api/pendaftaran/${summary.pendaftar_id}/cetak/formulir`}
+              download="Formulir-Pendaftaran-PMB.pdf"
+            >
+              <Button variant="outline" size="sm" className="gap-2">
+                <FileText className="w-4 h-4" />
+                <span>Unduh Formulir Pendaftaran (PDF)</span>
+              </Button>
+            </a>
             {summary.bisa_cetak_kartu && (
               <a
                 href={`/api/pendaftaran/${summary.pendaftar_id}/cetak/kartu-peserta`}

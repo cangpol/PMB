@@ -119,7 +119,7 @@ export const LoginPage: React.FC = () => {
             Alamat Email
           </label>
           <div className="relative">
-            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-biru-500" />
+            <Mail aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 h-4 w-4 text-biru-600" />
             <Input
               {...register("email")}
               type="email"
@@ -129,7 +129,7 @@ export const LoginPage: React.FC = () => {
             />
           </div>
           {errors.email && (
-            <p className="mt-1 text-xs font-semibold text-biru-800">
+            <p className="mt-1 text-xs font-semibold text-rose-700">
               {errors.email.message}
             </p>
           )}
@@ -148,7 +148,7 @@ export const LoginPage: React.FC = () => {
             </Link>
           </div>
           <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-biru-500" />
+            <Lock aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 h-4 w-4 text-biru-600" />
             <Input
               {...register("password")}
               type="password"
@@ -158,7 +158,7 @@ export const LoginPage: React.FC = () => {
             />
           </div>
           {errors.password && (
-            <p className="mt-1 text-xs font-semibold text-biru-800">
+            <p className="mt-1 text-xs font-semibold text-rose-700">
               {errors.password.message}
             </p>
           )}

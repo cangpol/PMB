@@ -194,10 +194,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   key={item.href}
                   aria-disabled="true"
                   title="Terkunci: selesaikan langkah sebelumnya"
-                  className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-biru-200/40 cursor-not-allowed select-none"
+                  className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-biru-200/65 cursor-not-allowed select-none"
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className="h-5 w-5 shrink-0 text-biru-400/40" />
+                    <Icon className="h-5 w-5 shrink-0 text-biru-300/65" />
                     <span>{item.label}</span>
                   </div>
                   <Lock

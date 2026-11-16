@@ -271,7 +271,7 @@ export const ProdiPage: React.FC = () => {
               onSubmit={handleSearchSubmit}
               className="relative w-full lg:w-80 shrink-0"
             >
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-biru-500" />
+              <Search className="w-4 h-4 pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-biru-500" />
               <input
                 type="text"
                 placeholder="Cari prodi, prospek, keahlian..."
