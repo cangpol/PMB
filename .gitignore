@@ -43,3 +43,8 @@ Thumbs.db
 *.swp
 *.swo
 
+
+# Data lokal & tooling asisten AI (tidak untuk di-commit)
+.claude/
+.pgdata-local/
+apps/api/uploads/
